@@ -1,4 +1,4 @@
-module github.com/golang-templates/seed
+module github.com/sargassum-eco/fluitans
 
 go 1.16
 
