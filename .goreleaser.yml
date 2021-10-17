@@ -2,7 +2,9 @@ before:
   hooks:
     - go mod download
 builds:
-- env:
+- id: "fluitans"
+  main: ./cmd/fluitans
+  env:
     - CGO_ENABLED=0
   goos:
     - darwin

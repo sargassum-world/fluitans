@@ -1,0 +1,12 @@
+@charset 'utf-8';
+
+.field .message {
+  margin-top: $gap;
+}
+.field .message .message-body {
+  padding: $gap;
+}
+// For some reason, the Bulma tag color classes ignore $success, $danger, etc.
+.message.is-danger {
+  background-color: $danger-light;
+}

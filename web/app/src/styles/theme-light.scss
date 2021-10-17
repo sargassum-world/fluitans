@@ -1,0 +1,32 @@
+@charset 'utf-8';
+
+// Shared base
+@import 'styles/shared/global.scss';
+@import 'styles/shared/typography.vars.scss';
+@import 'node_modules/bulma/sass/utilities/mixins.sass';
+
+// Application-specific parameters
+@import 'styles/app/fonts.scss';
+@import 'styles/app/layout.vars.scss';
+
+// Shared
+@import 'styles/shared/layout.scss';
+@import 'styles/shared/colors-base.vars.scss';
+@import 'node_modules/bulma/sass/utilities/initial-variables.sass';
+
+// Theme colors
+@import 'styles/shared/colors-light.vars.scss';
+
+// Shared
+@import 'styles/shared/theme.vars.scss';
+
+// Application-specific Bulma imports
+@import 'styles/app/bulma.scss';
+
+// Anti-FOUC mechanism
+@import 'styles/app/fouc-post.scss';
+
+// Overrides & components
+@import 'styles/app/theme-overrides.scss';
+@import 'styles/app/components.scss';
+@import 'styles/app/sprinkles.scss';

@@ -1,0 +1,26 @@
+@charset 'utf-8';
+
+.info-card-container {
+  padding-right: $gap;
+  padding-bottom: $gap;
+
+  @include from($navside-breakpoint) {
+    padding-right: 2 * $gap;
+    padding-bottom: 2 * $gap;
+  }
+}
+.card.info-card {
+  display: inline-block;
+  vertical-align: top;
+  border-radius: 0;
+  width: calc(100% - #{$gap});
+  max-width: 36em;
+  margin-top: $gap;
+  margin-left: $gap;
+
+  @include from($navside-breakpoint) {
+    width: calc(100% - #{2 * $gap});
+    margin-top: 2 * $gap;
+    margin-left: 2 * $gap;
+  }
+}

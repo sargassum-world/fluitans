@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content={{.Meta.Description}}>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#00d1b2">
+
+  <title>{{block "title" .}}{{end}}</title>
+
+  <style>{{.Assets.BundleEagerCSS}}</style>
+  <!-- TODO: add cache-busting and use data-turbo-track="reload"> -->
+  <noscript><link rel="stylesheet" href="/app/theme-light.min.css"></noscript>
+  <link id="light-theme" as="style" rel="preload" href="/app/theme-light.min.css">
+  <link id="dark-theme" as="style" rel="preload" href="/app/theme-dark.min.css">
+  <script>{{.Assets.BundleEagerJS}}</script>
+  {{block "navbar.assets" .}}{{end}}
+  <link rel="preload" as="font" type="font/woff2" href="/app/fonts/atkinson-hyperlegible-latin-400-normal.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="/app/fonts/atkinson-hyperlegible-latin-700-normal.woff2" crossorigin>
+  <link rel="preload" as="script" href="/app/bundle-deferred.js">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <!-- TODO: add shortcuts to the web application manifest -->
+  <link rel="manifest" href="/static/app.webmanifest">
+  <script defer src="/app/bundle-deferred.js"></script>
+</head>
+
+<body>
+  <div class="main-window is-flex is-flex-direction-column-touch is-flex-direction-row-desktop">
+    {{block "navbar" .}}{{end}}
+    {{block "content" .}}{{end}}
+  </div>
+</body>
+</html>

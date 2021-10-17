@@ -2,7 +2,7 @@
 
 .PHONY: dev
 dev: ## dev build
-dev: clean install generate vet fmt lint test mod-tidy
+dev: clean install generate buildweb vet fmt lint test mod-tidy
 
 .PHONY: ci
 ci: ## CI build
@@ -11,6 +11,8 @@ ci: dev diff
 .PHONY: clean
 clean: ## remove files created during build pipeline
 	$(call print-target)
+	rm -rf web/app/node_modules
+	rm -rf web/app/public/build
 	rm -rf dist
 	rm -f coverage.*
 
@@ -23,6 +25,11 @@ install: ## go install tools
 generate: ## go generate
 	$(call print-target)
 	go generate ./...
+
+.PHONY: buildweb
+buildweb: ## generate webapp build artifacts
+	$(call print-target)
+	cd web/app && yarn && yarn build
 
 .PHONY: vet
 vet: ## go vet
@@ -59,7 +66,7 @@ diff: ## git diff
 
 .PHONY: build
 build: ## goreleaser --snapshot --skip-publish --rm-dist
-build: install
+build: install buildweb
 	$(call print-target)
 	goreleaser --snapshot --skip-publish --rm-dist
 
@@ -71,7 +78,7 @@ release: install
 
 .PHONY: run
 run: ## go run
-	@go run -race .
+	@go run -race ./cmd/fluitans
 
 .PHONY: go-clean
 go-clean: ## go clean build, test and modules caches

@@ -1,0 +1,14 @@
+{{template "base.layout.tmpl" .}}
+
+{{define "title"}}Hello, {{.Name}}!{{end}}
+
+{{define "content"}}
+<main class="main-container scroller">
+  <section class="section content">
+    <h1>Hello</h1>
+    <p>
+      Hello, {{.Name}}!
+    </p>
+  </section>
+</main>
+{{end}}
