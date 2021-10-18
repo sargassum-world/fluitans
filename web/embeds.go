@@ -35,6 +35,11 @@ var (
 	FontsFS, _ = fs.Sub(fontsFS, "app/public/build/fonts")
 )
 
+var EmbedAssets = []string{
+	"bundle-eager.js",
+	"theme-eager.css",
+}
+
 //go:embed app/public/build/bundle-eager.js
 var BundleEagerJS string
 

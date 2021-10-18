@@ -2,41 +2,37 @@
 package templates
 
 import (
-	"fmt"
 	"html/template"
 	"io"
+	"io/fs"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/labstack/echo/v4"
-
-	"github.com/sargassum-eco/fluitans/web"
 )
 
 type TemplateRenderer struct {
-	templates *template.Template
+	templates   *template.Template
+	templatesFS fs.FS
 }
 
-func New() *TemplateRenderer {
+func New(appNamer, staticNamer HashNamer, templates fs.FS) *TemplateRenderer {
 	return &TemplateRenderer{
 		templates: template.Must(
 			template.
-				New("").
+				New("App").
 				Funcs(sprig.FuncMap()).
 				Funcs(template.FuncMap{
-					"appHashed": func(file string) string {
-						return fmt.Sprintf("/app/%s", web.AppHFS.HashName(file))
-					},
-					"staticHashed": func(file string) string {
-						return fmt.Sprintf("/static/%s", web.StaticHFS.HashName(file))
-					},
+					"appHashed":    getHashedName("app", appNamer),
+					"staticHashed": getHashedName("static", staticNamer),
 				}).
-				ParseFS(web.TemplatesFS, "*.tmpl", "*/*.tmpl"),
+				ParseFS(templates, "*.tmpl", "*/*.tmpl"),
 		),
+		templatesFS: templates,
 	}
 }
 
 func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	tmpl := template.Must(t.templates.Clone())
-	tmpl = template.Must(tmpl.ParseFS(web.TemplatesFS, name))
+	tmpl = template.Must(tmpl.ParseFS(t.templatesFS, name))
 	return tmpl.ExecuteTemplate(w, name, data)
 }
