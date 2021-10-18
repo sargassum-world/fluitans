@@ -25,5 +25,5 @@ export default class extends Controller {
     document.removeEventListener('turbo:render', this.updateActiveListener);
   }
 
-  updateActive
+  updateActive;
 }

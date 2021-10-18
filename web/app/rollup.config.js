@@ -7,7 +7,7 @@ import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
 import scss from 'rollup-plugin-scss';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import CleanCSS from 'clean-css';
+import purify from 'purify-css';
 import copy from 'rollup-plugin-copy';
 
 const production = !process.env.ROLLUP_WATCH;
@@ -31,18 +31,31 @@ function themeGenerator(theme) {
 				runtime: require('sass'),
 				output: function (styles, styleNodes) {
 					if (!existsSync(buildDir)) {
-						mkdirSync(buildDir);
+						mkdirSync(buildDir, { recursive: true });
 					}
 					writeFileSync(`${buildDir}/theme-${theme}.css`, styles);
-					const compressed = new CleanCSS({
-						level: {
-							2: {
-								all: true,
+					purify(
+						[
+							'src/**/*.js',
+							'src/**/*.ts',
+							'src/**/*.svelte',
+							'../templates/**/*.tmpl',
+						],
+						styles,
+						{
+							output: `${buildDir}/theme-${theme}.min.css`,
+							minify: true,
+							info: true,
+							cleanCssOptions: {
+								level: {
+									2: {
+										all: true,
+									},
+								},
 							},
 						},
-					}).minify(styles).styles;
-					writeFileSync(`${buildDir}/theme-${theme}.min.css`, compressed);
-				}
+					);
+				},
 			}),
 		],
 		watch: {
