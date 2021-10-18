@@ -14,8 +14,8 @@
    id="svg27"
    sodipodi:docname="icon-maskable.svg"
    inkscape:export-filename="/home/lietk12/Projects/mp/sargassum/fluitans/web/static/icon-maskable.png"
-   inkscape:export-xdpi="418.91"
-   inkscape:export-ydpi="418.91"
+   inkscape:export-xdpi="1117.09"
+   inkscape:export-ydpi="1117.09"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
   <metadata
      id="metadata31">
@@ -25,7 +25,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -44,7 +44,7 @@
      showgrid="false"
      inkscape:pagecheckerboard="true"
      inkscape:zoom="21.454545"
-     inkscape:cx="15.837993"
+     inkscape:cx="18.308332"
      inkscape:cy="31.888468"
      inkscape:window-x="0"
      inkscape:window-y="0"

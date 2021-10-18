@@ -9,19 +9,31 @@ import (
 	"github.com/benbjohnson/hashfs"
 )
 
-//go:embed static/*
-var staticFS embed.FS
-var StaticFS, _ = fs.Sub(staticFS, "static")
-var StaticHFS = hashfs.NewFS(StaticFS)
+var (
+	//go:embed static/*
+	staticFS    embed.FS
+	StaticFS, _ = fs.Sub(staticFS, "static")
+	StaticHFS   = hashfs.NewFS(StaticFS)
+)
 
-//go:embed templates/*.tmpl templates/*/*.tmpl
-var templatesFS embed.FS
-var TemplatesFS, _ = fs.Sub(templatesFS, "templates")
+var (
+	//go:embed templates/*.tmpl templates/*/*.tmpl
+	templatesFS    embed.FS
+	TemplatesFS, _ = fs.Sub(templatesFS, "templates")
+)
 
-//go:embed app/public/build/* app/public/build/fonts/*
-var appFS embed.FS
-var AppFS, _ = fs.Sub(appFS, "app/public/build")
-var AppHFS = hashfs.NewFS(AppFS)
+var (
+	//go:embed app/public/build/*
+	appFS    embed.FS
+	AppFS, _ = fs.Sub(appFS, "app/public/build")
+	AppHFS   = hashfs.NewFS(AppFS)
+)
+
+var (
+	//go:embed app/public/build/fonts/*
+	fontsFS    embed.FS
+	FontsFS, _ = fs.Sub(fontsFS, "app/public/build/fonts")
+)
 
 //go:embed app/public/build/bundle-eager.js
 var BundleEagerJS string

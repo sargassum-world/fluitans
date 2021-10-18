@@ -8,22 +8,21 @@
 
   <title>{{block "title" .}}{{end}}</title>
 
-  <style>{{.Assets.BundleEagerCSS}}</style>
-  <!-- TODO: add cache-busting and use data-turbo-track="reload"> -->
-  <noscript><link rel="stylesheet" href="/app/theme-light.min.css"></noscript>
-  <link id="light-theme" as="style" rel="preload" href="/app/theme-light.min.css">
-  <link id="dark-theme" as="style" rel="preload" href="/app/theme-dark.min.css">
-  <script>{{.Assets.BundleEagerJS}}</script>
+  <style type="text/css">{{.EmbedAssets.BundleEagerCSS}}</style>
+  <noscript><link rel="stylesheet" href={{appHashed "theme-light.min.css"}}></noscript>
+  <link id="light-theme" as="style" rel="preload" href={{appHashed "theme-light.min.css"}} turbo-data-track="reload">
+  <link id="dark-theme" as="style" rel="preload" href={{appHashed "theme-dark.min.css"}} turbo-data-track="reload">
+  <script>{{.EmbedAssets.BundleEagerJS}}</script>
   {{block "navbar.assets" .}}{{end}}
-  <link rel="preload" as="font" type="font/woff2" href="/app/fonts/atkinson-hyperlegible-latin-400-normal.woff2" crossorigin>
-  <link rel="preload" as="font" type="font/woff2" href="/app/fonts/atkinson-hyperlegible-latin-700-normal.woff2" crossorigin>
-  <link rel="preload" as="script" href="/app/bundle-deferred.js">
-  <link rel="icon" href="/favicon.ico" sizes="any">
-  <link rel="icon" href="/static/icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/atkinson-hyperlegible-latin-400-normal.woff2" crossorigin>
+  <link rel="preload" as="font" type="font/woff2" href="/fonts/atkinson-hyperlegible-latin-700-normal.woff2" crossorigin>
+  <link rel="preload" as="script" href={{appHashed "bundle-deferred.js"}}>
+  <link rel="icon" href={{staticHashed "icon.svg"}} type="image/svg+xml">
+  <link rel="icon alternate" href="/favicon.ico" size="any">
+  <link rel="apple-touch-icon" href={{staticHashed "apple-touch-icon.png"}}>
   <!-- TODO: add shortcuts to the web application manifest -->
-  <link rel="manifest" href="/static/app.webmanifest">
-  <script defer src="/app/bundle-deferred.js"></script>
+  <link rel="manifest" href="/app/app.webmanifest">
+  <script defer src={{appHashed "bundle-deferred.js"}} turbo-data-track="reload"></script>
 </head>
 
 <body>

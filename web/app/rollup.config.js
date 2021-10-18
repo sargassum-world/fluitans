@@ -19,7 +19,7 @@ function themeGenerator(theme) {
 		output: {
 			sourcemap: !production,
 			format: 'iife',
-			name: 'app',
+			name: `appTheme_${theme}`,
 			file: `${buildDir}/theme-${theme}.js`
 		},
 		plugins: [
@@ -51,13 +51,13 @@ function themeGenerator(theme) {
 	};
 }
 
-function bundleGenerator(type, context) {
+function bundleGenerator(type, appName, context) {
 	return {
 		input: `src/main-${type}.ts`,
 		output: {
 			sourcemap: !production,
 			format: 'iife',
-			name: 'app',
+			name: appName,
 			file: `${buildDir}/bundle-${type}.js`
 		},
 		context,
@@ -118,6 +118,6 @@ export default [
 	themeGenerator('eager', undefined),
 	themeGenerator('light'),
 	themeGenerator('dark'),
-	bundleGenerator('eager'),
-	bundleGenerator('deferred', 'window'),
+	bundleGenerator('eager', 'appEager'),
+	bundleGenerator('deferred', 'app', 'window'),
 ];

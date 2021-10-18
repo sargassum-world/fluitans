@@ -1,11 +1,18 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/handlers"
 	"github.com/sargassum-eco/fluitans/internal/templates"
+)
+
+const (
+	gzipLevel = 6
+	port      = 3000
 )
 
 func main() {
@@ -17,7 +24,7 @@ func main() {
 	// TODO: add recovery configuration
 	e.Use(middleware.Recover())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Level: 6,
+		Level: gzipLevel,
 	}))
 	e.Use(middleware.Decompress())
 	// TODO: enable CORS, CSRF, auth, Prometheus, rate-limiting, and security
@@ -28,9 +35,9 @@ func main() {
 	e.Renderer = renderer
 
 	// Handlers
-	fluitans.RegisterHandlers(e)
-	fluitans.RegisterStatics(e)
+	handlers.RegisterPages(e)
+	handlers.RegisterAssets(e)
 
 	// Start server
-	e.Logger.Fatal(e.Start(":3000"))
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

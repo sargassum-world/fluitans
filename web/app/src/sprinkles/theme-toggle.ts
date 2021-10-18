@@ -23,7 +23,6 @@ export function invert(theme: Theme): Theme {
 function setThemeProperties(stylesheetID: string, theme: Theme): void {
   const stylesheet = document.querySelector(`link#${stylesheetID}`);
   if (stylesheet === null || !(stylesheet instanceof HTMLLinkElement)) {
-    console.error('could not find element!');
     return;
   }
 
