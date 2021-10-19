@@ -72,7 +72,7 @@ build: install buildweb
 
 .PHONY: release
 release: ## goreleaser --rm-dist
-release: install
+release: install buildweb
 	$(call print-target)
 	goreleaser --rm-dist
 
