@@ -50,7 +50,7 @@ func computeGlobals() (*route.TemplateGlobals, *route.StaticGlobals, error) {
 	return &tg, &sg, nil
 }
 
-func LoadTemplates() *templates.TemplateRenderer {
+func NewRenderer() *templates.TemplateRenderer {
 	return templates.New(web.AppHFS.HashName, web.StaticHFS.HashName, web.TemplatesFS)
 }
 

@@ -1,0 +1,12 @@
+{{template "base.layout.tmpl" .}}
+
+{{define "title"}}There's a problem{{end}}
+
+{{define "content"}}
+<main class="main-container scroller">
+  <section class="section content">
+    <h1>{{(describeError .ErrorCode).Name}} ({{.ErrorCode}})</h1>
+    <p>{{(describeError .ErrorCode).Description}}</p>
+  </section>
+</main>
+{{end}}

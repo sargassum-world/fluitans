@@ -30,14 +30,19 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	// Renderer
-	renderer := fluitans.LoadTemplates()
-	e.Renderer = renderer
+	e.Renderer = fluitans.NewRenderer()
 
 	// Handlers
 	err := fluitans.RegisterRoutes(e)
 	if err != nil {
 		panic(err)
 	}
+
+	eh, err := fluitans.NewHTTPErrorHandler()
+	if err != nil {
+		panic(err)
+	}
+	e.HTTPErrorHandler = eh
 
 	// Start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))

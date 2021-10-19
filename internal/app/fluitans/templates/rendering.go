@@ -22,8 +22,9 @@ func New(appNamer, staticNamer HashNamer, templates fs.FS) *TemplateRenderer {
 				New("App").
 				Funcs(sprig.FuncMap()).
 				Funcs(template.FuncMap{
-					"appHashed":    getHashedName("app", appNamer),
-					"staticHashed": getHashedName("static", staticNamer),
+					"appHashed":     getHashedName("app", appNamer),
+					"staticHashed":  getHashedName("static", staticNamer),
+					"describeError": describeError,
 				}).
 				ParseFS(templates, "*.tmpl", "*/*.tmpl"),
 		),
