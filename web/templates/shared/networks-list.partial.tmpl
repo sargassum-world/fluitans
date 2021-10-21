@@ -1,0 +1,16 @@
+{{define "networks-list"}}
+<turbo-frame id="networks-{{.Controller.Name}}-list">
+  {{template "create-network" .Controller}}
+  {{if not .Networks}}
+  <p>
+    This controller is not yet hosting any networks!
+  </p>
+  {{end}}
+  {{range $network := .Networks}}
+  <li>
+    <a href="/networks/{{$network}}" data-turbo-frame="_top">{{$network}}</a>
+    <!-- TODO: show these as network entity cards instead -->
+  </li>
+  {{end}}
+</turbo-frame>
+{{end}}

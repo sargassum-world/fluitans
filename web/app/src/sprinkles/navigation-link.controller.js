@@ -8,7 +8,7 @@ export default class extends Controller {
         return;
       }
 
-      if (this.element.href === location) {
+      if (location.startsWith(this.element.href)) {
         this.element.classList.add('is-active');
       } else {
         this.element.classList.remove('is-active');

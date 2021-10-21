@@ -51,6 +51,7 @@
       padding-left: 0.5em;
       max-height: unset;
       height: unset;
+      width: calc(100% - 2 * 0.75em);
     }
   }
   a.navbar-item.brand-with-logo {

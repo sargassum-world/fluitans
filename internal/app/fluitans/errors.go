@@ -26,8 +26,7 @@ func NewHTTPErrorHandler() (func(err error, c echo.Context), error) {
 			ErrorCode int
 		}{
 			Meta: template.Meta{
-				Description: "We've got some trouble.",
-				Path:        c.Request().URL.Path,
+				Path: c.Request().URL.Path,
 			},
 			Embeds:    g.Embeds,
 			ErrorCode: code,

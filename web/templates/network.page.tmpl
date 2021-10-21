@@ -1,0 +1,45 @@
+{{template "base.layout.tmpl" .}}
+
+{{define "title"}}Network {{identifyNetwork .Network}}{{end}}
+{{define "description"}}The ZeroTier network {{identifyNetwork .Network}}{{end}}
+
+{{define "content"}}
+<main class="main-container scroller">
+  <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li><a href="/networks">Networks</a></li>
+      <li class="is-active"><a href="/controllers/{{.Network.Id}}" aria-current="page">{{identifyNetwork .Network}}</a></li>
+    </ul>
+  </nav>
+
+  <section class="section content">
+    <h1>
+      {{if not .Network.Name}}
+      Unnamed Network
+      {{end}}
+      {{if .Network.Name}}
+      Network {{.Network.Name}}
+      {{end}}
+    </h1>
+    <turbo-frame id="network-{{.Network.Id}}-info">
+      <p>
+        Id: {{.Network.Id}}
+        <br />
+        Name: {{.Network.Name}}
+      </p>
+      <p>
+        Created: {{.Network.CreationTime | date "2006-01-02 15:04 MST"}}
+        <br />
+        Private: {{.Network.Private}}
+      </p>
+    </turbo-frame>
+    <!-- TODO: make a controller with a confirmation dialog -->
+    <form action="/networks/{{.Network.Id}}" method="POST" data-turbo-frame="_top">
+      <div class="control">
+        <input type="hidden" id="delete-method" name="method" value="DELETE">
+        <input class="button is-danger" type="submit" value="Delete network">
+      </div>
+    </form>
+  </section>
+</main>
+{{end}}

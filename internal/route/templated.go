@@ -18,7 +18,7 @@ type TemplateFingerprints struct {
 }
 
 func ComputeTemplateFingerprints(
-	layoutFiles, pageFiles, embedAssets []string,
+	layoutFiles, pageFiles, appAssets []string,
 	templates, app fs.FS,
 ) (*TemplateFingerprints, error) {
 	pageFingerprints, err := fingerprint.ComputeFiles(pageFiles, templates)
@@ -26,7 +26,7 @@ func ComputeTemplateFingerprints(
 		return nil, err
 	}
 
-	embedConcatenated, err := fsutil.ReadConcatenated(embedAssets, app)
+	appConcatenated, err := fsutil.ReadConcatenated(appAssets, app)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func ComputeTemplateFingerprints(
 	}
 
 	g := TemplateFingerprints{
-		App:  fingerprint.Compute(append(embedConcatenated, layoutConcatenated...)),
+		App:  fingerprint.Compute(append(appConcatenated, layoutConcatenated...)),
 		Page: pageFingerprints,
 	}
 	return &g, nil

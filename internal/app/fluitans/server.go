@@ -3,6 +3,7 @@ package fluitans
 
 import (
 	"io/fs"
+	"strings"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
@@ -16,7 +17,7 @@ import (
 // TODO: even better is if it acts as an overlay FS, so only the files to override need to be supplied
 
 func computeGlobals() (*route.TemplateGlobals, *route.StaticGlobals, error) {
-	appFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterApp)
+	layoutFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterApp)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -26,8 +27,15 @@ func computeGlobals() (*route.TemplateGlobals, *route.StaticGlobals, error) {
 		return nil, nil, err
 	}
 
+	appFiles, err := fsutil.ListFiles(web.AppFS, func(path string) bool {
+		return strings.HasSuffix(path, ".min.css") || strings.HasSuffix(path, ".js")
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
 	f, err := route.ComputeTemplateFingerprints(
-		appFiles, pageFiles, web.EmbedAssets, web.TemplatesFS, web.AppFS,
+		layoutFiles, pageFiles, appFiles, web.TemplatesFS, web.AppFS,
 	)
 	if err != nil {
 		return nil, nil, err

@@ -1,0 +1,26 @@
+{{template "base.layout.tmpl" .}}
+
+{{define "title"}}Network Controllers{{end}}
+{{define "description"}}Network controllers used by Fluitans.{{end}}
+
+{{define "content"}}
+<main class="main-container scroller">
+  <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li class="is-active"><a href="/controllers" aria-current="page">Controllers</a></li>
+    </ul>
+  </nav>
+
+  <section class="section content">
+    <h1>Network Controllers</h1>
+    <ul>
+    {{range $controller := .Controllers}}
+      <li>
+        <a href="/controllers/{{$controller.Name}}">{{$controller.Name}}</a>:
+        {{$controller.Description}}
+      </li>
+    {{end}}
+    </ul>
+  </section>
+</main>
+{{end}}

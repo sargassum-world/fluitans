@@ -3,6 +3,9 @@ package templates
 import (
 	"fmt"
 	"net/http"
+	"strings"
+
+	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 // Asset hashed naming
@@ -67,4 +70,14 @@ func describeError(code int) HTTPError {
 	}
 
 	return name
+}
+
+// ZeroTier
+
+func identifyNetwork(network zerotier.ControllerNetwork) string {
+	if strings.TrimSpace(*network.Name) != "" {
+		return fmt.Sprintf("%s (%s)", *network.Name, *network.Id)
+	}
+
+	return *network.Id
 }

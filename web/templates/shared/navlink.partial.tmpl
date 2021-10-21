@@ -1,7 +1,7 @@
 {{define "navlink"}}
 <a
   href={{get . "Navlink.Href"}}
-  {{if eq (get . "Navlink.Href") (get . "Meta.Path")}}
+  {{if hasPrefix (get . "Navlink.Href") (get . "Meta.Path")}}
   class="navbar-item nav-link is-active"
   {{else}}
   class="navbar-item nav-link"

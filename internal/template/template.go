@@ -2,6 +2,5 @@
 package template
 
 type Meta struct {
-	Description string
-	Path        string
+	Path string
 }

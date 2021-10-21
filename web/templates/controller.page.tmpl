@@ -1,0 +1,36 @@
+{{template "base.layout.tmpl" .}}
+
+{{define "title"}}Network Controller {{.Controller.Name}}{{end}}
+{{define "description"}}The ZeroTier network controller {{.Controller.Name}}.{{end}}
+
+{{define "content"}}
+<main class="main-container scroller">
+  <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li><a href="/controllers">Controllers</a></li>
+      <li class="is-active"><a href="/controllers/{{.Controller.Name}}" aria-current="page">{{.Controller.Name}}</a></li>
+    </ul>
+  </nav>
+
+  <section class="section content">
+    <h1>Network Controller {{.Controller.Name}}</h1>
+    <turbo-frame id="controller-{{.Controller.Name}}-info">
+      <p>
+        Address: {{.Status.Address}}
+      </p>
+      <p>
+        Online: {{.Status.Online}}
+        <br />
+        Controller: {{.ControllerStatus.Controller}}
+      </p>
+      <p>
+        ZeroTier Version: {{.Status.Version}}
+        <br />
+        API Version: {{.ControllerStatus.ApiVersion}}
+      </p>
+    </turbo-frame>
+    <h2>Networks</h2>
+    {{template "networks-list" .}}
+  </section>
+</main>
+{{end}}
