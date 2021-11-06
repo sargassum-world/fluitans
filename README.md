@@ -18,19 +18,20 @@ To execute the full build pipeline, run `make`; to build the docker images, run 
 
 ### Environment Variables
 
-You'll need to set some environment variables to tell Fluitans how to connect to a ZeroTier network controller. Specifically, you'll need to set:
+You'll need to set some environment variables to tell Fluitans how to assign names and how to connect to a ZeroTier network controller. Specifically, you'll need to set:
 
+- FLUITANS_DOMAIN_NAME, which should be the parent domain name under which network domain names will be assigned, for example `fluitans.org` or `prakashlab.dedyn.io`.
 - FLUITANS_ZT_CONTROLLER_SERVER, which should be the URL for the ZeroTier network controller's HTTP API. It needs to include the scheme `http://` or `https://`, for example `http://localhost:9993` or `https://zerotier-test.cloud.fluitans.org`.
 - FLUITANS_ZT_CONTROLLER_AUTHTOKEN, which should be the contents of the authtoken.secret file saved by ZeroTier One in its working directory (more details [in ZeroTier's documentation](https://docs.zerotier.com/zerotier/zerotier.conf/)).
 
 For example, you could run the server in development mode using:
 ```
-FLUITANS_ZT_CONTROLLER_SERVER="http://localhost:9993" FLUITANS_ZT_CONTROLLER_AUTHTOKEN="0123456789abcdefghijklmn" make run
+FLUITANS_DOMAIN_NAME="fluitans.org" FLUITANS_ZT_CONTROLLER_SERVER="http://localhost:9993" FLUITANS_ZT_CONTROLLER_AUTHTOKEN="0123456789abcdefghijklmn" make run
 ```
 
 Or you could run the built binary using:
 ```
-FLUITANS_ZT_CONTROLLER_SERVER="http://localhost:9993" FLUITANS_ZT_CONTROLLER_AUTHTOKEN="0123456789abcdefghijklmn" ./fluitans
+FLUITANS_DOMAIN_NAME="fluitans.org" FLUITANS_ZT_CONTROLLER_SERVER="http://localhost:9993" FLUITANS_ZT_CONTROLLER_AUTHTOKEN="0123456789abcdefghijklmn" ./fluitans
 ```
 
 ## License

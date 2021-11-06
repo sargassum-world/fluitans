@@ -8,6 +8,8 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/labstack/echo/v4"
+
+	tp "github.com/sargassum-eco/fluitans/internal/template"
 )
 
 type TemplateRenderer struct {
@@ -15,26 +17,31 @@ type TemplateRenderer struct {
 	templatesFS fs.FS
 }
 
-func New(appNamer, staticNamer HashNamer, templates fs.FS) *TemplateRenderer {
+func New(appNamer, staticNamer HashNamer, fsys fs.FS) *TemplateRenderer {
+	tmpl :=
+		template.
+			New("App").
+			Funcs(sprig.FuncMap()).
+			Funcs(template.FuncMap{
+				"appHashed":             getHashedName("app", appNamer),
+				"staticHashed":          getHashedName("static", staticNamer),
+				"describeError":         describeError,
+				"identifyNetwork":       identifyNetwork,
+				"getNetworkHostAddress": getNetworkHostAddress,
+				"getNetworkNumber":      getNetworkNumber,
+				"derefBool":             derefBool,
+				"derefInt":              derefInt,
+			})
 	return &TemplateRenderer{
 		templates: template.Must(
-			template.
-				New("App").
-				Funcs(sprig.FuncMap()).
-				Funcs(template.FuncMap{
-					"appHashed":       getHashedName("app", appNamer),
-					"staticHashed":    getHashedName("static", staticNamer),
-					"describeError":   describeError,
-					"identifyNetwork": identifyNetwork,
-				}).
-				ParseFS(templates, "*.tmpl", "*/*.tmpl"),
+			tp.ParseFS(tmpl, fsys, "*.tmpl", "*/*.tmpl"),
 		),
-		templatesFS: templates,
+		templatesFS: fsys,
 	}
 }
 
 func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
 	tmpl := template.Must(t.templates.Clone())
-	tmpl = template.Must(tmpl.ParseFS(t.templatesFS, name))
+	tmpl = template.Must(tp.ParseFS(tmpl, t.templatesFS, name))
 	return tmpl.ExecuteTemplate(w, name, data)
 }

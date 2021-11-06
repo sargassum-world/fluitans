@@ -23,6 +23,14 @@
     border-radius: 0.5em 0.5em 0 0;
     background-color: $card-header-background-color;
     box-shadow: none;
+
+    .entity-name {
+      margin-bottom: 0.25em;
+      display: inline-flex;
+    }
+    .tag {
+      font-weight: normal;
+    }
   }
 
   .panel-block {

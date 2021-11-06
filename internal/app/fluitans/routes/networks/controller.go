@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
@@ -15,33 +16,9 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-func makeControllerDataEtagSegment(
-	controller Controller,
-	status zerotier.Status,
-	controllerStatus zerotier.ControllerStatus,
-	networks []string,
-) (string, error) {
-	// Zero out clocks, since they will always change the Etag
-	*status.Clock = 0
-	*controllerStatus.Clock = 0
-
-	// Combine all variable data for the Etag
-	etagData, err := json.Marshal(struct {
-		Controller       Controller                `json:"controller"`
-		Status           zerotier.Status           `json:"status"`
-		ControllerStatus zerotier.ControllerStatus `json:"controllerStatus"`
-		Networks         []string                  `json:"network"`
-	}{
-		Controller:       controller,
-		Status:           status,
-		ControllerStatus: controllerStatus,
-		Networks:         networks,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return fingerprint.Compute(etagData), nil
+type ControllerNetworks struct {
+	Controller Controller                            `json:"controller"`
+	Networks   map[string]zerotier.ControllerNetwork `json:"network"`
 }
 
 func getControllerInfo(
@@ -90,10 +67,44 @@ func getControllerInfo(
 	return status, controllerStatus, networks, nil
 }
 
+type ControllerData struct {
+	Controller       Controller
+	Status           zerotier.Status
+	ControllerStatus zerotier.ControllerStatus
+	Networks         map[string]zerotier.ControllerNetwork
+}
+
+func getControllerData(c echo.Context, name string, templateName string) (*ControllerData, error) {
+	controller, ok := findController(storedControllers, name)
+	if !ok {
+		return nil, echo.NewHTTPError(
+			http.StatusNotFound,
+			fmt.Sprintf("Controller %s not found for %s", name, templateName),
+		)
+	}
+
+	status, controllerStatus, networkIDs, err := getControllerInfo(c, *controller)
+	if err != nil {
+		return nil, err
+	}
+
+	networks, err := getNetworks(c, []Controller{*controller}, [][]string{networkIDs})
+	if err != nil {
+		return nil, err
+	}
+
+	return &ControllerData{
+		Controller:       *controller,
+		Status:           *status,
+		ControllerStatus: *controllerStatus,
+		Networks:         networks[0],
+	}, nil
+}
+
 func controller(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	t := "controller.page.tmpl"
+	t := "networks/controller.page.tmpl"
 	tte, ok := te[t]
 	if !ok {
 		return nil, te.NewNotFoundError(t)
@@ -104,48 +115,36 @@ func controller(
 		name := c.Param("name")
 
 		// Run queries
-		controller, ok := findController(storedControllers, name)
-		if !ok {
-			return echo.NewHTTPError(
-				http.StatusNotFound,
-				fmt.Sprintf("Controller %s not found for %s", name, t),
-			)
-		}
-
-		status, controllerStatus, networks, err := getControllerInfo(c, *controller)
+		controllerData, err := getControllerData(c, name, t)
 		if err != nil {
 			return err
 		}
 
 		// Handle Etag
-		dataEtagSegment, err := makeControllerDataEtagSegment(
-			*controller, *status, *controllerStatus, networks,
-		)
+		// Zero out clocks, since they will always change the Etag
+		*controllerData.Status.Clock = 0
+		*controllerData.ControllerStatus.Clock = 0
+		etagData, err := json.Marshal(controllerData)
 		if err != nil {
 			return err
 		}
 
-		if noContent, err := caching.ProcessEtag(c, tte, dataEtagSegment); noContent {
+		if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
 			return err
 		}
 
 		// Render template
 		return c.Render(http.StatusOK, t, struct {
-			Meta             template.Meta
-			Embeds           template.Embeds
-			Controller       Controller
-			Status           zerotier.Status
-			ControllerStatus zerotier.ControllerStatus
-			Networks         []string
+			Meta   template.Meta
+			Embeds template.Embeds
+			Data   ControllerData
 		}{
 			Meta: template.Meta{
-				Path: c.Request().URL.Path,
+				Path:       c.Request().URL.Path,
+				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
 			},
-			Embeds:           g.Embeds,
-			Controller:       *controller,
-			Status:           *status,
-			ControllerStatus: *controllerStatus,
-			Networks:         networks,
+			Embeds: g.Embeds,
+			Data:   *controllerData,
 		})
 	}, nil
 }

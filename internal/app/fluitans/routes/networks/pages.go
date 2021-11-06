@@ -12,19 +12,19 @@ var Pages = []route.Templated{
 		Path:         "/controllers",
 		Method:       http.MethodGet,
 		HandlerMaker: controllers,
-		Templates:    []string{"controllers.page.tmpl"},
+		Templates:    []string{"networks/controllers.page.tmpl"},
 	},
 	{
 		Path:         "/controllers/:name",
 		Method:       http.MethodGet,
 		HandlerMaker: controller,
-		Templates:    []string{"controller.page.tmpl"},
+		Templates:    []string{"networks/controller.page.tmpl"},
 	},
 	{
 		Path:         "/networks",
 		Method:       http.MethodGet,
 		HandlerMaker: networks,
-		Templates:    []string{"networks.page.tmpl"},
+		Templates:    []string{"networks/networks.page.tmpl"},
 	},
 	{
 		Path:         "/networks",
@@ -36,12 +36,24 @@ var Pages = []route.Templated{
 		Path:         "/networks/:id",
 		Method:       http.MethodGet,
 		HandlerMaker: network,
-		Templates:    []string{"network.page.tmpl"},
+		Templates:    []string{"networks/network.page.tmpl"},
 	},
 	{
 		Path:         "/networks/:id",
 		Method:       http.MethodPost,
 		HandlerMaker: postNetwork,
+		Templates:    []string{},
+	},
+	{
+		Path:         "/networks/:id/devices",
+		Method:       http.MethodPost,
+		HandlerMaker: postDevices,
+		Templates:    []string{},
+	},
+	{
+		Path:         "/networks/:id/devices/:address",
+		Method:       http.MethodPost,
+		HandlerMaker: postDevice,
 		Templates:    []string{},
 	},
 }

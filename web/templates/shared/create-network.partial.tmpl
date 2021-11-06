@@ -1,8 +1,7 @@
-{{define "create-network"}}
 <form action="/networks" method="POST" data-turbo-frame="_top">
-  <input type="hidden" id="controller" name="controller" value="{{.Name}}">
+  <input type="hidden" name="method" value="CREATE">
+  <input type="hidden" name="controller" value="{{.Name}}">
   <div class="control">
     <input class="button is-primary" type="submit" value="Create a network">
   </div>
 </form>
-{{end}}

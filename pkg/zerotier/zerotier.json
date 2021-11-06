@@ -290,7 +290,7 @@
         }
       }
     },
-    "/controller/network/{networkID}/member{nodeID}": {
+    "/controller/network/{networkID}/member/{nodeID}": {
       "get": {
         "tags": [
           "controller"
@@ -320,6 +320,101 @@
         "responses": {
           "200": {
             "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControllerNetworkMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "controller"
+        ],
+        "summary": "Create or Update a Network Membership.",
+        "operationId": "setControllerNetworkMember",
+        "parameters": [
+          {
+            "name": "networkID",
+            "description": "ID of the network.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeID",
+            "description": "ID of the member node.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Network object JSON.",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ControllerNetworkMember"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ControllerNetworkMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "controller"
+        ],
+        "summary": "Remove a network member.",
+        "operationId": "deleteControllerNetworkMember",
+        "parameters": [
+          {
+            "name": "networkID",
+            "description": "ID of the network.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "nodeID",
+            "description": "ID of the member node.",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Network member deleted.",
             "content": {
               "application/json": {
                 "schema": {

@@ -34,9 +34,15 @@ type ServerInterface interface {
 	// List Network Members.
 	// (GET /controller/network/{networkID}/member)
 	GetControllerNetworkMembers(ctx echo.Context, networkID string) error
+	// Remove a network member.
+	// (DELETE /controller/network/{networkID}/member/{nodeID})
+	DeleteControllerNetworkMember(ctx echo.Context, networkID string, nodeID string) error
 	// Get Network Member Details by ID.
-	// (GET /controller/network/{networkID}/member{nodeID})
+	// (GET /controller/network/{networkID}/member/{nodeID})
 	GetControllerNetworkMember(ctx echo.Context, networkID string, nodeID string) error
+	// Create or Update a Network Membership.
+	// (POST /controller/network/{networkID}/member/{nodeID})
+	SetControllerNetworkMember(ctx echo.Context, networkID string, nodeID string) error
 	// Get all network memberships.
 	// (GET /network)
 	GetNetworks(ctx echo.Context) error
@@ -177,6 +183,32 @@ func (w *ServerInterfaceWrapper) GetControllerNetworkMembers(ctx echo.Context) e
 	return err
 }
 
+// DeleteControllerNetworkMember converts echo context to params.
+func (w *ServerInterfaceWrapper) DeleteControllerNetworkMember(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "networkID" -------------
+	var networkID string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "networkID", runtime.ParamLocationPath, ctx.Param("networkID"), &networkID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter networkID: %s", err))
+	}
+
+	// ------------- Path parameter "nodeID" -------------
+	var nodeID string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "nodeID", runtime.ParamLocationPath, ctx.Param("nodeID"), &nodeID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter nodeID: %s", err))
+	}
+
+	ctx.Set(ApiKeyAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.DeleteControllerNetworkMember(ctx, networkID, nodeID)
+	return err
+}
+
 // GetControllerNetworkMember converts echo context to params.
 func (w *ServerInterfaceWrapper) GetControllerNetworkMember(ctx echo.Context) error {
 	var err error
@@ -200,6 +232,32 @@ func (w *ServerInterfaceWrapper) GetControllerNetworkMember(ctx echo.Context) er
 
 	// Invoke the callback with all the unmarshalled arguments
 	err = w.Handler.GetControllerNetworkMember(ctx, networkID, nodeID)
+	return err
+}
+
+// SetControllerNetworkMember converts echo context to params.
+func (w *ServerInterfaceWrapper) SetControllerNetworkMember(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "networkID" -------------
+	var networkID string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "networkID", runtime.ParamLocationPath, ctx.Param("networkID"), &networkID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter networkID: %s", err))
+	}
+
+	// ------------- Path parameter "nodeID" -------------
+	var nodeID string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "nodeID", runtime.ParamLocationPath, ctx.Param("nodeID"), &nodeID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter nodeID: %s", err))
+	}
+
+	ctx.Set(ApiKeyAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.SetControllerNetworkMember(ctx, networkID, nodeID)
 	return err
 }
 
@@ -342,7 +400,9 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/controller/network/:networkID", wrapper.GetControllerNetwork)
 	router.POST(baseURL+"/controller/network/:networkID", wrapper.SetControllerNetwork)
 	router.GET(baseURL+"/controller/network/:networkID/member", wrapper.GetControllerNetworkMembers)
-	router.GET(baseURL+"/controller/network/:networkID/member:nodeID", wrapper.GetControllerNetworkMember)
+	router.DELETE(baseURL+"/controller/network/:networkID/member/:nodeID", wrapper.DeleteControllerNetworkMember)
+	router.GET(baseURL+"/controller/network/:networkID/member/:nodeID", wrapper.GetControllerNetworkMember)
+	router.POST(baseURL+"/controller/network/:networkID/member/:nodeID", wrapper.SetControllerNetworkMember)
 	router.GET(baseURL+"/network", wrapper.GetNetworks)
 	router.DELETE(baseURL+"/network/:networkID", wrapper.DeleteNetwork)
 	router.GET(baseURL+"/network/:networkID", wrapper.GetNetwork)

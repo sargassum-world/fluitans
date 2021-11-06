@@ -115,8 +115,16 @@ type ClientInterface interface {
 	// GetControllerNetworkMembers request
 	GetControllerNetworkMembers(ctx context.Context, networkID string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteControllerNetworkMember request
+	DeleteControllerNetworkMember(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetControllerNetworkMember request
 	GetControllerNetworkMember(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SetControllerNetworkMember request with any body
+	SetControllerNetworkMemberWithBody(ctx context.Context, networkID string, nodeID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	SetControllerNetworkMember(ctx context.Context, networkID string, nodeID string, body SetControllerNetworkMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetNetworks request
 	GetNetworks(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -250,8 +258,44 @@ func (c *Client) GetControllerNetworkMembers(ctx context.Context, networkID stri
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteControllerNetworkMember(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteControllerNetworkMemberRequest(c.Server, networkID, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetControllerNetworkMember(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetControllerNetworkMemberRequest(c.Server, networkID, nodeID)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetControllerNetworkMemberWithBody(ctx context.Context, networkID string, nodeID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetControllerNetworkMemberRequestWithBody(c.Server, networkID, nodeID, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SetControllerNetworkMember(ctx context.Context, networkID string, nodeID string, body SetControllerNetworkMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSetControllerNetworkMemberRequest(c.Server, networkID, nodeID, body)
 	if err != nil {
 		return nil, err
 	}
@@ -608,6 +652,47 @@ func NewGetControllerNetworkMembersRequest(server string, networkID string) (*ht
 	return req, nil
 }
 
+// NewDeleteControllerNetworkMemberRequest generates requests for DeleteControllerNetworkMember
+func NewDeleteControllerNetworkMemberRequest(server string, networkID string, nodeID string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "networkID", runtime.ParamLocationPath, networkID)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "nodeID", runtime.ParamLocationPath, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/controller/network/%s/member/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetControllerNetworkMemberRequest generates requests for GetControllerNetworkMember
 func NewGetControllerNetworkMemberRequest(server string, networkID string, nodeID string) (*http.Request, error) {
 	var err error
@@ -631,7 +716,7 @@ func NewGetControllerNetworkMemberRequest(server string, networkID string, nodeI
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/controller/network/%s/member%s", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/controller/network/%s/member/%s", pathParam0, pathParam1)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -645,6 +730,60 @@ func NewGetControllerNetworkMemberRequest(server string, networkID string, nodeI
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSetControllerNetworkMemberRequest calls the generic SetControllerNetworkMember builder with application/json body
+func NewSetControllerNetworkMemberRequest(server string, networkID string, nodeID string, body SetControllerNetworkMemberJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewSetControllerNetworkMemberRequestWithBody(server, networkID, nodeID, "application/json", bodyReader)
+}
+
+// NewSetControllerNetworkMemberRequestWithBody generates requests for SetControllerNetworkMember with any type of body
+func NewSetControllerNetworkMemberRequestWithBody(server string, networkID string, nodeID string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "networkID", runtime.ParamLocationPath, networkID)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "nodeID", runtime.ParamLocationPath, nodeID)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/controller/network/%s/member/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -947,8 +1086,16 @@ type ClientWithResponsesInterface interface {
 	// GetControllerNetworkMembers request
 	GetControllerNetworkMembersWithResponse(ctx context.Context, networkID string, reqEditors ...RequestEditorFn) (*GetControllerNetworkMembersResponse, error)
 
+	// DeleteControllerNetworkMember request
+	DeleteControllerNetworkMemberWithResponse(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*DeleteControllerNetworkMemberResponse, error)
+
 	// GetControllerNetworkMember request
 	GetControllerNetworkMemberWithResponse(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*GetControllerNetworkMemberResponse, error)
+
+	// SetControllerNetworkMember request with any body
+	SetControllerNetworkMemberWithBodyWithResponse(ctx context.Context, networkID string, nodeID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetControllerNetworkMemberResponse, error)
+
+	SetControllerNetworkMemberWithResponse(ctx context.Context, networkID string, nodeID string, body SetControllerNetworkMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*SetControllerNetworkMemberResponse, error)
 
 	// GetNetworks request
 	GetNetworksWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetNetworksResponse, error)
@@ -1130,6 +1277,28 @@ func (r GetControllerNetworkMembersResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteControllerNetworkMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ControllerNetworkMember
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteControllerNetworkMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteControllerNetworkMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetControllerNetworkMemberResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1146,6 +1315,28 @@ func (r GetControllerNetworkMemberResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r GetControllerNetworkMemberResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type SetControllerNetworkMemberResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ControllerNetworkMember
+}
+
+// Status returns HTTPResponse.Status
+func (r SetControllerNetworkMemberResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SetControllerNetworkMemberResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1384,6 +1575,15 @@ func (c *ClientWithResponses) GetControllerNetworkMembersWithResponse(ctx contex
 	return ParseGetControllerNetworkMembersResponse(rsp)
 }
 
+// DeleteControllerNetworkMemberWithResponse request returning *DeleteControllerNetworkMemberResponse
+func (c *ClientWithResponses) DeleteControllerNetworkMemberWithResponse(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*DeleteControllerNetworkMemberResponse, error) {
+	rsp, err := c.DeleteControllerNetworkMember(ctx, networkID, nodeID, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteControllerNetworkMemberResponse(rsp)
+}
+
 // GetControllerNetworkMemberWithResponse request returning *GetControllerNetworkMemberResponse
 func (c *ClientWithResponses) GetControllerNetworkMemberWithResponse(ctx context.Context, networkID string, nodeID string, reqEditors ...RequestEditorFn) (*GetControllerNetworkMemberResponse, error) {
 	rsp, err := c.GetControllerNetworkMember(ctx, networkID, nodeID, reqEditors...)
@@ -1391,6 +1591,23 @@ func (c *ClientWithResponses) GetControllerNetworkMemberWithResponse(ctx context
 		return nil, err
 	}
 	return ParseGetControllerNetworkMemberResponse(rsp)
+}
+
+// SetControllerNetworkMemberWithBodyWithResponse request with arbitrary body returning *SetControllerNetworkMemberResponse
+func (c *ClientWithResponses) SetControllerNetworkMemberWithBodyWithResponse(ctx context.Context, networkID string, nodeID string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetControllerNetworkMemberResponse, error) {
+	rsp, err := c.SetControllerNetworkMemberWithBody(ctx, networkID, nodeID, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetControllerNetworkMemberResponse(rsp)
+}
+
+func (c *ClientWithResponses) SetControllerNetworkMemberWithResponse(ctx context.Context, networkID string, nodeID string, body SetControllerNetworkMemberJSONRequestBody, reqEditors ...RequestEditorFn) (*SetControllerNetworkMemberResponse, error) {
+	rsp, err := c.SetControllerNetworkMember(ctx, networkID, nodeID, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSetControllerNetworkMemberResponse(rsp)
 }
 
 // GetNetworksWithResponse request returning *GetNetworksResponse
@@ -1641,6 +1858,31 @@ func ParseGetControllerNetworkMembersResponse(rsp *http.Response) (*GetControlle
 	return response, nil
 }
 
+// ParseDeleteControllerNetworkMemberResponse parses an HTTP response from a DeleteControllerNetworkMemberWithResponse call
+func ParseDeleteControllerNetworkMemberResponse(rsp *http.Response) (*DeleteControllerNetworkMemberResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteControllerNetworkMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ControllerNetworkMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+	}
+
+	return response, nil
+}
+
 // ParseGetControllerNetworkMemberResponse parses an HTTP response from a GetControllerNetworkMemberWithResponse call
 func ParseGetControllerNetworkMemberResponse(rsp *http.Response) (*GetControllerNetworkMemberResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -1650,6 +1892,31 @@ func ParseGetControllerNetworkMemberResponse(rsp *http.Response) (*GetController
 	}
 
 	response := &GetControllerNetworkMemberResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ControllerNetworkMember
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+	}
+
+	return response, nil
+}
+
+// ParseSetControllerNetworkMemberResponse parses an HTTP response from a SetControllerNetworkMemberWithResponse call
+func ParseSetControllerNetworkMemberResponse(rsp *http.Response) (*SetControllerNetworkMemberResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SetControllerNetworkMemberResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

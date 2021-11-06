@@ -1,13 +1,13 @@
-{{template "base.layout.tmpl" .}}
+{{template "shared/base.layout.tmpl" .}}
 
 {{define "title"}}There's a problem{{end}}
 {{define "description"}}We have some trouble.{{end}}
 
 {{define "content"}}
-<main class="main-container scroller">
+<main class="main-container">
   <section class="section content">
-    <h1>{{(describeError .ErrorCode).Name}} ({{.ErrorCode}})</h1>
-    <p>{{(describeError .ErrorCode).Description}}</p>
+    <h1>{{(describeError .Data).Name}} ({{.Data}})</h1>
+    <p>{{(describeError .Data).Description}}</p>
   </section>
 </main>
 {{end}}

@@ -93,7 +93,7 @@ func findControllerByAddress(
 }
 
 func controllers(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	t := "controllers.page.tmpl"
+	t := "networks/controllers.page.tmpl"
 	tte, ok := te[t]
 	if !ok {
 		return nil, te.NewNotFoundError(t)
@@ -116,15 +116,16 @@ func controllers(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 
 		// Render template
 		return c.Render(http.StatusOK, t, struct {
-			Meta        template.Meta
-			Embeds      template.Embeds
-			Controllers []Controller
+			Meta   template.Meta
+			Embeds template.Embeds
+			Data   []Controller
 		}{
 			Meta: template.Meta{
-				Path: c.Request().URL.Path,
+				Path:       c.Request().URL.Path,
+				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
 			},
-			Embeds:      g.Embeds,
-			Controllers: storedControllers,
+			Embeds: g.Embeds,
+			Data:   storedControllers,
 		})
 	}, nil
 }

@@ -2,6 +2,7 @@ package fluitans
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 
@@ -21,15 +22,16 @@ func NewHTTPErrorHandler() (func(err error, c echo.Context), error) {
 			code = herr.Code
 		}
 		perr := c.Render(code, "httperr.page.tmpl", struct {
-			Meta      template.Meta
-			Embeds    template.Embeds
-			ErrorCode int
+			Meta   template.Meta
+			Embeds template.Embeds
+			Data   int
 		}{
 			Meta: template.Meta{
-				Path: c.Request().URL.Path,
+				Path:       c.Request().URL.Path,
+				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
 			},
-			Embeds:    g.Embeds,
-			ErrorCode: code,
+			Embeds: g.Embeds,
+			Data:   code,
 		})
 		if perr != nil {
 			c.Logger().Error(err)

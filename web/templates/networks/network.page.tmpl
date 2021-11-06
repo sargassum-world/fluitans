@@ -1,0 +1,216 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}{{identifyNetwork .Data.Network}}{{end}}
+{{define "description"}}The ZeroTier network {{identifyNetwork .Data.Network}}{{end}}
+
+{{define "content"}}
+<main class="main-container">
+  <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li><a href="/">Fluitans</a></li>
+      <li><a href="/networks">Networks</a></li>
+      <li class="is-active"><a href="/networks/{{.Data.Network.Id}}" aria-current="page">
+        {{template "shared/network-name.partial.tmpl" dict "Network" .Data.Network "DomainName" .Meta.DomainName}}
+      </a></li>
+    </ul>
+  </nav>
+
+  <section class="section content">
+    <turbo-frame id="network-{{.Data.Network.Id}}-basics">
+      <h1>
+        {{if eq 0 (len .Data.Network.Name)}}
+        Unnamed Network
+        {{else}}
+        {{.Data.Network.Name}}.{{.Meta.DomainName}}
+        {{end}}
+      </h1>
+      <p>ID: {{template "shared/network-id.partial.tmpl" .Data.Network.Id}}</p>
+      <div class="card section-card is-block" id="network-{{.Data.Network.Id}}-name">
+        <div class="card-content">
+          <h2 class="is-size-4">Name</h2>
+          <form
+            action="/networks/{{.Data.Network.Id}}"
+            method="POST"
+            data-turbo-frame="_top"
+            data-controller="form-submission"
+            data-action="submit->form-submission#submit"
+            data-form-submission-target="submitter"
+          >
+            <input type="hidden" name="method" value="RENAME">
+            <label class="label" for="name">Domain Name</label>
+            <div class="field has-addons">
+              <div class="control">
+                <input class="input" type="text" name="name" value="{{.Data.Network.Name}}">
+              </div>
+              <div class="control">
+                <span class="button is-static">.{{.Meta.DomainName}}</span>
+              </div>
+            </div>
+            <div class="control">
+              <input
+                class="button"
+                type="submit"
+                value="Set domain name"
+                data-form-submission-target="submit"
+              >
+            </div>
+          </form>
+        </div>
+      </div>
+    </turbo-frame>
+    <h2>Devices</h2>
+    <turbo-frame id="network-{{.Data.Network.Id}}-devices">
+      {{range $member := .Data.Members}}
+      {{template "networks/network-device.partial.tmpl" dict "Member" $member "Network" $.Data.Network}}
+      {{else}}
+      <p>This network does not yet have any devices!</p>
+      {{end}}
+      <div class="card section-card is-block">
+        <div class="card-content">
+          <h3>Manually Add Device</h3>
+          <form
+            action="/networks/{{.Data.Network.Id}}/devices"
+            method="POST"
+            data-controller="form-submission"
+            data-action="submit->form-submission#submit"
+            data-form-submission-target="submitter"
+          >
+            <input type="hidden" name="method" value="CREATE">
+            <label class="label" for="address">ZeroTier Address</label>
+            <div class="field is-grouped">
+              <div class="control">
+                <input class="input" type="text" name="address" placeholder="8bdf00d13">
+              </div>
+              <div class="control">
+                <input
+                  class="button"
+                  type="submit"
+                  value="Add device"
+                  data-form-submission-target="submit"
+                >
+              </div>
+            </div>
+            <p class="help">Add a device to the network before it attempts to join.</p>
+          </form>
+        </div>
+      </div>
+    </turbo-frame>
+    <h2>Advanced</h2>
+    <div class="card section-card">
+      <div class="card-content">
+        <turbo-frame id="network-{{.Data.Network.Id}}-rules">
+          <h3>Traffic Rules</h3>
+          <ol>
+            <li>Inspect the packet,</li>
+            {{range $rule := .Data.Network.Rules}}
+            {{template "networks/network-rule.partial.tmpl" $rule}}
+            {{end}}
+            <li>discard the packet</li>
+          </ol>
+          <form
+            action="/networks/{{.Data.Network.Id}}"
+            method="POST"
+            data-controller="form-submission"
+            data-action="submit->form-submission#submit"
+            data-form-submission-target="submitter"
+          >
+            <input type="hidden" name="method" value="SETRULES">
+            <label class="label" for="rules">Rule Editor</label>
+            <div class="field">
+              <div class="control">
+                <textarea class="textarea is-fullwidth" name="rules" rows="10">{{.Data.JSONPrintedRules}}</textarea>
+              </div>
+            </div>
+            <div class="field">
+              <div class="control">
+                <input
+                  class="button"
+                  type="submit"
+                  value="Set rules"
+                  data-form-submission-target="submit"
+                >
+              </div>
+            </div>
+          </form>
+        </turbo-frame>
+      </div>
+    </div>
+    <div class="card section-card">
+      <div class="card-content">
+        <turbo-frame id="network-{{.Data.Network.Id}}-ipaddr">
+          <h3>IP Address Assignments</h3>
+          <h4 class="is-size-6">IPv6 Auto-Assignment Mode</h4>
+          <p>
+            ZeroTier RFC4193 (/128 per device):
+            {{if derefBool .Data.Network.V6AssignMode.Rfc4193}}
+            <span class="tag is-info">Enabled</span>
+            {{else}}
+            <span class="tag is-info">Disabled</span>
+            {{end}}
+          </p>
+          <p>
+            ZeroTier 6PLANE (/80 routable per device):
+            {{if derefBool .Data.Network.V6AssignMode.N6plane}}
+            <span class="tag is-success">Enabled</span>
+            {{else}}
+            <span class="tag is-warning">Disabled</span>
+            {{end}}
+          </p>
+          <h4 class="is-size-6">Managed Routes</h4>
+          <p>
+            {{range $route := .Data.Network.Routes}}
+            {{$route.Target}} via {{$route.Via}}
+            {{else}}
+            <span class="tag is-info">None</span>
+            {{end}}
+          </p>
+        </turbo-frame>
+      </div>
+    </div>
+    <div class="card section-card">
+      <div class="card-content">
+        <turbo-frame id="network-{{.Data.Network.Id}}-advancedmisc">
+          <h3>Miscellaneous</h3>
+          <h4 class="is-size-6">Access Control</h4>
+          {{if derefBool .Data.Network.Private}}
+          <span class="tag is-success">Private</span>
+          {{else}}
+          <span class="tag is-warning">Public</span>
+          {{end}}
+          <h4 class="is-size-6">Ethernet Settings</h4>
+          <p>Maximum transmission unit: {{.Data.Network.Mtu}}</p>
+          <p>Multicast Recipient Limit: {{.Data.Network.MulticastLimit}}</p>
+          <p>
+            Broadcast (ff:ff:ff:ff:ff:ff):
+            {{if derefBool .Data.Network.EnableBroadcast}}
+            <span class="tag is-info">Allowed</span>
+            {{else}}
+            <span class="tag is-info">Not allowed</span>
+            {{end}}
+          </p>
+          <h4 class="is-size-6">Troubleshooting Information</h4>
+          <p>Network configuration revision: {{.Data.Network.Revision}}</p>
+        </turbo-frame>
+      </div>
+    </div>
+    <!-- TODO: make a controller with a confirmation dialog -->
+    <form
+      action="/networks/{{.Data.Network.Id}}"
+      method="POST"
+      data-turbo-frame="_top"
+      data-controller="form-submission"
+      data-action="submit->form-submission#submit"
+    >
+      <input type="hidden" name="method" value="DELETE">
+      <div class="control" data-form-submission-target="submitter">
+        <input
+          class="button is-danger"
+          type="submit"
+          value="Delete network"
+          data-form-submission-target="submit"
+        >
+      </div>
+    </form>
+  </section>
+</main>
+{{end}}

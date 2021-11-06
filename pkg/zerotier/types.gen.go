@@ -170,6 +170,9 @@ type GenerateControllerNetworkJSONBody ControllerNetwork
 // SetControllerNetworkJSONBody defines parameters for SetControllerNetwork.
 type SetControllerNetworkJSONBody ControllerNetwork
 
+// SetControllerNetworkMemberJSONBody defines parameters for SetControllerNetworkMember.
+type SetControllerNetworkMemberJSONBody ControllerNetworkMember
+
 // UpdateNetworkJSONBody defines parameters for UpdateNetwork.
 type UpdateNetworkJSONBody Network
 
@@ -178,6 +181,9 @@ type GenerateControllerNetworkJSONRequestBody GenerateControllerNetworkJSONBody
 
 // SetControllerNetworkJSONRequestBody defines body for SetControllerNetwork for application/json ContentType.
 type SetControllerNetworkJSONRequestBody SetControllerNetworkJSONBody
+
+// SetControllerNetworkMemberJSONRequestBody defines body for SetControllerNetworkMember for application/json ContentType.
+type SetControllerNetworkMemberJSONRequestBody SetControllerNetworkMemberJSONBody
 
 // UpdateNetworkJSONRequestBody defines body for UpdateNetwork for application/json ContentType.
 type UpdateNetworkJSONRequestBody UpdateNetworkJSONBody

@@ -1,33 +1,33 @@
-{{template "base.layout.tmpl" .}}
+{{template "shared/base.layout.tmpl" .}}
 
 {{define "title"}}Networks{{end}}
 {{define "description"}}Networks managed by Fluitans.{{end}}
 
 {{define "content"}}
-<main class="main-container scroller">
+<main class="main-container">
   <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
     <ul>
+      <li><a href="/">Fluitans</a></li>
       <li class="is-active"><a href="/networks" aria-current="page">Networks</a></li>
     </ul>
   </nav>
 
   <section class="section content">
     <h1>Networks</h1>
-    {{if not .ControllerNetworks}}
-    <p>
-      Fluitans is not yet aware of any ZeroTier network controllers! You'll need to
-      manually specify at least a default one by setting environment variables for
-      Fluitans before starting it.
-    </p>
-    {{end}}
-    {{range $controllerNetworks := .ControllerNetworks}}
+    {{range $controllerNetworks := .Data}}
     <h2>Hosted by {{$controllerNetworks.Controller.Name}}</h2>
     <turbo-frame id="controller-{{$controllerNetworks.Controller.Name}}-info">
       <p>
         <a href="/controllers/{{$controllerNetworks.Controller.Name}}">More Information</a>
       </p>
     </turbo-frame>
-    {{template "networks-list" $controllerNetworks}}
+    {{template "networks/networks-list.partial.tmpl" dict "Controller" $controllerNetworks.Controller "Networks" $controllerNetworks.Networks "DomainName" $.Meta.DomainName}}
+    {{else}}
+    <p>
+      Fluitans is not yet aware of any ZeroTier network controllers! You'll need to
+      manually specify at least a default one by setting environment variables for
+      Fluitans before starting it.
+    </p>
     {{end}}
   </section>
 </main>

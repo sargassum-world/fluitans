@@ -3,3 +3,7 @@
 .turbo-progress-bar {
   background-color: $primary;
 }
+
+form .control input[type="submit"] + progress {
+  margin-top: 0.5em;
+}

@@ -3,6 +3,7 @@ package routes
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/labstack/echo/v4"
 
@@ -49,7 +50,8 @@ func home(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerF
 			Embeds template.Embeds
 		}{
 			Meta: template.Meta{
-				Path: c.Request().URL.Path,
+				Path:       c.Request().URL.Path,
+				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
 			},
 			Embeds: g.Embeds,
 		})
