@@ -3,7 +3,6 @@ package templates
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
@@ -77,7 +76,7 @@ func describeError(code int) HTTPError {
 
 func identifyNetwork(network zerotier.ControllerNetwork) string {
 	if strings.TrimSpace(*network.Name) != "" {
-		return fmt.Sprintf("%s.%s", *network.Name, os.Getenv("FLUITANS_DOMAIN_NAME"))
+		return *network.Name
 	}
 
 	return *network.Id

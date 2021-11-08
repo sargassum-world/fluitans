@@ -278,7 +278,13 @@ func postNetwork(
 
 		switch method {
 		case "RENAME":
-			err = setNetworkName(c, *controller, id, name)
+			var fqdn string
+			if len(name) > 0 {
+				fqdn = fmt.Sprintf("%s.%s", name, os.Getenv("FLUITANS_DOMAIN_NAME"))
+			} else {
+				fqdn = ""
+			}
+			err = setNetworkName(c, *controller, id, fqdn)
 			if err != nil {
 				return err
 			}
@@ -288,7 +294,9 @@ func postNetwork(
 				return err
 			}
 
-			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
+			return c.Redirect(
+				http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
+			)
 		case "DELETE":
 			err = deleteNetwork(c, *controller, id)
 			if err != nil {

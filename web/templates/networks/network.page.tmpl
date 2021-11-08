@@ -10,7 +10,7 @@
       <li><a href="/">Fluitans</a></li>
       <li><a href="/networks">Networks</a></li>
       <li class="is-active"><a href="/networks/{{.Data.Network.Id}}" aria-current="page">
-        {{template "shared/network-name.partial.tmpl" dict "Network" .Data.Network "DomainName" .Meta.DomainName}}
+        {{template "shared/network-name.partial.tmpl" .Data.Network}}
       </a></li>
     </ul>
   </nav>
@@ -18,11 +18,7 @@
   <section class="section content">
     <turbo-frame id="network-{{.Data.Network.Id}}-basics">
       <h1>
-        {{if eq 0 (len .Data.Network.Name)}}
-        Unnamed Network
-        {{else}}
-        {{.Data.Network.Name}}.{{.Meta.DomainName}}
-        {{end}}
+        {{if eq 0 (len .Data.Network.Name)}}Unnamed Network{{else}}{{.Data.Network.Name}}{{end}}
       </h1>
       <p>ID: {{template "shared/network-id.partial.tmpl" .Data.Network.Id}}</p>
       <div class="card section-card is-block" id="network-{{.Data.Network.Id}}-name">
@@ -40,19 +36,26 @@
             <label class="label" for="name">Domain Name</label>
             <div class="field has-addons">
               <div class="control">
+                {{if hasSuffix .Meta.DomainName .Data.Network.Name}}
+                {{$regex := (print (regexQuoteMeta (print "." .Meta.DomainName)) "$")}}
+                <input class="input" type="text" name="name" value="{{regexReplaceAll $regex .Data.Network.Name ""}}">
+                {{else}}
                 <input class="input" type="text" name="name" value="{{.Data.Network.Name}}">
+                {{end}}
               </div>
               <div class="control">
                 <span class="button is-static">.{{.Meta.DomainName}}</span>
               </div>
             </div>
-            <div class="control">
-              <input
-                class="button"
-                type="submit"
-                value="Set domain name"
-                data-form-submission-target="submit"
-              >
+            <div class="field">
+              <div class="control">
+                <input
+                  class="button"
+                  type="submit"
+                  value="Set domain name"
+                  data-form-submission-target="submit"
+                >
+              </div>
             </div>
           </form>
         </div>

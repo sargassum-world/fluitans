@@ -21,7 +21,7 @@
         <a href="/controllers/{{$controllerNetworks.Controller.Name}}">More Information</a>
       </p>
     </turbo-frame>
-    {{template "networks/networks-list.partial.tmpl" dict "Controller" $controllerNetworks.Controller "Networks" $controllerNetworks.Networks "DomainName" $.Meta.DomainName}}
+    {{template "networks/networks-list.partial.tmpl" dict "Controller" $controllerNetworks.Controller "Networks" $controllerNetworks.Networks}}
     {{else}}
     <p>
       Fluitans is not yet aware of any ZeroTier network controllers! You'll need to

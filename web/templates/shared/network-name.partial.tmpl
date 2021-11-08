@@ -1,6 +1,5 @@
-{{$network := get . "Network"}}
-{{if ne (trim $network.Name) ""}}
-{{$network.Name}}.{{get . "DomainName"}}
+{{if ne (trim .Name) ""}}
+{{.Name}}
 {{else}}
-{{template "shared/network-id.partial.tmpl" $network.Id}}
+{{template "shared/network-id.partial.tmpl" .Id}}
 {{end}}

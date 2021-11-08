@@ -1,13 +1,12 @@
 {{$controller := get . "Controller"}}
 {{$networks := get . "Networks"}}
-{{$domainName := get . "DomainName"}}
 <turbo-frame id="networks-{{$controller.Name}}-list">
   {{template "shared/create-network.partial.tmpl" $controller}}
   <ul>
     {{range $networkID, $network := $networks}}
     <li>
       <a href="/networks/{{$networkID}}" data-turbo-frame="_top">
-        {{template "shared/network-name.partial.tmpl" dict "Network" $network "DomainName" $domainName}}
+        {{template "shared/network-name.partial.tmpl" $network}}
       </a>
       <!-- TODO: show these as network entity cards instead -->
     </li>
