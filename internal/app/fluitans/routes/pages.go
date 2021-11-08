@@ -3,10 +3,10 @@ package routes
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/networks"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -18,20 +18,20 @@ var Pages = append(
 		{
 			Path:         "/",
 			Method:       http.MethodGet,
-			HandlerMaker: home,
+			HandlerMaker: getHome,
 			Templates:    []string{"home.page.tmpl"},
 		},
 		{
 			Path:         "/login",
 			Method:       http.MethodGet,
-			HandlerMaker: login,
+			HandlerMaker: getLogin,
 			Templates:    []string{"login.page.tmpl"},
 		},
 	},
 	networks.Pages...,
 )
 
-func home(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "home.page.tmpl"
 	tte, ok := te[t]
 	if !ok {
@@ -51,14 +51,14 @@ func home(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerF
 		}{
 			Meta: template.Meta{
 				Path:       c.Request().URL.Path,
-				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
+				DomainName: client.GetDomainName(),
 			},
 			Embeds: g.Embeds,
 		})
 	}, nil
 }
 
-func login(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "login.page.tmpl"
 	tte, ok := te[t]
 	if !ok {

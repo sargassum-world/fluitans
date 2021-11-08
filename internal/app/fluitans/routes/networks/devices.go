@@ -6,28 +6,24 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 func setMemberAuthorization(
-	c echo.Context, controller Controller, networkID string, memberAddress string, authorized bool,
+	c echo.Context,
+	controller client.Controller,
+	networkID string,
+	memberAddress string,
+	authorized bool,
 ) error {
-	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
-	if err != nil {
-		return err
-	}
-
-	ctx := c.Request().Context()
 	auth := authorized
-	_, err = client.SetControllerNetworkMemberWithResponse(
-		ctx, networkID, memberAddress,
+	err := client.UpdateMember(
+		c, controller, networkID, memberAddress,
 		zerotier.SetControllerNetworkMemberJSONRequestBody{Authorized: &auth},
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func postDevice(
@@ -41,7 +37,7 @@ func postDevice(
 		method := c.FormValue("method")
 
 		// Run queries
-		controller, err := findControllerByAddress(c, storedControllers, controllerAddress)
+		controller, err := client.FindControllerByAddress(c, controllerAddress)
 		if err != nil {
 			return err
 		}
@@ -73,7 +69,7 @@ func postDevices(
 		memberAddress := c.FormValue("address")
 
 		// Run queries
-		controller, err := findControllerByAddress(c, storedControllers, controllerAddress)
+		controller, err := client.FindControllerByAddress(c, controllerAddress)
 		if err != nil {
 			return err
 		}
@@ -83,6 +79,9 @@ func postDevices(
 			return err
 		}
 
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress))
+		return c.Redirect(
+			http.StatusSeeOther,
+			fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
+		)
 	}, nil
 }

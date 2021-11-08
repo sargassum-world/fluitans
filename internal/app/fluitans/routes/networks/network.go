@@ -4,100 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/labstack/echo/v4"
-	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/route"
 	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
-
-func getNetworkInfo(
-	c echo.Context, controller Controller, id string,
-) (*zerotier.ControllerNetwork, []string, error) {
-	client, cerr := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
-	if cerr != nil {
-		return nil, nil, cerr
-	}
-
-	var network *zerotier.ControllerNetwork
-	var memberRevisions map[string]int
-	eg, ctx := errgroup.WithContext(c.Request().Context())
-	eg.Go(func() error {
-		res, err := client.GetControllerNetworkWithResponse(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		network = res.JSON200
-		return nil
-	})
-	eg.Go(func() error {
-		res, err := client.GetControllerNetworkMembersWithResponse(ctx, id)
-		if err != nil {
-			return err
-		}
-
-		err = json.Unmarshal(res.Body, &memberRevisions)
-		return err
-	})
-	if err := eg.Wait(); err != nil {
-		return nil, nil, err
-	}
-
-	memberAddresses := make([]string, 0, len(memberRevisions))
-	for address := range memberRevisions {
-		memberAddresses = append(memberAddresses, address)
-	}
-
-	return network, memberAddresses, nil
-}
-
-func getNetworkMembersInfo(
-	c echo.Context, controller Controller, id string, addresses []string,
-) (map[string]zerotier.ControllerNetworkMember, error) {
-	client, cerr := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
-	if cerr != nil {
-		return nil, cerr
-	}
-
-	eg, ctx := errgroup.WithContext(c.Request().Context())
-	members := make([]zerotier.ControllerNetworkMember, len(addresses))
-	for i := range addresses {
-		members[i] = zerotier.ControllerNetworkMember{}
-	}
-	for i, address := range addresses {
-		eg.Go(func(i int, address string) func() error {
-			return func() error {
-				res, err := client.GetControllerNetworkMemberWithResponse(ctx, id, address)
-				if err != nil {
-					return err
-				}
-
-				members[i] = *res.JSON200
-				return nil
-			}
-		}(i, address))
-	}
-	if err := eg.Wait(); err != nil {
-		return nil, err
-	}
-
-	keyedMembers := make(map[string]zerotier.ControllerNetworkMember)
-	for i, addr := range addresses {
-		keyedMembers[addr] = members[i]
-	}
-
-	return keyedMembers, nil
-}
 
 func getControllerAddress(networkID string) string {
 	addressLength := 10
@@ -129,24 +45,24 @@ func addNDPAddresses(
 }
 
 type NetworkData struct {
-	Controller       Controller
+	Controller       client.Controller
 	Network          zerotier.ControllerNetwork
 	Members          map[string]zerotier.ControllerNetworkMember
 	JSONPrintedRules string
 }
 
 func getNetworkData(c echo.Context, address string, id string) (*NetworkData, error) {
-	controller, err := findControllerByAddress(c, storedControllers, address)
+	controller, err := client.FindControllerByAddress(c, address)
 	if err != nil {
 		return nil, err
 	}
 
-	network, memberAddresses, err := getNetworkInfo(c, *controller, id)
+	network, memberAddresses, err := client.GetNetworkInfo(c, *controller, id)
 	if err != nil {
 		return nil, err
 	}
 
-	members, err := getNetworkMembersInfo(c, *controller, id, memberAddresses)
+	members, err := client.GetNetworkMembersInfo(c, *controller, id, memberAddresses)
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +85,7 @@ func getNetworkData(c echo.Context, address string, id string) (*NetworkData, er
 	}, nil
 }
 
-func network(
+func getNetwork(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/network.page.tmpl"
@@ -207,56 +123,12 @@ func network(
 		}{
 			Meta: template.Meta{
 				Path:       c.Request().URL.Path,
-				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
+				DomainName: client.GetDomainName(),
 			},
 			Embeds: g.Embeds,
 			Data:   *networkData,
 		})
 	}, nil
-}
-
-func setNetworkName(c echo.Context, controller Controller, id string, name string) error {
-	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
-	if err != nil {
-		return err
-	}
-
-	ctx := c.Request().Context()
-	_, err = client.SetControllerNetworkWithResponse(
-		ctx, id,
-		zerotier.SetControllerNetworkJSONRequestBody{Name: &name},
-	)
-	return err
-}
-
-func setNetworkRules(c echo.Context, controller Controller, id string, jsonRules string) error {
-	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
-	if err != nil {
-		return err
-	}
-
-	rules := make([]map[string]interface{}, 0)
-	if err = json.Unmarshal([]byte(jsonRules), &rules); err != nil {
-		return err
-	}
-
-	ctx := c.Request().Context()
-	_, err = client.SetControllerNetworkWithResponse(
-		ctx, id,
-		zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
-	)
-	return err
-}
-
-func deleteNetwork(c echo.Context, controller Controller, id string) error {
-	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
-	if err != nil {
-		return err
-	}
-
-	ctx := c.Request().Context()
-	_, err = client.DeleteControllerNetworkWithResponse(ctx, id)
-	return err
 }
 
 func postNetwork(
@@ -268,10 +140,10 @@ func postNetwork(
 		address := getControllerAddress(id)
 		method := c.FormValue("method")
 		name := c.FormValue("name")
-		rules := c.FormValue("rules")
+		jsonRules := c.FormValue("rules")
 
 		// Run queries
-		controller, err := findControllerByAddress(c, storedControllers, address)
+		controller, err := client.FindControllerByAddress(c, address)
 		if err != nil {
 			return err
 		}
@@ -280,16 +152,25 @@ func postNetwork(
 		case "RENAME":
 			var fqdn string
 			if len(name) > 0 {
-				fqdn = fmt.Sprintf("%s.%s", name, os.Getenv("FLUITANS_DOMAIN_NAME"))
+				fqdn = fmt.Sprintf("%s.%s", name, client.GetDomainName())
 			} else {
 				fqdn = ""
 			}
-			err = setNetworkName(c, *controller, id, fqdn)
+			err = client.UpdateNetwork(
+				c, *controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
+			)
 			if err != nil {
 				return err
 			}
 		case "SETRULES":
-			err = setNetworkRules(c, *controller, id, rules)
+			rules := make([]map[string]interface{}, 0)
+			if err = json.Unmarshal([]byte(jsonRules), &rules); err != nil {
+				return err
+			}
+
+			err = client.UpdateNetwork(
+				c, *controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
+			)
 			if err != nil {
 				return err
 			}
@@ -298,7 +179,7 @@ func postNetwork(
 				http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
 			)
 		case "DELETE":
-			err = deleteNetwork(c, *controller, id)
+			err = client.DeleteNetwork(c, *controller, id)
 			if err != nil {
 				return err
 			}

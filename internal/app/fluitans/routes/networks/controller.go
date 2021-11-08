@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/labstack/echo/v4"
-	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -16,66 +15,19 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-type ControllerNetworks struct {
-	Controller Controller                            `json:"controller"`
-	Networks   map[string]zerotier.ControllerNetwork `json:"network"`
-}
-
-func getControllerInfo(
-	c echo.Context, controller Controller,
-) (*zerotier.Status, *zerotier.ControllerStatus, []string, error) {
-	client, cerr := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
-	if cerr != nil {
-		return nil, nil, nil, cerr
-	}
-
-	var status *zerotier.Status
-	var controllerStatus *zerotier.ControllerStatus
-	var networks []string
-	eg, ctx := errgroup.WithContext(c.Request().Context())
-	eg.Go(func() error {
-		res, err := client.GetStatusWithResponse(ctx)
-		if err != nil {
-			return err
-		}
-
-		status = res.JSON200
-		return nil
-	})
-	eg.Go(func() error {
-		res, err := client.GetControllerStatusWithResponse(ctx)
-		if err != nil {
-			return err
-		}
-
-		controllerStatus = res.JSON200
-		return err
-	})
-	eg.Go(func() error {
-		res, err := client.GetControllerNetworksWithResponse(ctx)
-		if err != nil {
-			return err
-		}
-
-		networks = *res.JSON200
-		return nil
-	})
-	if err := eg.Wait(); err != nil {
-		return nil, nil, nil, err
-	}
-
-	return status, controllerStatus, networks, nil
-}
-
 type ControllerData struct {
-	Controller       Controller
+	Controller       client.Controller
 	Status           zerotier.Status
 	ControllerStatus zerotier.ControllerStatus
 	Networks         map[string]zerotier.ControllerNetwork
 }
 
 func getControllerData(c echo.Context, name string, templateName string) (*ControllerData, error) {
-	controller, ok := findController(storedControllers, name)
+	controller, ok, err := client.FindController(name)
+	if err != nil {
+		return nil, err
+	}
+
 	if !ok {
 		return nil, echo.NewHTTPError(
 			http.StatusNotFound,
@@ -83,12 +35,14 @@ func getControllerData(c echo.Context, name string, templateName string) (*Contr
 		)
 	}
 
-	status, controllerStatus, networkIDs, err := getControllerInfo(c, *controller)
+	status, controllerStatus, networkIDs, err := client.GetController(c, *controller)
 	if err != nil {
 		return nil, err
 	}
 
-	networks, err := getNetworks(c, []Controller{*controller}, [][]string{networkIDs})
+	networks, err := client.GetNetworks(
+		c, []client.Controller{*controller}, [][]string{networkIDs},
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +55,7 @@ func getControllerData(c echo.Context, name string, templateName string) (*Contr
 	}, nil
 }
 
-func controller(
+func getController(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/controller.page.tmpl"
@@ -141,7 +95,7 @@ func controller(
 		}{
 			Meta: template.Meta{
 				Path:       c.Request().URL.Path,
-				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
+				DomainName: client.GetDomainName(),
 			},
 			Embeds: g.Embeds,
 			Data:   *controllerData,

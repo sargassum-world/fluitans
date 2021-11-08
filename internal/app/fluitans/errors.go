@@ -2,10 +2,10 @@ package fluitans
 
 import (
 	"net/http"
-	"os"
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/template"
 )
 
@@ -28,7 +28,7 @@ func NewHTTPErrorHandler() (func(err error, c echo.Context), error) {
 		}{
 			Meta: template.Meta{
 				Path:       c.Request().URL.Path,
-				DomainName: os.Getenv("FLUITANS_DOMAIN_NAME"),
+				DomainName: client.GetDomainName(),
 			},
 			Embeds: g.Embeds,
 			Data:   code,
