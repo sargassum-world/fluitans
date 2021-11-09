@@ -2,16 +2,17 @@ package client
 
 type Controller struct {
 	// TODO: move this to a models package or something!
-	Server      string `json:"server"`
-	Name        string `json:"name"` // Must be unique for display purposes!
-	Description string `json:"description"`
-	Authtoken   string `json:"authtoken"`
+	Server            string  `json:"server"`
+	Name              string  `json:"name"` // Must be unique for display purposes!
+	Description       string  `json:"description"`
+	Authtoken         string  `json:"authtoken"`
+	NetworkCostWeight float32 `json:"local"`
 }
 
 func GetControllers() ([]Controller, error) {
-	// TODO: first look up the controllers from a database, if one is specified!
+	// TODO: look up the controllers from a database, if one is specified!
 	controllers := make([]Controller, 0)
-	envController, err := getEnvVarController()
+	envController, err := GetEnvVarController()
 	if err != nil {
 		return nil, err
 	}

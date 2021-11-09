@@ -15,11 +15,6 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-func getControllerAddress(networkID string) string {
-	addressLength := 10
-	return networkID[:addressLength]
-}
-
 func addNDPAddresses(
 	id string,
 	v6AssignMode zerotier.V6AssignMode,
@@ -51,8 +46,10 @@ type NetworkData struct {
 	JSONPrintedRules string
 }
 
-func getNetworkData(c echo.Context, address string, id string) (*NetworkData, error) {
-	controller, err := client.FindControllerByAddress(c, address)
+func getNetworkData(
+	c echo.Context, address string, id string, cache *client.Cache,
+) (*NetworkData, error) {
+	controller, err := client.FindControllerByAddress(c, address, cache)
 	if err != nil {
 		return nil, err
 	}
@@ -94,99 +91,114 @@ func getNetwork(
 		return nil, te.NewNotFoundError(t)
 	}
 
-	return func(c echo.Context) error {
-		// Parse params
-		id := c.Param("id")
-		address := getControllerAddress(id)
+	switch cache := g.Cache.(type) {
+	default:
+		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
+	case *client.Cache:
+		return func(c echo.Context) error {
+			// Parse params
+			id := c.Param("id")
+			address := client.GetControllerAddress(id)
 
-		// Run queries
-		networkData, err := getNetworkData(c, address, id)
-		if err != nil {
-			return err
-		}
+			// Run queries
+			networkData, err := getNetworkData(c, address, id, cache)
+			if err != nil {
+				return err
+			}
 
-		// Handle Etag
-		etagData, err := json.Marshal(networkData)
-		if err != nil {
-			return err
-		}
+			// Handle Etag
+			etagData, err := json.Marshal(networkData)
+			if err != nil {
+				return err
+			}
 
-		if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
-			return err
-		}
+			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
+				return err
+			}
 
-		// Render template
-		return c.Render(http.StatusOK, t, struct {
-			Meta   template.Meta
-			Embeds template.Embeds
-			Data   NetworkData
-		}{
-			Meta: template.Meta{
-				Path:       c.Request().URL.Path,
-				DomainName: client.GetDomainName(),
-			},
-			Embeds: g.Embeds,
-			Data:   *networkData,
-		})
-	}, nil
+			// Render template
+			return c.Render(http.StatusOK, t, struct {
+				Meta   template.Meta
+				Embeds template.Embeds
+				Data   NetworkData
+			}{
+				Meta: template.Meta{
+					Path:       c.Request().URL.Path,
+					DomainName: client.GetDomainName(),
+				},
+				Embeds: g.Embeds,
+				Data:   *networkData,
+			})
+		}, nil
+	}
+}
+
+func renameNetwork(c echo.Context, controller client.Controller, id string, name string) error {
+	var fqdn string
+	if len(name) > 0 {
+		fqdn = fmt.Sprintf("%s.%s", name, client.GetDomainName())
+	} else {
+		fqdn = ""
+	}
+	return client.UpdateNetwork(
+		c, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
+	)
+}
+
+func setNetworkRules(
+	c echo.Context, controller client.Controller, id string, jsonRules string,
+) error {
+	rules := make([]map[string]interface{}, 0)
+	if err := json.Unmarshal([]byte(jsonRules), &rules); err != nil {
+		return err
+	}
+
+	err := client.UpdateNetwork(
+		c, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
+	)
+	if err != nil {
+		return err
+	}
+
+	return c.Redirect(
+		http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
+	)
 }
 
 func postNetwork(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	return func(c echo.Context) error {
-		// Parse params
-		id := c.Param("id")
-		address := getControllerAddress(id)
-		method := c.FormValue("method")
-		name := c.FormValue("name")
-		jsonRules := c.FormValue("rules")
+	switch cache := g.Cache.(type) {
+	default:
+		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
+	case *client.Cache:
+		return func(c echo.Context) error {
+			// Parse params
+			id := c.Param("id")
+			address := client.GetControllerAddress(id)
+			method := c.FormValue("method")
 
-		// Run queries
-		controller, err := client.FindControllerByAddress(c, address)
-		if err != nil {
-			return err
-		}
-
-		switch method {
-		case "RENAME":
-			var fqdn string
-			if len(name) > 0 {
-				fqdn = fmt.Sprintf("%s.%s", name, client.GetDomainName())
-			} else {
-				fqdn = ""
-			}
-			err = client.UpdateNetwork(
-				c, *controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
-			)
-			if err != nil {
-				return err
-			}
-		case "SETRULES":
-			rules := make([]map[string]interface{}, 0)
-			if err = json.Unmarshal([]byte(jsonRules), &rules); err != nil {
-				return err
-			}
-
-			err = client.UpdateNetwork(
-				c, *controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
-			)
+			// Run queries
+			controller, err := client.FindControllerByAddress(c, address, cache)
 			if err != nil {
 				return err
 			}
 
-			return c.Redirect(
-				http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
-			)
-		case "DELETE":
-			err = client.DeleteNetwork(c, *controller, id)
-			if err != nil {
-				return err
+			switch method {
+			case "RENAME":
+				return renameNetwork(c, *controller, id, c.FormValue("name"))
+			case "SETRULES":
+				return setNetworkRules(c, *controller, id, c.FormValue("rules"))
+			case "DELETE":
+				err = client.DeleteNetwork(c, *controller, id)
+				if err != nil {
+					return err
+				}
+
+				return c.Redirect(http.StatusSeeOther, "/networks")
 			}
 
-			return c.Redirect(http.StatusSeeOther, "/networks")
-		}
-
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
-	}, nil
+			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
+		}, nil
+	}
 }

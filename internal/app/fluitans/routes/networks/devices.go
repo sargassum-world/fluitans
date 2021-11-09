@@ -29,59 +29,69 @@ func setMemberAuthorization(
 func postDevice(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	return func(c echo.Context) error {
-		// Parse params
-		networkID := c.Param("id")
-		controllerAddress := getControllerAddress(networkID)
-		memberAddress := c.Param("address")
-		method := c.FormValue("method")
+	switch cache := g.Cache.(type) {
+	default:
+		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
+	case *client.Cache:
+		return func(c echo.Context) error {
+			// Parse params
+			networkID := c.Param("id")
+			controllerAddress := client.GetControllerAddress(networkID)
+			memberAddress := c.Param("address")
+			method := c.FormValue("method")
 
-		// Run queries
-		controller, err := client.FindControllerByAddress(c, controllerAddress)
-		if err != nil {
-			return err
-		}
-
-		switch method {
-		case "AUTHORIZE":
-			err = setMemberAuthorization(c, *controller, networkID, memberAddress, true)
+			// Run queries
+			controller, err := client.FindControllerByAddress(c, controllerAddress, cache)
 			if err != nil {
 				return err
 			}
-		case "DEAUTHORIZE":
-			err = setMemberAuthorization(c, *controller, networkID, memberAddress, false)
-			if err != nil {
-				return err
-			}
-		}
 
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress))
-	}, nil
+			switch method {
+			case "AUTHORIZE":
+				err = setMemberAuthorization(c, *controller, networkID, memberAddress, true)
+				if err != nil {
+					return err
+				}
+			case "DEAUTHORIZE":
+				err = setMemberAuthorization(c, *controller, networkID, memberAddress, false)
+				if err != nil {
+					return err
+				}
+			}
+
+			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress))
+		}, nil
+	}
 }
 
 func postDevices(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	return func(c echo.Context) error {
-		// Parse params
-		networkID := c.Param("id")
-		controllerAddress := getControllerAddress(networkID)
-		memberAddress := c.FormValue("address")
+	switch cache := g.Cache.(type) {
+	default:
+		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
+	case *client.Cache:
+		return func(c echo.Context) error {
+			// Parse params
+			networkID := c.Param("id")
+			controllerAddress := client.GetControllerAddress(networkID)
+			memberAddress := c.FormValue("address")
 
-		// Run queries
-		controller, err := client.FindControllerByAddress(c, controllerAddress)
-		if err != nil {
-			return err
-		}
+			// Run queries
+			controller, err := client.FindControllerByAddress(c, controllerAddress, cache)
+			if err != nil {
+				return err
+			}
 
-		err = setMemberAuthorization(c, *controller, networkID, memberAddress, true)
-		if err != nil {
-			return err
-		}
+			err = setMemberAuthorization(c, *controller, networkID, memberAddress, true)
+			if err != nil {
+				return err
+			}
 
-		return c.Redirect(
-			http.StatusSeeOther,
-			fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
-		)
-	}, nil
+			return c.Redirect(
+				http.StatusSeeOther,
+				fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
+			)
+		}, nil
+	}
 }

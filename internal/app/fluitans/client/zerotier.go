@@ -13,17 +13,50 @@ import (
 
 // Controller
 
-func FindControllerByAddress(c echo.Context, address string) (*Controller, error) {
-	// TODO: we should instead first look up the address in a cache and then
-	// issue a request to the controller to verify it still has the address;
-	// if not, we should update the cache. If the address isn't in the cache,
-	// then we should query all controllers, starting with the ones not in
-	// the cache
-	controllers, err := GetControllers()
+func checkCachedController(c echo.Context, address string, cache *Cache) (*Controller, error) {
+	controller, cacheHit, err := cache.GetControllerByAddress(address)
 	if err != nil {
 		return nil, err
 	}
 
+	if !cacheHit {
+		return nil, nil
+	}
+
+	client, cerr := zerotier.NewAuthClientWithResponses(
+		controller.Server, controller.Authtoken,
+	)
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	res, err := client.GetStatusWithResponse(c.Request().Context())
+	if err != nil {
+		// evict the cached controller if its authtoken is stale or it no longer responds
+		cache.UnsetControllerByAddress(address)
+		return nil, err
+	}
+
+	if address != *res.JSON200.Address { // cached controller's address is stale
+		c.Logger().Warnf(
+			"controller %s's address has changed from %s to %s",
+			controller.Server, address, *res.JSON200.Address,
+		)
+		err = cache.SetControllerByAddress(*res.JSON200.Address, *controller)
+		if err != nil {
+			return nil, err
+		}
+
+		cache.UnsetControllerByAddress(address)
+		return nil, nil
+	}
+
+	return controller, nil
+}
+
+func scanControllers(
+	c echo.Context, controllers []Controller, cache *Cache,
+) ([]string, error) {
 	eg, ctx := errgroup.WithContext(c.Request().Context())
 	addresses := make([]string, len(controllers))
 	for i, controller := range controllers {
@@ -51,6 +84,42 @@ func FindControllerByAddress(c echo.Context, address string) (*Controller, error
 	}
 
 	for i, v := range controllers {
+		err := cache.SetControllerByAddress(addresses[i], v)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return addresses, nil
+}
+
+func FindControllerByAddress(
+	c echo.Context, address string, cache *Cache,
+) (*Controller, error) {
+	controller, err := checkCachedController(c, address, cache)
+	if err != nil {
+		// Log the error and proceed to manually query all controllers
+		c.Logger().Error(err)
+	} else if controller != nil {
+		return controller, nil
+	}
+
+	// Query the list of all known controllers
+	controllers, err := GetControllers()
+	if err != nil {
+		return nil, err
+	}
+
+	c.Logger().Warnf(
+		"rescanning controllers due to a stale/missing controller for %s in cache",
+		address,
+	)
+	addresses, err := scanControllers(c, controllers, cache)
+	if err != nil {
+		return nil, err
+	}
+
+	for i, v := range controllers {
 		if addresses[i] == address {
 			return &v, nil
 		}
@@ -63,7 +132,7 @@ func FindControllerByAddress(c echo.Context, address string) (*Controller, error
 }
 
 func GetController(
-	c echo.Context, controller Controller,
+	c echo.Context, controller Controller, cache *Cache,
 ) (*zerotier.Status, *zerotier.ControllerStatus, []string, error) {
 	client, cerr := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
 	if cerr != nil {
@@ -81,6 +150,10 @@ func GetController(
 		}
 
 		status = res.JSON200
+		if err := cache.SetControllerByAddress(*status.Address, controller); err != nil {
+			return err
+		}
+
 		return nil
 	})
 	eg.Go(func() error {
@@ -110,7 +183,14 @@ func GetController(
 
 // Networks
 
-func GetNetworkIDs(c echo.Context, controllers []Controller) ([][]string, error) {
+func GetControllerAddress(networkID string) string {
+	addressLength := 10
+	return networkID[:addressLength]
+}
+
+func GetNetworkIDs(
+	c echo.Context, controllers []Controller, cache *Cache,
+) ([][]string, error) {
 	eg, ctx := errgroup.WithContext(c.Request().Context())
 	networkIDs := make([][]string, len(controllers))
 	for i := range controllers {
@@ -119,7 +199,9 @@ func GetNetworkIDs(c echo.Context, controllers []Controller) ([][]string, error)
 	for i, controller := range controllers {
 		eg.Go(func(i int, controller Controller) func() error {
 			return func() error {
-				client, cerr := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
+				client, cerr := zerotier.NewAuthClientWithResponses(
+					controller.Server, controller.Authtoken,
+				)
 				if cerr != nil {
 					return nil
 				}
@@ -138,6 +220,17 @@ func GetNetworkIDs(c echo.Context, controllers []Controller) ([][]string, error)
 		return nil, err
 	}
 
+	for i, controller := range controllers {
+		if len(networkIDs[i]) > 0 {
+			// It's safe to assume that all networks under a controller have the same
+			// controller address, so we only need to cache the controller named by the
+			// first network
+			err := cache.SetControllerByAddress(GetControllerAddress(networkIDs[i][0]), controller)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
 	return networkIDs, nil
 }
 
@@ -278,7 +371,6 @@ func CreateNetwork(c echo.Context, controller Controller) (*zerotier.ControllerN
 			"type": "ACTION_ACCEPT",
 		},
 	}
-	fmt.Println(rules)
 
 	body := zerotier.GenerateControllerNetworkJSONRequestBody{}
 	body.Private = &private

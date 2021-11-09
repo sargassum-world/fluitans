@@ -10,12 +10,11 @@ import (
 )
 
 func NewHTTPErrorHandler() (func(err error, c echo.Context), error) {
-	tg, _, err := computeGlobals()
+	globals, err := computeGlobals()
 	if err != nil {
 		return nil, err
 	}
 
-	g := *tg
 	return func(err error, c echo.Context) {
 		code := http.StatusInternalServerError
 		if herr, ok := err.(*echo.HTTPError); ok {
@@ -30,7 +29,7 @@ func NewHTTPErrorHandler() (func(err error, c echo.Context), error) {
 				Path:       c.Request().URL.Path,
 				DomainName: client.GetDomainName(),
 			},
-			Embeds: g.Embeds,
+			Embeds: globals.Template.Embeds,
 			Data:   code,
 		})
 		if perr != nil {

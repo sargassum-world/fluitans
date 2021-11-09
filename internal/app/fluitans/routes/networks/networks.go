@@ -15,9 +15,33 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-type ControllerNetworks struct {
+type NetworksData struct {
 	Controller client.Controller
 	Networks   map[string]zerotier.ControllerNetwork
+}
+
+func getNetworksData(c echo.Context, cache *client.Cache) ([]NetworksData, error) {
+	controllers, err := client.GetControllers()
+	if err != nil {
+		return nil, err
+	}
+
+	networkIDs, err := client.GetNetworkIDs(c, controllers, cache)
+	if err != nil {
+		return nil, err
+	}
+
+	networks, err := client.GetNetworks(c, controllers, networkIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	networksData := make([]NetworksData, len(controllers))
+	for i, controller := range controllers {
+		networksData[i].Controller = controller
+		networksData[i].Networks = networks[i]
+	}
+	return networksData, nil
 }
 
 func getNetworks(
@@ -29,55 +53,42 @@ func getNetworks(
 		return nil, te.NewNotFoundError(t)
 	}
 
-	return func(c echo.Context) error {
-		// Run queries
-		controllers, err := client.GetControllers()
-		if err != nil {
-			return err
-		}
+	switch cache := g.Cache.(type) {
+	default:
+		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
+	case *client.Cache:
+		return func(c echo.Context) error {
+			// Run queries
+			networksData, err := getNetworksData(c, cache)
+			if err != nil {
+				return err
+			}
 
-		networkIDs, err := client.GetNetworkIDs(c, controllers)
-		if err != nil {
-			return err
-		}
+			// Handle Etag
+			etagData, err := json.Marshal(networksData)
+			if err != nil {
+				return err
+			}
 
-		networks, err := client.GetNetworks(c, controllers, networkIDs)
-		if err != nil {
-			return err
-		}
+			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
+				return err
+			}
 
-		controllerNetworks := make([]ControllerNetworks, len(controllers))
-		for i, controller := range controllers {
-			controllerNetworks[i].Controller = controller
-			controllerNetworks[i].Networks = networks[i]
-		}
-
-		// TODO: look up network names, too
-
-		// Handle Etag
-		etagData, err := json.Marshal(controllerNetworks)
-		if err != nil {
-			return err
-		}
-
-		if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
-			return err
-		}
-
-		// Render template
-		return c.Render(http.StatusOK, t, struct {
-			Meta   template.Meta
-			Embeds template.Embeds
-			Data   []ControllerNetworks
-		}{
-			Meta: template.Meta{
-				Path:       c.Request().URL.Path,
-				DomainName: client.GetDomainName(),
-			},
-			Embeds: g.Embeds,
-			Data:   controllerNetworks,
-		})
-	}, nil
+			// Render template
+			return c.Render(http.StatusOK, t, struct {
+				Meta   template.Meta
+				Embeds template.Embeds
+				Data   []NetworksData
+			}{
+				Meta: template.Meta{
+					Path:       c.Request().URL.Path,
+					DomainName: client.GetDomainName(),
+				},
+				Embeds: g.Embeds,
+				Data:   networksData,
+			})
+		}, nil
+	}
 }
 
 func postNetworks(

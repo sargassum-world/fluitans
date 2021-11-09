@@ -5,6 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans"
 )
@@ -21,6 +22,7 @@ func main() {
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => (${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
+	e.Logger.SetLevel(log.WARN)
 	e.Use(middleware.Recover())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Level: gzipLevel,

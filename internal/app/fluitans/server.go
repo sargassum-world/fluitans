@@ -5,6 +5,9 @@ import (
 	"io/fs"
 	"strings"
 
+	"github.com/dgraph-io/ristretto"
+
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/fsutil"
@@ -12,50 +15,63 @@ import (
 	"github.com/sargassum-eco/fluitans/web"
 )
 
-// TODO: add a flag to specify reading all files from disk into a virtual FS memory,
-// rather than using the compile-time virtual FS
-// TODO: even better is if it acts as an overlay FS, so only the files to override need to be supplied
+type Globals struct {
+	Template route.TemplateGlobals
+	Static   route.StaticGlobals
+}
 
-func computeGlobals() (*route.TemplateGlobals, *route.StaticGlobals, error) {
+func computeGlobals() (*Globals, error) {
 	layoutFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterApp)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	pageFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterPage)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	appFiles, err := fsutil.ListFiles(web.AppFS, func(path string) bool {
 		return strings.HasSuffix(path, ".min.css") || strings.HasSuffix(path, ".js")
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	f, err := route.ComputeTemplateFingerprints(
 		layoutFiles, pageFiles, appFiles, web.TemplatesFS, web.AppFS,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	tg := route.TemplateGlobals{
-		Embeds:               embeds,
-		TemplateFingerprints: *f,
+	cacheConfig, err := client.GetCacheConfig()
+	if err != nil {
+		return nil, err
 	}
-	sg := route.StaticGlobals{
-		FS: map[string]fs.FS{
-			"Web":   web.StaticFS,
-			"Fonts": web.FontsFS,
-		},
-		HFS: map[string]fs.FS{
-			"Static": web.StaticHFS,
-			"App":    web.AppHFS,
-		},
+
+	cache, err := ristretto.NewCache(cacheConfig)
+	if err != nil {
+		return nil, err
 	}
-	return &tg, &sg, nil
+
+	return &Globals{
+		Template: route.TemplateGlobals{
+			Embeds:               embeds,
+			TemplateFingerprints: *f,
+			Cache:                &client.Cache{Cache: cache},
+		},
+		Static: route.StaticGlobals{
+			FS: map[string]fs.FS{
+				"Web":   web.StaticFS,
+				"Fonts": web.FontsFS,
+			},
+			HFS: map[string]fs.FS{
+				"Static": web.StaticHFS,
+				"App":    web.AppHFS,
+			},
+		},
+	}, nil
 }
 
 func NewRenderer() *templates.TemplateRenderer {
@@ -63,22 +79,22 @@ func NewRenderer() *templates.TemplateRenderer {
 }
 
 func RegisterRoutes(e route.EchoRouter) error {
-	tg, sg, err := computeGlobals()
+	globals, err := computeGlobals()
 	if err != nil {
 		return err
 	}
 
-	err = route.RegisterTemplated(e, routes.TemplatedAssets, *tg)
+	err = route.RegisterTemplated(e, routes.TemplatedAssets, globals.Template)
 	if err != nil {
 		return err
 	}
 
-	err = route.RegisterStatic(e, routes.StaticAssets, *sg)
+	err = route.RegisterStatic(e, routes.StaticAssets, globals.Static)
 	if err != nil {
 		return err
 	}
 
-	err = route.RegisterTemplated(e, routes.Pages, *tg)
+	err = route.RegisterTemplated(e, routes.Pages, globals.Template)
 	if err != nil {
 		return err
 	}

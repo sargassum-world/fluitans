@@ -22,7 +22,9 @@ type ControllerData struct {
 	Networks         map[string]zerotier.ControllerNetwork
 }
 
-func getControllerData(c echo.Context, name string, templateName string) (*ControllerData, error) {
+func getControllerData(
+	c echo.Context, name string, templateName string, cache *client.Cache,
+) (*ControllerData, error) {
 	controller, ok, err := client.FindController(name)
 	if err != nil {
 		return nil, err
@@ -35,7 +37,7 @@ func getControllerData(c echo.Context, name string, templateName string) (*Contr
 		)
 	}
 
-	status, controllerStatus, networkIDs, err := client.GetController(c, *controller)
+	status, controllerStatus, networkIDs, err := client.GetController(c, *controller, cache)
 	if err != nil {
 		return nil, err
 	}
@@ -64,41 +66,46 @@ func getController(
 		return nil, te.NewNotFoundError(t)
 	}
 
-	return func(c echo.Context) error {
-		// Parse params
-		name := c.Param("name")
+	switch cache := g.Cache.(type) {
+	case *client.Cache:
+		return func(c echo.Context) error {
+			// Parse params
+			name := c.Param("name")
 
-		// Run queries
-		controllerData, err := getControllerData(c, name, t)
-		if err != nil {
-			return err
-		}
+			// Run queries
+			controllerData, err := getControllerData(c, name, t, cache)
+			if err != nil {
+				return err
+			}
 
-		// Handle Etag
-		// Zero out clocks, since they will always change the Etag
-		*controllerData.Status.Clock = 0
-		*controllerData.ControllerStatus.Clock = 0
-		etagData, err := json.Marshal(controllerData)
-		if err != nil {
-			return err
-		}
+			// Handle Etag
+			// Zero out clocks, since they will always change the Etag
+			*controllerData.Status.Clock = 0
+			*controllerData.ControllerStatus.Clock = 0
+			etagData, err := json.Marshal(controllerData)
+			if err != nil {
+				return err
+			}
 
-		if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
-			return err
-		}
+			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
+				return err
+			}
 
-		// Render template
-		return c.Render(http.StatusOK, t, struct {
-			Meta   template.Meta
-			Embeds template.Embeds
-			Data   ControllerData
-		}{
-			Meta: template.Meta{
-				Path:       c.Request().URL.Path,
-				DomainName: client.GetDomainName(),
-			},
-			Embeds: g.Embeds,
-			Data:   *controllerData,
-		})
-	}, nil
+			// Render template
+			return c.Render(http.StatusOK, t, struct {
+				Meta   template.Meta
+				Embeds template.Embeds
+				Data   ControllerData
+			}{
+				Meta: template.Meta{
+					Path:       c.Request().URL.Path,
+					DomainName: client.GetDomainName(),
+				},
+				Embeds: g.Embeds,
+				Data:   *controllerData,
+			})
+		}, nil
+	default:
+		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
+	}
 }
