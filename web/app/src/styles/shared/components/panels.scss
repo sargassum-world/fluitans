@@ -28,16 +28,30 @@
       margin-bottom: 0.25em;
       display: inline-flex;
     }
+    .entity-name:last-child {
+      margin-bottom: 0;
+    }
     .tag {
       font-weight: normal;
     }
   }
 
   .panel-block {
+    width: 100%;
     padding-left: $gap;
     padding-right: $gap;
     padding-top: 0.5 * $gap;
-    padding-bottom: 0.5 * $gap;
+    padding-bottom: $gap;
+
+    h4, h5 {
+      margin-bottom: 0;
+    }
+    h4:not(:first-child), h5:not(:first-child) {
+      margin-top: 0.5em;
+    }
+    p:not(:last-child) {
+      margin-bottom: 0;
+    }
   }
 
   .panel-block:not(:last-child) {

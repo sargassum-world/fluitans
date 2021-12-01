@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
@@ -41,6 +42,10 @@ var httpErrors = map[int]HTTPError{
 	http.StatusNotFound: {
 		Name:        "Not found",
 		Description: "The requested resource could not be found, but it may become available in the future.",
+	},
+	http.StatusTooManyRequests: {
+		Name:        "Too busy",
+		Description: "The server has reached a temporary usage limit. Please try again later.",
 	},
 	http.StatusInternalServerError: {
 		Name:        "Server error",
@@ -90,6 +95,100 @@ func getNetworkNumber(id string) string {
 	return id[10:]
 }
 
+// DNS
+
+type DNSRecordType struct {
+	Description string
+	Example     string
+}
+
+var recordTypes = map[string]DNSRecordType{
+	"A": {
+		Description: "IPv4 Addresses",
+		Example:     "203.0.113.210",
+	},
+	"AAAA": {
+		Description: "IPv6 Addresses",
+		Example:     "2001:db8:2000:bf0::1",
+	},
+	"CAA": {
+		Description: "Certificate Authorities",
+		Example:     "0 issue \"ca.example.net\"",
+	},
+	"CERT": {
+		Description: "Certificates",
+		Example:     "",
+	},
+	"CNAME": {
+		Description: "Canonical Name Aliases",
+		Example:     "foo.example.com.",
+	},
+	"DNAME": {
+		Description: "Name Delegations",
+		Example:     "foo.example.com.",
+	},
+	"LOC": {
+		Description: "Geographical Locations",
+		Example:     "51 30 12.748 N 0 7 39.612 W 0.00",
+	},
+	"NS": {
+		Description: "Delegated Authoritative Name Servers",
+		Example:     "foo.example.com.",
+	},
+	"PTR": {
+		Description: "Canonical Name Pointers",
+		Example:     "foo.example.com.",
+	},
+	"RP": {
+		Description: "Responsible Persons",
+		Example:     "ethanli.stanford.edu ethanjli.people.fluitans.org",
+	},
+	"SRV": {
+		Description: "Service Locations",
+		Example:     "0 5 5060 sipserver.example.com",
+	},
+	"SSHFP": {
+		Description: "SSH Public Host Key Fingerprints",
+		Example:     "2 1 123456789abcdef67890123456789abcdef67890",
+	},
+	"TLSA": {
+		Description: "TLS Server Certificates",
+		Example:     "3 1 1 0123456789ABCDEF",
+	},
+	"TXT": {
+		Description: "Textual Data",
+		Example:     "\"zerotier-net-id=1c33c1ced015c144\"",
+	},
+	"URI": {
+		Description: "URI Mappings",
+		Example:     "10 1 \"ftp://ftp1.example.com/public\"",
+	},
+}
+
+func describeDNSRecordType(recordType string) string {
+	recordTypeInfo, ok := recordTypes[recordType]
+	if !ok {
+		return "Unknown Record Type"
+	}
+
+	return recordTypeInfo.Description
+}
+
+func exemplifyDNSRecordType(recordType string) string {
+	recordTypeInfo, ok := recordTypes[recordType]
+	if !ok {
+		return ""
+	}
+
+	return recordTypeInfo.Example
+}
+
+// Durations
+
+func durationToSec(i time.Duration) float64 {
+	return i.Seconds()
+}
+
 // Pointers
 
 func derefBool(b *bool) bool {
@@ -97,6 +196,14 @@ func derefBool(b *bool) bool {
 }
 
 func derefInt(i *int, nilValue int) int {
+	if i == nil {
+		return nilValue
+	}
+
+	return *i
+}
+
+func derefFloat32(i *float32, nilValue float32) float32 {
 	if i == nil {
 		return nilValue
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/fsutil"
@@ -26,17 +27,17 @@ func ComputeTemplateFingerprints(
 	// depend on the partials & layouts in the same top-level subdirectory of templates
 	pageFingerprints, err := fingerprint.ComputeFiles(pageFiles, templates)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't compute templated page fingerprints")
 	}
 
 	appConcatenated, err := fsutil.ReadConcatenated(appAssets, app)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't concatenate all app assets")
 	}
 
 	layoutConcatenated, err := fsutil.ReadConcatenated(layoutFiles, templates)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't concatenate all layout & partials templates")
 	}
 
 	tf := TemplateFingerprints{
@@ -49,10 +50,7 @@ func ComputeTemplateFingerprints(
 type TemplateGlobals struct {
 	Embeds               template.Embeds
 	TemplateFingerprints TemplateFingerprints
-	// Note: If any other application-specific globals need to be added, this
-	// should be changed to an App interface{} instead, and Cache and other globals
-	// can be added inside generically
-	Cache interface{}
+	App                  interface{}
 }
 
 func (tg TemplateGlobals) GetEtagSegments(
@@ -65,7 +63,9 @@ func (tg TemplateGlobals) GetEtagSegments(
 
 	pageFingerprint, ok := tg.TemplateFingerprints.Page[templateName]
 	if !ok {
-		return []string{appFingerprint}, fmt.Errorf("couldn't find template %s", templateName)
+		return []string{appFingerprint}, errors.Errorf(
+			"couldn't find page fingerprint for template %s", templateName,
+		)
 	}
 
 	return []string{appFingerprint, pageFingerprint}, nil
@@ -93,7 +93,9 @@ func (route Templated) AssembleTemplateEtagSegments(tg TemplateGlobals) (Templat
 	for _, templateName := range route.Templates {
 		globalSegments, err := tg.GetEtagSegments(templateName)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, fmt.Sprintf(
+				"couldn't get the global etag segments for template %s", templateName,
+			))
 		}
 
 		segments[templateName] = globalSegments
@@ -106,17 +108,21 @@ func RegisterTemplated(e EchoRouter, r []Templated, tg TemplateGlobals) error {
 	for _, route := range r {
 		reg, ok := regFuncs[route.Method]
 		if !ok {
-			return fmt.Errorf("unknown route %s", route.Method)
+			return errors.Errorf("unknown route %s", route.Method)
 		}
 
 		e, err := route.AssembleTemplateEtagSegments(tg)
 		if err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf(
+				"couldn't assemble template etag segments for route %s", route.Path),
+			)
 		}
 
 		h, err := route.HandlerMaker(tg, e)
 		if err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf(
+				"couldn't make the handler for templated route %s", route.Path),
+			)
 		}
 
 		reg(route.Path, h)

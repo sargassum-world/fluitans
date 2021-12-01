@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -29,10 +30,10 @@ func setMemberAuthorization(
 func postDevice(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	switch cache := g.Cache.(type) {
+	switch app := g.App.(type) {
 	default:
-		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
-	case *client.Cache:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
 		return func(c echo.Context) error {
 			// Parse params
 			networkID := c.Param("id")
@@ -41,7 +42,7 @@ func postDevice(
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(c, controllerAddress, cache)
+			controller, err := client.FindControllerByAddress(c, controllerAddress, app.Cache)
 			if err != nil {
 				return err
 			}
@@ -59,7 +60,9 @@ func postDevice(
 				}
 			}
 
-			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress))
+			return c.Redirect(
+				http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
+			)
 		}, nil
 	}
 }
@@ -67,10 +70,10 @@ func postDevice(
 func postDevices(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	switch cache := g.Cache.(type) {
+	switch app := g.App.(type) {
 	default:
-		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
-	case *client.Cache:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
 		return func(c echo.Context) error {
 			// Parse params
 			networkID := c.Param("id")
@@ -78,7 +81,7 @@ func postDevices(
 			memberAddress := c.FormValue("address")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(c, controllerAddress, cache)
+			controller, err := client.FindControllerByAddress(c, controllerAddress, app.Cache)
 			if err != nil {
 				return err
 			}

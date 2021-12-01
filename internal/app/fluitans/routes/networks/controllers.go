@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/caching"
@@ -17,7 +18,9 @@ func getControllers(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 	t := "networks/controllers.page.tmpl"
 	tte, ok := te[t]
 	if !ok {
-		return nil, te.NewNotFoundError(t)
+		return nil, errors.Wrap(
+			te.NewNotFoundError(t), "couldn't find template for networks.getControllers",
+		)
 	}
 
 	return func(c echo.Context) error {
@@ -45,7 +48,7 @@ func getControllers(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 		}{
 			Meta: template.Meta{
 				Path:       c.Request().URL.Path,
-				DomainName: client.GetDomainName(),
+				DomainName: client.GetEnvVarDomainName(),
 			},
 			Embeds: g.Embeds,
 			Data:   controllers,

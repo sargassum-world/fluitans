@@ -4,55 +4,87 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"time"
 
 	"github.com/dgraph-io/ristretto"
+	"github.com/pkg/errors"
 )
 
-type Cache struct {
-	*ristretto.Cache
+type NonexistentValue struct{}
+
+func computeCacheCost(costWeight float32, bytes []byte) int64 {
+	return int64(float64(costWeight) * float64(len(bytes)))
 }
 
-func (c *Cache) SetControllerByAddress(address string, controller Controller) error {
-	key := fmt.Sprintf("controllers/%s", address)
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(controller); err != nil {
-		return err
+type Cache struct {
+	cache *ristretto.Cache
+}
+
+func NewCache(cacheConfig *ristretto.Config) (*Cache, error) {
+	cache, err := ristretto.NewCache(cacheConfig)
+	if err != nil {
+		return nil, err
 	}
 
-	controllerBytes := buf.Bytes()
-	c.Cache.Set(
-		key, controllerBytes,
-		int64(float64(controller.NetworkCostWeight)*float64(len(controllerBytes))),
-	)
+	return &Cache{cache: cache}, nil
+}
+
+func (c *Cache) setEntry(
+	key string, value interface{}, costWeight float32, ttl time.Duration,
+) error {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(value); err != nil {
+		return errors.Wrap(err, fmt.Sprintf(
+			"couldn't gob-encode value %+v for key %s", value, key,
+		))
+	}
+
+	if ttl < 0 {
+		gobbed := buf.Bytes()
+		c.cache.Set(key, gobbed, computeCacheCost(costWeight, gobbed))
+	} else {
+		gobbed := buf.Bytes()
+		c.cache.SetWithTTL(key, gobbed, computeCacheCost(costWeight, gobbed), ttl)
+	}
 	return nil
 }
 
-func (c *Cache) UnsetControllerByAddress(address string) {
-	key := fmt.Sprintf("controllers/%s", address)
-	c.Cache.Del(key)
+func (c *Cache) unsetEntry(key string) {
+	c.cache.Del(key)
 }
 
-func (c *Cache) GetControllerByAddress(address string) (*Controller, bool, error) {
-	key := fmt.Sprintf("controllers/%s", address)
-	controllerServer, hasKey := c.Cache.Get(key)
+func (c *Cache) setNonexistentEntry(key string, cost float32, ttl time.Duration) {
+	// Put a tombstone in the cache so the key has a cache hit indicating lack of a value
+	if ttl < 0 {
+		c.cache.Set(key, NonexistentValue{}, int64(cost))
+	} else {
+		c.cache.SetWithTTL(key, NonexistentValue{}, int64(cost), ttl)
+	}
+}
+
+func (c *Cache) getEntry(key string, value interface{}) (bool, bool, error) {
+	entryRaw, hasKey := c.cache.Get(key)
 	if !hasKey {
-		return nil, false, nil
+		return false, false, nil
 	}
 
-	switch controllerGob := controllerServer.(type) {
+	switch entryGob := entryRaw.(type) {
 	default:
-		return nil, true, fmt.Errorf(
-			"invalid cache key %s has unexpected type %T", key, controllerServer,
+		return true, false, fmt.Errorf(
+			"invalid cache entry %s has unexpected type %T", key, entryRaw,
 		)
+	case NonexistentValue:
+		return true, false, nil
 	case []byte:
-		var controller Controller
-		buf := bytes.NewBuffer(controllerGob)
+		buf := bytes.NewBuffer(entryGob)
 		dec := gob.NewDecoder(buf)
-		if err := dec.Decode(&controller); err != nil {
-			return nil, true, err
+		if err := dec.Decode(value); err != nil {
+			return true, true, errors.Wrap(err, fmt.Sprintf(
+				"couldn't gob-decode value %+v for key %s", buf, key,
+			))
 		}
 
-		return &controller, true, nil
+		return true, true, nil
 	}
 }

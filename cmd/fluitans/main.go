@@ -35,16 +35,13 @@ func main() {
 	e.Renderer = fluitans.NewRenderer()
 
 	// Handlers
-	err := fluitans.RegisterRoutes(e)
+	globals, err := fluitans.RegisterRoutes(e)
 	if err != nil {
+		fmt.Printf("%+v\n", err)
 		panic(err)
 	}
 
-	eh, err := fluitans.NewHTTPErrorHandler()
-	if err != nil {
-		panic(err)
-	}
-	e.HTTPErrorHandler = eh
+	e.HTTPErrorHandler = fluitans.NewHTTPErrorHandler(globals)
 
 	// Start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/caching"
@@ -63,17 +64,21 @@ func getController(
 	t := "networks/controller.page.tmpl"
 	tte, ok := te[t]
 	if !ok {
-		return nil, te.NewNotFoundError(t)
+		return nil, errors.Wrap(
+			te.NewNotFoundError(t), "couldn't find template for networks.getController",
+		)
 	}
 
-	switch cache := g.Cache.(type) {
-	case *client.Cache:
+	switch app := g.App.(type) {
+	default:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
 		return func(c echo.Context) error {
 			// Parse params
 			name := c.Param("name")
 
 			// Run queries
-			controllerData, err := getControllerData(c, name, t, cache)
+			controllerData, err := getControllerData(c, name, t, app.Cache)
 			if err != nil {
 				return err
 			}
@@ -99,13 +104,11 @@ func getController(
 			}{
 				Meta: template.Meta{
 					Path:       c.Request().URL.Path,
-					DomainName: client.GetDomainName(),
+					DomainName: client.GetEnvVarDomainName(),
 				},
 				Embeds: g.Embeds,
 				Data:   *controllerData,
 			})
 		}, nil
-	default:
-		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
 	}
 }

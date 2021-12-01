@@ -9,6 +9,7 @@ Fluitans
 {{end}}
 
 {{define "navbar.menu.start"}}
+{{template "shared/navlink.partial.tmpl" dict "Navlink.Href" "/dns" "Navlink.Name" "DNS" "Meta.Path" .Meta.Path}}
 {{template "shared/navlink.partial.tmpl" dict "Navlink.Href" "/controllers" "Navlink.Name" "Controllers" "Meta.Path" .Meta.Path}}
 {{template "shared/navlink.partial.tmpl" dict "Navlink.Href" "/networks" "Navlink.Name" "Networks" "Meta.Path" .Meta.Path}}
 {{end}}

@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/caching"
@@ -88,20 +89,22 @@ func getNetwork(
 	t := "networks/network.page.tmpl"
 	tte, ok := te[t]
 	if !ok {
-		return nil, te.NewNotFoundError(t)
+		return nil, errors.Wrap(
+			te.NewNotFoundError(t), "couldn't find template for networks.getNetwork",
+		)
 	}
 
-	switch cache := g.Cache.(type) {
+	switch app := g.App.(type) {
 	default:
-		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
-	case *client.Cache:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
 		return func(c echo.Context) error {
 			// Parse params
 			id := c.Param("id")
 			address := client.GetControllerAddress(id)
 
 			// Run queries
-			networkData, err := getNetworkData(c, address, id, cache)
+			networkData, err := getNetworkData(c, address, id, app.Cache)
 			if err != nil {
 				return err
 			}
@@ -124,7 +127,7 @@ func getNetwork(
 			}{
 				Meta: template.Meta{
 					Path:       c.Request().URL.Path,
-					DomainName: client.GetDomainName(),
+					DomainName: client.GetEnvVarDomainName(),
 				},
 				Embeds: g.Embeds,
 				Data:   *networkData,
@@ -136,7 +139,7 @@ func getNetwork(
 func renameNetwork(c echo.Context, controller client.Controller, id string, name string) error {
 	var fqdn string
 	if len(name) > 0 {
-		fqdn = fmt.Sprintf("%s.%s", name, client.GetDomainName())
+		fqdn = fmt.Sprintf("%s.%s", name, client.GetEnvVarDomainName())
 	} else {
 		fqdn = ""
 	}
@@ -168,10 +171,10 @@ func setNetworkRules(
 func postNetwork(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	switch cache := g.Cache.(type) {
+	switch app := g.App.(type) {
 	default:
-		return nil, fmt.Errorf("global cache is of unexpected type %T", g.Cache)
-	case *client.Cache:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
 		return func(c echo.Context) error {
 			// Parse params
 			id := c.Param("id")
@@ -179,7 +182,7 @@ func postNetwork(
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(c, address, cache)
+			controller, err := client.FindControllerByAddress(c, address, app.Cache)
 			if err != nil {
 				return err
 			}

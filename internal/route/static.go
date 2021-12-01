@@ -1,9 +1,11 @@
 package route
 
 import (
+	"fmt"
 	"io/fs"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 )
 
 type StaticGlobals struct {
@@ -20,7 +22,9 @@ func RegisterStatic(e EchoRouter, routes []Static, g StaticGlobals) error {
 	for _, route := range routes {
 		h, err := route.HandlerMaker(g)
 		if err != nil {
-			return err
+			return errors.Wrap(err, fmt.Sprintf(
+				"couldn't make the handler for static route %s", route.Path),
+			)
 		}
 
 		e.GET(route.Path, h)

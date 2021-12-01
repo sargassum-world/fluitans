@@ -1,0 +1,33 @@
+{{$settings := (get . "DesecAPISettings")}}
+{{$stats := (get . "APILimiterStats")}}
+<div class="card section-card">
+  <div class="card-content">
+    <h3>API Read Quotas</h3>
+    {{$readCacheTTL := durationToSec $settings.ReadCacheTTL}}
+    <p>
+      Fluitans will serve cached read results whenever available, to minimize
+      the number of read requests sent to the deSEC server's API. Each cached
+      read result is
+      {{if lt $readCacheTTL 0.0}}
+      saved until the Fluitans server restarts, or until the corresponding
+      record is modified by a write, or until the cache becomes full enough that
+      it needs to start discarding infrequently-used results.
+      {{else}}
+      discarded after {{$readCacheTTL}} sec, after which
+      another query of the deSEC server's API will be needed.
+      {{end}}
+    </p>
+    {{$readWait := $stats.ReadWaitSec}}
+    {{if gt $readWait 0.0}}
+    <p>
+      Fluitans is currently not issuing read requests to the deSEC server's API
+      due to rate limits. The next read request can be attemped after
+      {{round $readWait 1}} sec.
+    </p>
+    {{end}}
+    {{range $pair := $stats.ReadLimiterFillRatios}}
+    <h4 class="is-size-6">Reads/{{lower (trimPrefix "Per" $pair.Key)}}</h4>
+    <progress class="progress is-info is-body-background" value="{{$pair.FillRatio}}" max="1"></progress>
+    {{end}}
+  </div>
+</div>

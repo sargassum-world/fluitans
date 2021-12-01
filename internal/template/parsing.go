@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"html/template"
 	"io/fs"
+
+	"github.com/pkg/errors"
 )
 
 // parseFiles is a direct copy of the parseFiles helper function in text/template.
@@ -13,13 +15,13 @@ func parseFiles(
 	filenames ...string,
 ) (*template.Template, error) {
 	if len(filenames) == 0 {
-		return nil, fmt.Errorf("template: no files named in call to ParseFiles")
+		return nil, errors.Errorf("template: no files named in call to ParseFiles")
 	}
 
 	for _, filename := range filenames {
 		name, b, err := readFile(filename)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, fmt.Sprintf("couldn't read file %s", filename))
 		}
 
 		s := string(b)
@@ -34,7 +36,7 @@ func parseFiles(
 		}
 		_, err = tmpl.Parse(s)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, fmt.Sprintf("couldn't parse template %s", filename))
 		}
 	}
 	return t, nil

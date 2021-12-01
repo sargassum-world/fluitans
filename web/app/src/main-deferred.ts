@@ -5,6 +5,7 @@ import ThemeController from './sprinkles/theme.controller';
 import NavigationMenuController from './sprinkles/navigation-menu.controller';
 import NavigationLinkController from './sprinkles/navigation-link.controller';
 import FormSubmissionController from './sprinkles/form-submission.controller';
+import DefaultScrollableController from './sprinkles/default-scrollable.controller';
 
 Turbo.session.drive = true;
 
@@ -13,5 +14,6 @@ Stimulus.register('theme', ThemeController);
 Stimulus.register('navigation-menu', NavigationMenuController);
 Stimulus.register('navigation-link', NavigationLinkController);
 Stimulus.register('form-submission', FormSubmissionController);
+Stimulus.register('default-scrollable', DefaultScrollableController);
 
 export {};

@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/dns"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/networks"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -28,7 +29,10 @@ var Pages = append(
 			Templates:    []string{"login.page.tmpl"},
 		},
 	},
-	networks.Pages...,
+	append(
+		networks.Pages,
+		dns.Pages...,
+	)...,
 )
 
 func getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
@@ -51,7 +55,7 @@ func getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Handl
 		}{
 			Meta: template.Meta{
 				Path:       c.Request().URL.Path,
-				DomainName: client.GetDomainName(),
+				DomainName: client.GetEnvVarDomainName(),
 			},
 			Embeds: g.Embeds,
 		})

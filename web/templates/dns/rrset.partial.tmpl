@@ -1,0 +1,23 @@
+<p>Created: {{dateInZone  "2006-01-02 15:04:05 UTC" .Created "UTC"}}</p>
+<p>Touched: {{dateInZone  "2006-01-02 15:04:05 UTC" .Touched "UTC"}}</p>
+<label class="label" for="ttl">TTL</label>
+<div class="field has-addons">
+  <div class="control">
+    <input type="text" class="input" name="ttl" value="{{.Ttl}}" placeholder="3600" readonly />
+  </div>
+  <div class="control">
+    <span class="button is-static">sec</span>
+  </div>
+</div>
+<div class="field">
+  <label class="label">Records</label>
+  {{range $record := .Records}}
+  <div class="control">
+    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $.Type}}" value="{{$record}}" readonly />
+  </div>
+  {{else}}
+  <div class="control">
+    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $.Type}}" readonly />
+  </div>
+  {{end}}
+</div>

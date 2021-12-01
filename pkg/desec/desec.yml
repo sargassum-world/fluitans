@@ -1,0 +1,1736 @@
+openapi: 3.0.2
+info:
+  title: ''
+  version: ''
+paths:
+  /api/v1/auth/account/:
+    get:
+      operationId: retrieveUser
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/tokens/:
+    get:
+      operationId: listTokens
+      description: ''
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                    nullable: true
+                  previous:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Token'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createToken
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Token'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/tokens/{id}/:
+    get:
+      operationId: retrieveToken
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+      tags:
+      - api
+    put:
+      operationId: updateToken
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Token'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+      tags:
+      - api
+    patch:
+      operationId: partialUpdateToken
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Token'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+      tags:
+      - api
+    delete:
+      operationId: destroyToken
+      description: ''
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+  /api/v1/:
+    get:
+      operationId: listRoots
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+      tags:
+      - api
+  /api/v1/domains/:
+    get:
+      operationId: listDomains
+      description: ''
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Domain'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createDomain
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Domain'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: ''
+      tags:
+      - api
+  /api/v1/domains/{name}/:
+    get:
+      operationId: retrieveDomain
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain'
+          description: ''
+      tags:
+      - api
+    delete:
+      operationId: destroyDomain
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+  /api/v1/domains/{name}/rrsets/:
+    get:
+      operationId: listRRsets
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
+        required: false
+        in: query
+        description: The subname filter.
+        schema:
+          type: string
+      - name: type
+        required: false
+        in: query
+        description: The record type filter.
+        schema:
+          type: string
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: integer
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    put:
+      operationId: updateRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    patch:
+      operationId: partialUpdateRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+  # /api/v1/domains/{name}/rrsets/.../{type}/:
+  #   get:
+  #     operationId: retrieveRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   put:
+  #     operationId: updateRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   patch:
+  #     operationId: partialUpdateRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   delete:
+  #     operationId: destroyRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '204':
+  #         description: ''
+  #     tags:
+  #     - api
+  # /api/v1/domains/{name}/rrsets/{subname}.../{type}/:
+  #   get:
+  #     operationId: retrieveRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   put:
+  #     operationId: updateRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   patch:
+  #     operationId: partialUpdateRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   delete:
+  #     operationId: destroyRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '204':
+  #         description: ''
+  #     tags:
+  #     - api
+  /api/v1/domains/{name}/rrsets/@/{type}/:
+    get:
+      operationId: retrieveApexRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    put:
+      operationId: updateApexRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    patch:
+      operationId: partialUpdateApexRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    delete:
+      operationId: destroyApexRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+  # /api/v1/domains/{name}/rrsets/{subname}@/{type}/:
+  #   get:
+  #     operationId: retrieveRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   put:
+  #     operationId: updateRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   patch:
+  #     operationId: partialUpdateRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   delete:
+  #     operationId: destroyRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '204':
+  #         description: ''
+  #     tags:
+  #     - api
+  /api/v1/domains/{name}/rrsets/{subname}/{type}/:
+    get:
+      operationId: retrieveSubnameRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    put:
+      operationId: updateSubnameRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    patch:
+      operationId: partialUpdateSubnameRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RRset'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+    delete:
+      operationId: destroySubnameRRset
+      description: ''
+      parameters:
+      - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: type
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '204':
+          description: ''
+      tags:
+      - api
+  /api/v1/dyndns/update:
+    get:
+      operationId: listDyndnsRRsets
+      description: ''
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: integer
+      responses:
+        '200':
+          content:
+            '*/*':
+              schema:
+                type: object
+                properties:
+                  next:
+                    type: string
+                    nullable: true
+                  previous:
+                    type: string
+                    nullable: true
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RRset'
+          description: ''
+      tags:
+      - api
+  /api/v1/serials/:
+    get:
+      operationId: listSerials
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+          description: ''
+      tags:
+      - api
+  /api/v1/v/activate-account/{code}/:
+    get:
+      operationId: retrieveAuthenticatedActivateUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedActivateUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedActivateUserAction'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createAuthenticatedActivateUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatedActivateUserAction'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedActivateUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedActivateUserAction'
+          description: ''
+      tags:
+      - api
+  /api/v1/v/change-email/{code}/:
+    get:
+      operationId: retrieveAuthenticatedChangeEmailUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedChangeEmailUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedChangeEmailUserAction'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createAuthenticatedChangeEmailUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatedChangeEmailUserAction'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedChangeEmailUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedChangeEmailUserAction'
+          description: ''
+      tags:
+      - api
+  /api/v1/v/reset-password/{code}/:
+    get:
+      operationId: retrieveAuthenticatedResetPasswordUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResetPasswordUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResetPasswordUserAction'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createAuthenticatedResetPasswordUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatedResetPasswordUserAction'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResetPasswordUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedResetPasswordUserAction'
+          description: ''
+      tags:
+      - api
+  /api/v1/v/delete-account/{code}/:
+    get:
+      operationId: retrieveAuthenticatedDeleteUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedDeleteUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedDeleteUserAction'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createAuthenticatedDeleteUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatedDeleteUserAction'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedDeleteUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedDeleteUserAction'
+          description: ''
+      tags:
+      - api
+  /api/v1/v/renew-domain/{code}/:
+    get:
+      operationId: retrieveAuthenticatedRenewDomainBasicUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedRenewDomainBasicUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedRenewDomainBasicUserAction'
+          description: ''
+      tags:
+      - api
+    post:
+      operationId: createAuthenticatedRenewDomainBasicUserAction
+      description: ''
+      parameters:
+      - name: code
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthenticatedRenewDomainBasicUserAction'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedRenewDomainBasicUserAction'
+            text/html:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedRenewDomainBasicUserAction'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/:
+    post:
+      operationId: createRegisterAccount
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterAccount'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterAccount'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/account/delete/:
+    post:
+      operationId: createAccountDelete
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/account/change-email/:
+    post:
+      operationId: createChangeEmail
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeEmail'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangeEmail'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/account/reset-password/:
+    post:
+      operationId: createResetPassword
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPassword'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResetPassword'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/login/:
+    post:
+      operationId: createTokenFromLogin
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Token'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+      tags:
+      - api
+  /api/v1/auth/logout/:
+    post:
+      operationId: createAccountLogout
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema: {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: {}
+          description: ''
+      tags:
+      - api
+  /api/v1/donation/:
+    post:
+      operationId: createDonation
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Donation'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Donation'
+          description: ''
+      tags:
+      - api
+  /api/v1/captcha/:
+    post:
+      operationId: createCaptcha
+      description: ''
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Captcha'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Captcha'
+          description: ''
+      tags:
+      - api
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        limit_domains:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        password:
+          type: string
+          writeOnly: true
+          nullable: true
+          maxLength: 128
+      required:
+      - email
+      - password
+    Token:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        last_used:
+          type: string
+          format: date-time
+          readOnly: true
+        max_age:
+          type: string
+          nullable: true
+        max_unused_period:
+          type: string
+          nullable: true
+        name:
+          type: string
+          maxLength: 64
+        perm_manage_tokens:
+          type: boolean
+        allowed_subnets:
+          type: array
+          items:
+            type: string
+        is_valid:
+          type: string
+          readOnly: true
+    Key:
+      type: object
+      properties:
+        dnskey:
+          type: string
+        ds:
+          type: array
+          items:
+            type: string
+        flags:
+          type: integer
+        keytype:
+          type: string
+    Domain:
+      type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        published:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          pattern: ^(([a-z0-9_-]{1,63})\.)*[a-z0-9-]{1,63}$
+          maxLength: 191
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/Key'
+          readOnly: true
+        minimum_ttl:
+          type: integer
+          readOnly: true
+        touched:
+          type: string
+          readOnly: true
+      required:
+      - name
+    RRset:
+      type: object
+      properties:
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        domain:
+          type: string
+          readOnly: true
+        subname:
+          type: string
+          pattern: ^([*]|(([*][.])?([a-z0-9_-]{1,63}[.])*[a-z0-9_-]{1,63}))$
+          maxLength: 178
+        name:
+          type: string
+          readOnly: true
+        records:
+          type: array
+          items:
+            type: string
+        ttl:
+          type: integer
+          maximum: 86400
+          minimum: 3600
+        type:
+          type: string
+          pattern: ^[A-Z][A-Z0-9]*$
+          maxLength: 10
+        touched:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - records
+      - ttl
+      - type
+    AuthenticatedActivateUserAction:
+      type: object
+      properties:
+        state:
+          type: string
+        user:
+          type: string
+        captcha:
+          type: object
+          properties:
+            id:
+              type: string
+            solution:
+              type: string
+              writeOnly: true
+          required:
+          - id
+          - solution
+        domain:
+          type: string
+          nullable: true
+          maxLength: 191
+      required:
+      - state
+      - user
+    AuthenticatedChangeEmailUserAction:
+      type: object
+      properties:
+        state:
+          type: string
+        user:
+          type: string
+        new_email:
+          type: string
+          format: email
+      required:
+      - state
+      - user
+      - new_email
+    AuthenticatedResetPasswordUserAction:
+      type: object
+      properties:
+        state:
+          type: string
+        user:
+          type: string
+        new_password:
+          type: string
+          writeOnly: true
+      required:
+      - state
+      - user
+      - new_password
+    AuthenticatedDeleteUserAction:
+      type: object
+      properties:
+        state:
+          type: string
+        user:
+          type: string
+      required:
+      - state
+      - user
+    AuthenticatedRenewDomainBasicUserAction:
+      type: object
+      properties:
+        state:
+          type: string
+        user:
+          type: string
+        domain:
+          type: integer
+      required:
+      - state
+      - user
+      - domain
+    RegisterAccount:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+          nullable: true
+          maxLength: 128
+        domain:
+          type: string
+          pattern: ^(([a-z0-9_-]{1,63})\.)*[a-z0-9-]{1,63}$
+        captcha:
+          type: object
+          properties:
+            id:
+              type: string
+            solution:
+              type: string
+              writeOnly: true
+          required:
+          - id
+          - solution
+      required:
+      - email
+      - password
+    ChangeEmail:
+      type: object
+      properties:
+        new_email:
+          type: string
+          format: email
+      required:
+      - new_email
+    ResetPassword:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        captcha:
+          type: object
+          properties:
+            id:
+              type: string
+            solution:
+              type: string
+              writeOnly: true
+          required:
+          - id
+          - solution
+      required:
+      - email
+      - captcha
+    Donation:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 255
+        iban:
+          type: string
+          maxLength: 34
+        bic:
+          type: string
+          maxLength: 11
+        amount:
+          type: string
+          format: decimal
+          multipleOf: 0.01
+          maximum: 1000000
+          minimum: -1000000
+        message:
+          type: string
+          maxLength: 255
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        mref:
+          type: string
+          readOnly: true
+        interval:
+          enum:
+          - 0
+          - 1
+          - 3
+          type: integer
+          minimum: -2147483648
+          maximum: 2147483647
+      required:
+      - name
+      - iban
+      - amount
+    Captcha:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        challenge:
+          type: string
+          readOnly: true
+        kind:
+          enum:
+          - image
+          - audio
+          type: string
+        content:
+          type: string
+          maxLength: 24

@@ -23,14 +23,18 @@ func New(appNamer, staticNamer HashNamer, fsys fs.FS) *TemplateRenderer {
 			New("App").
 			Funcs(sprig.FuncMap()).
 			Funcs(template.FuncMap{
-				"appHashed":             getHashedName("app", appNamer),
-				"staticHashed":          getHashedName("static", staticNamer),
-				"describeError":         describeError,
-				"identifyNetwork":       identifyNetwork,
-				"getNetworkHostAddress": getNetworkHostAddress,
-				"getNetworkNumber":      getNetworkNumber,
-				"derefBool":             derefBool,
-				"derefInt":              derefInt,
+				"appHashed":              getHashedName("app", appNamer),
+				"staticHashed":           getHashedName("static", staticNamer),
+				"describeError":          describeError,
+				"identifyNetwork":        identifyNetwork,
+				"getNetworkHostAddress":  getNetworkHostAddress,
+				"getNetworkNumber":       getNetworkNumber,
+				"durationToSec":          durationToSec,
+				"derefBool":              derefBool,
+				"derefInt":               derefInt,
+				"derefFloat32":           derefFloat32,
+				"describeDNSRecordType":  describeDNSRecordType,
+				"exemplifyDNSRecordType": exemplifyDNSRecordType,
 			})
 	return &TemplateRenderer{
 		templates: template.Must(

@@ -1,0 +1,21 @@
+{{$name := trimSuffix "." (index . 0).Name}}
+<turbo-frame id="dns-domain-{{$name}}">
+  <article class="panel entity-panel">
+    <header class="panel-heading">
+      <h3 class="entity-name"><span class="tag domain-name">{{$name}}</span></h3>
+    </header>
+    {{range $rrset := .}}
+    <details data-accordion-item class="panel-block accordion-item">
+      <summary class="accordion-header level">
+        <h4>{{describeDNSRecordType $rrset.Type}} ({{$rrset.Type}})</h4>
+        {{template "shared/accordion-icon.partial.tmpl"}}
+      </summary>
+      <turbo-frame id="dns-domain-{{$name}}-rrset-{{$rrset.Type}}">
+        <div class="accordion-content">
+          {{template "dns/rrset.partial.tmpl" $rrset}}
+        </div>
+      </turbo-frame>
+    </details>
+    {{end}}
+  </article>
+</turbo-frame>

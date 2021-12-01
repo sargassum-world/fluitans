@@ -1,0 +1,43 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}DNS{{end}}
+{{define "description"}}Overview of the DNS server and records managed by Fluitans{{end}}
+
+{{define "content"}}
+<main class="main-container" tabindex="-1" data-controller="default-scrollable">
+  <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+    <ul>
+      <li><a href="/">Fluitans</a></li>
+      <li class="is-active"><a href="/dns" aria-current="page">DNS</a></li>
+    </ul>
+  </nav>
+
+  <section class="section content">
+    <h1>DNS</h1>
+    <h2>Server</h2>
+    <turbo-frame id="dns-server-info">
+      <div class="card section-card">
+        <div class="card-content">
+          <h3>Server Configuration</h3>
+          <h4 class="is-size-6">Name</h4>
+          <p>{{.Data.Server.Name}}</p>
+          <h4 class="is-size-6">Description</h4>
+          <p>{{.Data.Server.Description}}</p>
+          <h4 class="is-size-6">Type</h4>
+          <p>{{.Data.Server.API}}</p>
+          <h4 class="is-size-6">URL</h4>
+          <p>{{.Data.Server.Server}}</p>
+        </div>
+      </div>
+      {{template "dns/desec-read-quotas.partial.tmpl" dict "DesecAPISettings" .Data.DesecAPISettings "APILimiterStats" .Data.APILimiterStats}}
+      {{template "dns/desec-write-quotas.partial.tmpl" dict "DesecAPISettings" .Data.DesecAPISettings "APILimiterStats" .Data.APILimiterStats}}
+    </turbo-frame>
+    <h2>Domain</h2>
+    {{template "dns/domain.partial.tmpl" dict "Domain" .Data.Domain "ApexRRsets" .Data.ApexRRsets}}
+    <h2>Subdomain Records</h2>
+    {{range $subnameRRsets := .Data.SubnameRRsets}}
+    {{template "dns/subdomain.partial.tmpl" $subnameRRsets}}
+    {{end}}
+  </section>
+</main>
+{{end}}
