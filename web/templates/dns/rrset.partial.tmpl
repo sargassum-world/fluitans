@@ -21,3 +21,21 @@
   </div>
   {{end}}
 </div>
+<!-- TODO: make a controller with a confirmation dialog -->
+<form
+  action="/dns/{{derefString .Subname "@"}}/{{.Type}}"
+  method="POST"
+  data-turbo-frame="_top"
+  data-controller="form-submission"
+  data-action="submit->form-submission#submit"
+>
+  <input type="hidden" name="method" value="DELETE">
+  <div class="control" data-form-submission-target="submitter">
+    <input
+      class="button is-danger"
+      type="submit"
+      value="Delete records"
+      data-form-submission-target="submit"
+    >
+  </div>
+</form>

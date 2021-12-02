@@ -33,6 +33,7 @@ func New(appNamer, staticNamer HashNamer, fsys fs.FS) *TemplateRenderer {
 				"derefBool":              derefBool,
 				"derefInt":               derefInt,
 				"derefFloat32":           derefFloat32,
+				"derefString":            derefString,
 				"describeDNSRecordType":  describeDNSRecordType,
 				"exemplifyDNSRecordType": exemplifyDNSRecordType,
 			})

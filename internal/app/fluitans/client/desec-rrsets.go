@@ -62,7 +62,9 @@ func getRRsetsFromCache(
 		if subnameRRsets == nil {
 			return nil // cache miss for any subname is cache miss for the overall query
 		}
-		rrsets[subname] = subnameRRsets
+		if len(subnameRRsets) > 0 {
+			rrsets[subname] = subnameRRsets
+		}
 	}
 	return rrsets
 }
@@ -317,4 +319,35 @@ func CreateRRset(
 	}
 
 	return rrset, nil
+}
+
+func DeleteRRset(
+	c echo.Context, domain DNSDomain, subname string, recordType string,
+) error {
+	client, cerr := domain.makeClientWithResponses()
+	if cerr != nil {
+		return cerr
+	}
+
+	// TODO: handle rate-limiting
+	res, err := client.DestroyRRsetWithResponse(
+		c.Request().Context(), domain.DomainName, subname, recordType,
+	)
+	if err != nil {
+		return err
+	}
+
+	if err = domain.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
+		return err
+	}
+
+	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+		return err
+	}
+
+	domain.Cache.SetNonexistentRRsetByNameAndType(
+		domain.DomainName, subname, recordType,
+		domain.Server.NetworkCostWeight, domain.APISettings.ReadCacheTTL,
+	)
+	return nil
 }

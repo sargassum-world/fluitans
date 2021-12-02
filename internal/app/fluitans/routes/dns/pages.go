@@ -14,4 +14,10 @@ var Pages = []route.Templated{
 		HandlerMaker: getServer,
 		Templates:    []string{"dns/server.page.tmpl"},
 	},
+	{
+		Path:         "/dns/:subname/:type",
+		Method:       http.MethodPost,
+		HandlerMaker: postRRset,
+		Templates:    []string{},
+	},
 }
