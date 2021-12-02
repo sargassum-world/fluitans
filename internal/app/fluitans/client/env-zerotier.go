@@ -2,6 +2,7 @@ package client
 
 import (
 	"os"
+	"time"
 
 	"github.com/sargassum-eco/fluitans/internal/env"
 )
@@ -37,4 +38,26 @@ func GetEnvVarController() (*Controller, error) {
 		Authtoken:         authtoken,
 		NetworkCostWeight: networkCostWeight,
 	}, nil
+}
+
+func GetEnvVarZerotierNetworkTTL() (int64, error) {
+	var defaultTTLHours int64 = 24 // hours
+	defaultTTL := int64((time.Duration(defaultTTLHours) * time.Hour).Seconds())
+	ttl, err := env.GetInt64("FLUITANS_ZEROTIER_DNS_NETWORKTTL", defaultTTL)
+	if err != nil {
+		return defaultTTL, err
+	}
+
+	return ttl, nil
+}
+
+func GetEnvVarZerotierDeviceTTL() (int64, error) {
+	var defaultTTLHours int64 = 1 // hour
+	defaultTTL := int64((time.Duration(defaultTTLHours) * time.Hour).Seconds())
+	ttl, err := env.GetInt64("FLUITANS_ZEROTIER_DNS_DEVICETTL", defaultTTL)
+	if err != nil {
+		return defaultTTL, err
+	}
+
+	return ttl, nil
 }

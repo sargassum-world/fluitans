@@ -223,26 +223,20 @@ type ListRRsetsParams struct {
 	Cursor *int `json:"cursor,omitempty"`
 }
 
+// PartialUpdateRRsetsJSONBody defines parameters for PartialUpdateRRsets.
+type PartialUpdateRRsetsJSONBody RRset
+
+// CreateRRsetsJSONBody defines parameters for CreateRRsets.
+type CreateRRsetsJSONBody RRset
+
+// UpdateRRsetsJSONBody defines parameters for UpdateRRsets.
+type UpdateRRsetsJSONBody RRset
+
 // PartialUpdateRRsetJSONBody defines parameters for PartialUpdateRRset.
 type PartialUpdateRRsetJSONBody RRset
 
-// CreateRRsetJSONBody defines parameters for CreateRRset.
-type CreateRRsetJSONBody RRset
-
 // UpdateRRsetJSONBody defines parameters for UpdateRRset.
 type UpdateRRsetJSONBody RRset
-
-// PartialUpdateApexRRsetJSONBody defines parameters for PartialUpdateApexRRset.
-type PartialUpdateApexRRsetJSONBody RRset
-
-// UpdateApexRRsetJSONBody defines parameters for UpdateApexRRset.
-type UpdateApexRRsetJSONBody RRset
-
-// PartialUpdateSubnameRRsetJSONBody defines parameters for PartialUpdateSubnameRRset.
-type PartialUpdateSubnameRRsetJSONBody RRset
-
-// UpdateSubnameRRsetJSONBody defines parameters for UpdateSubnameRRset.
-type UpdateSubnameRRsetJSONBody RRset
 
 // CreateDonationJSONBody defines parameters for CreateDonation.
 type CreateDonationJSONBody Donation
@@ -301,26 +295,20 @@ type CreateCaptchaJSONRequestBody CreateCaptchaJSONBody
 // CreateDomainJSONRequestBody defines body for CreateDomain for application/json ContentType.
 type CreateDomainJSONRequestBody CreateDomainJSONBody
 
+// PartialUpdateRRsetsJSONRequestBody defines body for PartialUpdateRRsets for application/json ContentType.
+type PartialUpdateRRsetsJSONRequestBody PartialUpdateRRsetsJSONBody
+
+// CreateRRsetsJSONRequestBody defines body for CreateRRsets for application/json ContentType.
+type CreateRRsetsJSONRequestBody CreateRRsetsJSONBody
+
+// UpdateRRsetsJSONRequestBody defines body for UpdateRRsets for application/json ContentType.
+type UpdateRRsetsJSONRequestBody UpdateRRsetsJSONBody
+
 // PartialUpdateRRsetJSONRequestBody defines body for PartialUpdateRRset for application/json ContentType.
 type PartialUpdateRRsetJSONRequestBody PartialUpdateRRsetJSONBody
 
-// CreateRRsetJSONRequestBody defines body for CreateRRset for application/json ContentType.
-type CreateRRsetJSONRequestBody CreateRRsetJSONBody
-
 // UpdateRRsetJSONRequestBody defines body for UpdateRRset for application/json ContentType.
 type UpdateRRsetJSONRequestBody UpdateRRsetJSONBody
-
-// PartialUpdateApexRRsetJSONRequestBody defines body for PartialUpdateApexRRset for application/json ContentType.
-type PartialUpdateApexRRsetJSONRequestBody PartialUpdateApexRRsetJSONBody
-
-// UpdateApexRRsetJSONRequestBody defines body for UpdateApexRRset for application/json ContentType.
-type UpdateApexRRsetJSONRequestBody UpdateApexRRsetJSONBody
-
-// PartialUpdateSubnameRRsetJSONRequestBody defines body for PartialUpdateSubnameRRset for application/json ContentType.
-type PartialUpdateSubnameRRsetJSONRequestBody PartialUpdateSubnameRRsetJSONBody
-
-// UpdateSubnameRRsetJSONRequestBody defines body for UpdateSubnameRRset for application/json ContentType.
-type UpdateSubnameRRsetJSONRequestBody UpdateSubnameRRsetJSONBody
 
 // CreateDonationJSONRequestBody defines body for CreateDonation for application/json ContentType.
 type CreateDonationJSONRequestBody CreateDonationJSONBody

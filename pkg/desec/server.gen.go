@@ -75,37 +75,25 @@ type ServerInterface interface {
 	ListRRsets(ctx echo.Context, name string, params ListRRsetsParams) error
 
 	// (PATCH /api/v1/domains/{name}/rrsets/)
-	PartialUpdateRRset(ctx echo.Context, name string) error
+	PartialUpdateRRsets(ctx echo.Context, name string) error
 
 	// (POST /api/v1/domains/{name}/rrsets/)
-	CreateRRset(ctx echo.Context, name string) error
+	CreateRRsets(ctx echo.Context, name string) error
 
 	// (PUT /api/v1/domains/{name}/rrsets/)
-	UpdateRRset(ctx echo.Context, name string) error
+	UpdateRRsets(ctx echo.Context, name string) error
 
-	// (DELETE /api/v1/domains/{name}/rrsets/@/{type}/)
-	DestroyApexRRset(ctx echo.Context, name string, pType string) error
+	// (DELETE /api/v1/domains/{name}/rrsets/{subname}.../{type}/)
+	DestroyRRset(ctx echo.Context, name string, subname string, pType string) error
 
-	// (GET /api/v1/domains/{name}/rrsets/@/{type}/)
-	RetrieveApexRRset(ctx echo.Context, name string, pType string) error
+	// (GET /api/v1/domains/{name}/rrsets/{subname}.../{type}/)
+	RetrieveRRset(ctx echo.Context, name string, subname string, pType string) error
 
-	// (PATCH /api/v1/domains/{name}/rrsets/@/{type}/)
-	PartialUpdateApexRRset(ctx echo.Context, name string, pType string) error
+	// (PATCH /api/v1/domains/{name}/rrsets/{subname}.../{type}/)
+	PartialUpdateRRset(ctx echo.Context, name string, subname string, pType string) error
 
-	// (PUT /api/v1/domains/{name}/rrsets/@/{type}/)
-	UpdateApexRRset(ctx echo.Context, name string, pType string) error
-
-	// (DELETE /api/v1/domains/{name}/rrsets/{subname}/{type}/)
-	DestroySubnameRRset(ctx echo.Context, name string, subname string, pType string) error
-
-	// (GET /api/v1/domains/{name}/rrsets/{subname}/{type}/)
-	RetrieveSubnameRRset(ctx echo.Context, name string, subname string, pType string) error
-
-	// (PATCH /api/v1/domains/{name}/rrsets/{subname}/{type}/)
-	PartialUpdateSubnameRRset(ctx echo.Context, name string, subname string, pType string) error
-
-	// (PUT /api/v1/domains/{name}/rrsets/{subname}/{type}/)
-	UpdateSubnameRRset(ctx echo.Context, name string, subname string, pType string) error
+	// (PUT /api/v1/domains/{name}/rrsets/{subname}.../{type}/)
+	UpdateRRset(ctx echo.Context, name string, subname string, pType string) error
 
 	// (POST /api/v1/donation/)
 	CreateDonation(ctx echo.Context) error
@@ -422,6 +410,118 @@ func (w *ServerInterfaceWrapper) ListRRsets(ctx echo.Context) error {
 	return err
 }
 
+// PartialUpdateRRsets converts echo context to params.
+func (w *ServerInterfaceWrapper) PartialUpdateRRsets(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.PartialUpdateRRsets(ctx, name)
+	return err
+}
+
+// CreateRRsets converts echo context to params.
+func (w *ServerInterfaceWrapper) CreateRRsets(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.CreateRRsets(ctx, name)
+	return err
+}
+
+// UpdateRRsets converts echo context to params.
+func (w *ServerInterfaceWrapper) UpdateRRsets(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UpdateRRsets(ctx, name)
+	return err
+}
+
+// DestroyRRset converts echo context to params.
+func (w *ServerInterfaceWrapper) DestroyRRset(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// ------------- Path parameter "subname" -------------
+	var subname string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "subname", runtime.ParamLocationPath, ctx.Param("subname"), &subname)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subname: %s", err))
+	}
+
+	// ------------- Path parameter "type" -------------
+	var pType string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.DestroyRRset(ctx, name, subname, pType)
+	return err
+}
+
+// RetrieveRRset converts echo context to params.
+func (w *ServerInterfaceWrapper) RetrieveRRset(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "name" -------------
+	var name string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+	}
+
+	// ------------- Path parameter "subname" -------------
+	var subname string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "subname", runtime.ParamLocationPath, ctx.Param("subname"), &subname)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subname: %s", err))
+	}
+
+	// ------------- Path parameter "type" -------------
+	var pType string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.RetrieveRRset(ctx, name, subname, pType)
+	return err
+}
+
 // PartialUpdateRRset converts echo context to params.
 func (w *ServerInterfaceWrapper) PartialUpdateRRset(ctx echo.Context) error {
 	var err error
@@ -433,24 +533,24 @@ func (w *ServerInterfaceWrapper) PartialUpdateRRset(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.PartialUpdateRRset(ctx, name)
-	return err
-}
+	// ------------- Path parameter "subname" -------------
+	var subname string
 
-// CreateRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) CreateRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
+	err = runtime.BindStyledParameterWithLocation("simple", false, "subname", runtime.ParamLocationPath, ctx.Param("subname"), &subname)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subname: %s", err))
+	}
+
+	// ------------- Path parameter "type" -------------
+	var pType string
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.CreateRRset(ctx, name)
+	err = w.Handler.PartialUpdateRRset(ctx, name, subname, pType)
 	return err
 }
 
@@ -465,118 +565,6 @@ func (w *ServerInterfaceWrapper) UpdateRRset(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
 	}
 
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UpdateRRset(ctx, name)
-	return err
-}
-
-// DestroyApexRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) DestroyApexRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.DestroyApexRRset(ctx, name, pType)
-	return err
-}
-
-// RetrieveApexRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) RetrieveApexRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.RetrieveApexRRset(ctx, name, pType)
-	return err
-}
-
-// PartialUpdateApexRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) PartialUpdateApexRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.PartialUpdateApexRRset(ctx, name, pType)
-	return err
-}
-
-// UpdateApexRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateApexRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UpdateApexRRset(ctx, name, pType)
-	return err
-}
-
-// DestroySubnameRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) DestroySubnameRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
 	// ------------- Path parameter "subname" -------------
 	var subname string
 
@@ -594,103 +582,7 @@ func (w *ServerInterfaceWrapper) DestroySubnameRRset(ctx echo.Context) error {
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.DestroySubnameRRset(ctx, name, subname, pType)
-	return err
-}
-
-// RetrieveSubnameRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) RetrieveSubnameRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "subname" -------------
-	var subname string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "subname", runtime.ParamLocationPath, ctx.Param("subname"), &subname)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subname: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.RetrieveSubnameRRset(ctx, name, subname, pType)
-	return err
-}
-
-// PartialUpdateSubnameRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) PartialUpdateSubnameRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "subname" -------------
-	var subname string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "subname", runtime.ParamLocationPath, ctx.Param("subname"), &subname)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subname: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.PartialUpdateSubnameRRset(ctx, name, subname, pType)
-	return err
-}
-
-// UpdateSubnameRRset converts echo context to params.
-func (w *ServerInterfaceWrapper) UpdateSubnameRRset(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "name" -------------
-	var name string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "name", runtime.ParamLocationPath, ctx.Param("name"), &name)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter name: %s", err))
-	}
-
-	// ------------- Path parameter "subname" -------------
-	var subname string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "subname", runtime.ParamLocationPath, ctx.Param("subname"), &subname)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subname: %s", err))
-	}
-
-	// ------------- Path parameter "type" -------------
-	var pType string
-
-	err = runtime.BindStyledParameterWithLocation("simple", false, "type", runtime.ParamLocationPath, ctx.Param("type"), &pType)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter type: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UpdateSubnameRRset(ctx, name, subname, pType)
+	err = w.Handler.UpdateRRset(ctx, name, subname, pType)
 	return err
 }
 
@@ -937,17 +829,13 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.DELETE(baseURL+"/api/v1/domains/:name/", wrapper.DestroyDomain)
 	router.GET(baseURL+"/api/v1/domains/:name/", wrapper.RetrieveDomain)
 	router.GET(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.ListRRsets)
-	router.PATCH(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.PartialUpdateRRset)
-	router.POST(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.CreateRRset)
-	router.PUT(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.UpdateRRset)
-	router.DELETE(baseURL+"/api/v1/domains/:name/rrsets/@/:type/", wrapper.DestroyApexRRset)
-	router.GET(baseURL+"/api/v1/domains/:name/rrsets/@/:type/", wrapper.RetrieveApexRRset)
-	router.PATCH(baseURL+"/api/v1/domains/:name/rrsets/@/:type/", wrapper.PartialUpdateApexRRset)
-	router.PUT(baseURL+"/api/v1/domains/:name/rrsets/@/:type/", wrapper.UpdateApexRRset)
-	router.DELETE(baseURL+"/api/v1/domains/:name/rrsets/:subname/:type/", wrapper.DestroySubnameRRset)
-	router.GET(baseURL+"/api/v1/domains/:name/rrsets/:subname/:type/", wrapper.RetrieveSubnameRRset)
-	router.PATCH(baseURL+"/api/v1/domains/:name/rrsets/:subname/:type/", wrapper.PartialUpdateSubnameRRset)
-	router.PUT(baseURL+"/api/v1/domains/:name/rrsets/:subname/:type/", wrapper.UpdateSubnameRRset)
+	router.PATCH(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.PartialUpdateRRsets)
+	router.POST(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.CreateRRsets)
+	router.PUT(baseURL+"/api/v1/domains/:name/rrsets/", wrapper.UpdateRRsets)
+	router.DELETE(baseURL+"/api/v1/domains/:name/rrsets/:subname.../:type/", wrapper.DestroyRRset)
+	router.GET(baseURL+"/api/v1/domains/:name/rrsets/:subname.../:type/", wrapper.RetrieveRRset)
+	router.PATCH(baseURL+"/api/v1/domains/:name/rrsets/:subname.../:type/", wrapper.PartialUpdateRRset)
+	router.PUT(baseURL+"/api/v1/domains/:name/rrsets/:subname.../:type/", wrapper.UpdateRRset)
 	router.POST(baseURL+"/api/v1/donation/", wrapper.CreateDonation)
 	router.GET(baseURL+"/api/v1/dyndns/update", wrapper.ListDyndnsRRsets)
 	router.GET(baseURL+"/api/v1/serials/", wrapper.ListSerials)

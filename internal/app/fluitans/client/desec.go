@@ -75,15 +75,38 @@ type DNSDomain struct {
 	ReadLimiter *slidingwindows.MultiLimiter
 }
 
+func NewDNSDomain(
+	readLimiter *slidingwindows.MultiLimiter, cache *Cache,
+) (*DNSDomain, error) {
+	server, err := GetEnvVarDNSServer()
+	if err != nil {
+		return nil, err
+	}
+
+	apiSettings, err := GetEnvVarDesecAPISettings()
+	if err != nil {
+		return nil, err
+	}
+
+	domainName := GetEnvVarDomainName()
+	domain := DNSDomain{
+		Server:      *server,
+		APISettings: *apiSettings,
+		DomainName:  domainName,
+		Cache:       cache,
+		ReadLimiter: readLimiter,
+	}
+	return &domain, nil
+}
+
 func (domain *DNSDomain) makeClientWithResponses() (*desec.ClientWithResponses, error) {
 	return desec.NewAuthClientWithResponses(
 		domain.Server.Server, domain.Server.Authtoken,
 	)
 }
 
-func (domain *DNSDomain) handleDesecClientError(c echo.Context, res http.Response) error {
-	switch res.StatusCode {
-	case http.StatusNotFound:
+func (domain *DNSDomain) handleDesecMissingDomainError(res http.Response) error {
+	if res.StatusCode == http.StatusNotFound {
 		domain.Cache.SetNonexistentDomainByName(
 			domain.DomainName, domain.Server.NetworkCostWeight,
 			domain.APISettings.ReadCacheTTL,
@@ -91,13 +114,38 @@ func (domain *DNSDomain) handleDesecClientError(c echo.Context, res http.Respons
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf(
 			"couldn't find domain %s", domain.DomainName,
 		))
+	}
+
+	return nil
+}
+
+func (domain *DNSDomain) handleDesecMissingRRsetError(
+	res http.Response, subname, recordType string,
+) error {
+	if res.StatusCode == http.StatusNotFound {
+		domain.Cache.SetNonexistentDomainByName(
+			domain.DomainName, domain.Server.NetworkCostWeight,
+			domain.APISettings.ReadCacheTTL,
+		)
+		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf(
+			"couldn't find %s RRset for %s.%s", recordType, subname, domain.DomainName,
+		))
+	}
+
+	return nil
+}
+
+func (domain *DNSDomain) handleDesecClientError(c echo.Context, res http.Response) error {
+	switch res.StatusCode {
 	case http.StatusTooManyRequests:
 		retryWaitSec := getRetryWait(c, res.Header)
 		// The read limiter expected not to be throttled, so its estimates of API usage
 		// need to be adjusted upwards
 		domain.ReadLimiter.Throttled(time.Now(), retryWaitSec)
 		return newReadRateLimitError(retryWaitSec)
-		// TODO: handle pagination case with StatusBadRequest and Link: header
+	case http.StatusBadRequest:
+		// TODO: handle pagination when there's a Link: header
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
 	}
 
 	return nil

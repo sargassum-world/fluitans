@@ -21,6 +21,9 @@
         {{if eq 0 (len .Data.Network.Name)}}Unnamed Network{{else}}{{.Data.Network.Name}}{{end}}
       </h1>
       <p>ID: {{template "shared/network-id.partial.tmpl" .Data.Network.Id}}</p>
+      {{if .Data.NamedByDNS}}
+      <p>Domain Name: <span class="tag domain-name">{{.Data.Network.Name}}</span></p>
+      {{else}}
       <div class="card section-card is-block" id="network-{{.Data.Network.Id}}-name">
         <div class="card-content">
           <h2 class="is-size-4">Name</h2>
@@ -32,15 +35,19 @@
             data-action="submit->form-submission#submit"
             data-form-submission-target="submitter"
           >
-            <input type="hidden" name="method" value="RENAME">
+            <input type="hidden" name="method" value="SETNAME">
             <label class="label" for="name">Domain Name</label>
             <div class="field has-addons">
               <div class="control">
                 {{if hasSuffix .Meta.DomainName .Data.Network.Name}}
-                {{$regex := (print (regexQuoteMeta (print "." .Meta.DomainName)) "$")}}
-                <input class="input" type="text" name="name" value="{{regexReplaceAll $regex .Data.Network.Name ""}}">
+                <input
+                  type="text"
+                  class="input"
+                  name="name"
+                  value="{{trimSuffix (print "." .Meta.DomainName) .Data.Network.Name}}"
+                >
                 {{else}}
-                <input class="input" type="text" name="name" value="{{.Data.Network.Name}}">
+                <input type="text" class="input" name="name" value="{{.Data.Network.Name}}">
                 {{end}}
               </div>
               <div class="control">
@@ -50,8 +57,8 @@
             <div class="field">
               <div class="control">
                 <input
-                  class="button"
                   type="submit"
+                  class="button"
                   value="Set domain name"
                   data-form-submission-target="submit"
                 >
@@ -60,6 +67,7 @@
           </form>
         </div>
       </div>
+      {{end}}
     </turbo-frame>
     <h2>Devices</h2>
     <turbo-frame id="network-{{.Data.Network.Id}}-devices">

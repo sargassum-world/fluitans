@@ -54,7 +54,7 @@ func checkCachedController(c echo.Context, address string, cache *Cache) (*Contr
 	return controller, nil
 }
 
-func scanControllers(
+func ScanControllers(
 	c echo.Context, controllers []Controller, cache *Cache,
 ) ([]string, error) {
 	eg, ctx := errgroup.WithContext(c.Request().Context())
@@ -116,7 +116,7 @@ func FindControllerByAddress(
 		"rescanning controllers due to a stale/missing controller for %s in cache",
 		address,
 	)
-	addresses, err := scanControllers(c, controllers, cache)
+	addresses, err := ScanControllers(c, controllers, cache)
 	if err != nil {
 		return nil, err
 	}

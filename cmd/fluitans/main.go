@@ -43,6 +43,14 @@ func main() {
 
 	e.HTTPErrorHandler = fluitans.NewHTTPErrorHandler(globals)
 
+	// Start background tasks
+	err = fluitans.LaunchBackgroundWorkers(e, globals)
+	if err != nil {
+		fmt.Printf("%+v\n", err)
+		panic(err)
+	}
+
 	// Start server
+
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

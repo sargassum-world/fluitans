@@ -280,7 +280,7 @@ paths:
       tags:
       - api
     post:
-      operationId: createRRset
+      operationId: createRRsets
       description: ''
       parameters:
       - name: name
@@ -304,7 +304,7 @@ paths:
       tags:
       - api
     put:
-      operationId: updateRRset
+      operationId: updateRRsets
       description: ''
       parameters:
       - name: name
@@ -328,7 +328,7 @@ paths:
       tags:
       - api
     patch:
-      operationId: partialUpdateRRset
+      operationId: partialUpdateRRsets
       description: ''
       parameters:
       - name: name
@@ -458,143 +458,18 @@ paths:
   #         description: ''
   #     tags:
   #     - api
-  # /api/v1/domains/{name}/rrsets/{subname}.../{type}/:
-  #   get:
-  #     operationId: retrieveRRset
-  #     description: ''
-  #     parameters:
-  #     - name: name
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: subname
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: type
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     responses:
-  #       '200':
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/RRset'
-  #         description: ''
-  #     tags:
-  #     - api
-  #   put:
-  #     operationId: updateRRset
-  #     description: ''
-  #     parameters:
-  #     - name: name
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: subname
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: type
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/RRset'
-  #     responses:
-  #       '200':
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/RRset'
-  #         description: ''
-  #     tags:
-  #     - api
-  #   patch:
-  #     operationId: partialUpdateRRset
-  #     description: ''
-  #     parameters:
-  #     - name: name
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: subname
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: type
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     requestBody:
-  #       content:
-  #         application/json:
-  #           schema:
-  #             $ref: '#/components/schemas/RRset'
-  #     responses:
-  #       '200':
-  #         content:
-  #           application/json:
-  #             schema:
-  #               $ref: '#/components/schemas/RRset'
-  #         description: ''
-  #     tags:
-  #     - api
-  #   delete:
-  #     operationId: destroyRRset
-  #     description: ''
-  #     parameters:
-  #     - name: name
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: subname
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     - name: type
-  #       in: path
-  #       required: true
-  #       description: ''
-  #       schema:
-  #         type: string
-  #     responses:
-  #       '204':
-  #         description: ''
-  #     tags:
-  #     - api
-  /api/v1/domains/{name}/rrsets/@/{type}/:
+  /api/v1/domains/{name}/rrsets/{subname}.../{type}/:
     get:
-      operationId: retrieveApexRRset
+      operationId: retrieveRRset
       description: ''
       parameters:
       - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
         in: path
         required: true
         description: ''
@@ -616,10 +491,16 @@ paths:
       tags:
       - api
     put:
-      operationId: updateApexRRset
+      operationId: updateRRset
       description: ''
       parameters:
       - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
         in: path
         required: true
         description: ''
@@ -646,10 +527,16 @@ paths:
       tags:
       - api
     patch:
-      operationId: partialUpdateApexRRset
+      operationId: partialUpdateRRset
       description: ''
       parameters:
       - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
         in: path
         required: true
         description: ''
@@ -676,10 +563,16 @@ paths:
       tags:
       - api
     delete:
-      operationId: destroyApexRRset
+      operationId: destroyRRset
       description: ''
       parameters:
       - name: name
+        in: path
+        required: true
+        description: ''
+        schema:
+          type: string
+      - name: subname
         in: path
         required: true
         description: ''
@@ -696,6 +589,113 @@ paths:
           description: ''
       tags:
       - api
+  # /api/v1/domains/{name}/rrsets/@/{type}/:
+  #   get:
+  #     operationId: retrieveApexRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   put:
+  #     operationId: updateApexRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   patch:
+  #     operationId: partialUpdateApexRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   delete:
+  #     operationId: destroyApexRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '204':
+  #         description: ''
+  #     tags:
+  #     - api
   # /api/v1/domains/{name}/rrsets/{subname}@/{type}/:
   #   get:
   #     operationId: retrieveRRset
@@ -827,137 +827,137 @@ paths:
   #         description: ''
   #     tags:
   #     - api
-  /api/v1/domains/{name}/rrsets/{subname}/{type}/:
-    get:
-      operationId: retrieveSubnameRRset
-      description: ''
-      parameters:
-      - name: name
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: subname
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: type
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RRset'
-          description: ''
-      tags:
-      - api
-    put:
-      operationId: updateSubnameRRset
-      description: ''
-      parameters:
-      - name: name
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: subname
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: type
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RRset'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RRset'
-          description: ''
-      tags:
-      - api
-    patch:
-      operationId: partialUpdateSubnameRRset
-      description: ''
-      parameters:
-      - name: name
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: subname
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: type
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RRset'
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RRset'
-          description: ''
-      tags:
-      - api
-    delete:
-      operationId: destroySubnameRRset
-      description: ''
-      parameters:
-      - name: name
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: subname
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      - name: type
-        in: path
-        required: true
-        description: ''
-        schema:
-          type: string
-      responses:
-        '204':
-          description: ''
-      tags:
-      - api
+  # /api/v1/domains/{name}/rrsets/{subname}/{type}/:
+  #   get:
+  #     operationId: retrieveSubnameRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   put:
+  #     operationId: updateSubnameRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   patch:
+  #     operationId: partialUpdateSubnameRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     requestBody:
+  #       content:
+  #         application/json:
+  #           schema:
+  #             $ref: '#/components/schemas/RRset'
+  #     responses:
+  #       '200':
+  #         content:
+  #           application/json:
+  #             schema:
+  #               $ref: '#/components/schemas/RRset'
+  #         description: ''
+  #     tags:
+  #     - api
+  #   delete:
+  #     operationId: destroySubnameRRset
+  #     description: ''
+  #     parameters:
+  #     - name: name
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: subname
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     - name: type
+  #       in: path
+  #       required: true
+  #       description: ''
+  #       schema:
+  #         type: string
+  #     responses:
+  #       '204':
+  #         description: ''
+  #     tags:
+  #     - api
   /api/v1/dyndns/update:
     get:
       operationId: listDyndnsRRsets

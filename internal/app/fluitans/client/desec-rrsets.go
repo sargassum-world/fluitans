@@ -124,7 +124,7 @@ func GetRRsets(c echo.Context, domain DNSDomain) (map[string][]desec.RRset, erro
 		return nil, err
 	}
 
-	fmt.Println("Performing a desec API read operation for GetRRsets...")
+	// fmt.Println("Performing a desec API read operation for GetRRsets...")
 	return getRRsetsFromDesec(c, domain)
 }
 
@@ -192,8 +192,129 @@ func GetSubnameRRsets(
 		return nil, err
 	}
 
-	fmt.Println("Performing a desec API read operation for GetSubnameRRsets...")
+	// fmt.Println("Performing a desec API read operation for GetSubnameRRsets...")
 	return getSubnameRRsetsFromDesec(c, domain, subname)
 }
 
 // Individual RRset
+
+func getRRsetFromCache(
+	c echo.Context, domainName, subname, recordType string, cache *Cache,
+) (*desec.RRset, bool) {
+	rrset, cacheHit, err := cache.GetRRsetByNameAndType(domainName, subname, recordType)
+	if err != nil {
+		// Log the error but return as a cache miss so we can manually query the RRsets
+		c.Logger().Error(errors.Wrap(err, fmt.Sprintf(
+			"couldn't get the cache entry for the %s RRsets for %s.%s",
+			recordType, subname, domainName,
+		)))
+		return nil, false // treat an unparseable cache entry like a cache miss
+	}
+
+	return rrset, cacheHit // cache hit with nil rrset indicates nonexistent RRset
+}
+
+func getRRsetFromDesec(
+	c echo.Context, domain DNSDomain, subname, recordType string,
+) (*desec.RRset, error) {
+	client, cerr := domain.makeClientWithResponses()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	res, err := client.RetrieveRRsetWithResponse(
+		c.Request().Context(), domain.DomainName, subname, recordType,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = domain.handleDesecMissingRRsetError(
+		*res.HTTPResponse, subname, recordType,
+	); err != nil {
+		domain.Cache.SetNonexistentRRsetByNameAndType(
+			domain.DomainName, subname, recordType,
+			domain.Server.NetworkCostWeight, domain.APISettings.ReadCacheTTL,
+		)
+		return nil, nil // treat this as a nonexistent RRset
+	}
+
+	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+		return nil, err
+	}
+
+	rrset := res.JSON200
+	if err = domain.Cache.SetRRsetByNameAndType(
+		domain.DomainName, subname, recordType, *rrset,
+		domain.Server.NetworkCostWeight, domain.APISettings.ReadCacheTTL,
+	); err != nil {
+		return nil, err
+	}
+
+	return rrset, nil
+}
+
+func GetRRset(
+	c echo.Context, domain DNSDomain, subname, recordType string,
+) (*desec.RRset, error) {
+	rrset, cacheHit := getRRsetFromCache(
+		c, domain.DomainName, subname, recordType, domain.Cache,
+	)
+	if cacheHit {
+		return rrset, nil // nil rrset indicates nonexistent RRset
+	}
+
+	// We had a cache miss, so we need to query the desec API
+	if err := domain.tryAddLimitedRead(); err != nil {
+		return nil, err
+	}
+
+	// fmt.Println("Performing a desec API read operation for GetRRset...")
+	return getRRsetFromDesec(c, domain, subname, recordType)
+}
+
+func CreateRRset(
+	c echo.Context, domain DNSDomain,
+	subname string, recordType string, ttl int64, records []string,
+) (*desec.RRset, error) {
+	client, cerr := domain.makeClientWithResponses()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	// TODO: handle rate-limiting
+	requestBody := desec.CreateRRsetsJSONRequestBody{
+		Subname: &subname,
+		Type:    recordType,
+		Ttl:     int(ttl),
+		Records: records,
+	}
+	res, err := client.CreateRRsetsWithResponse(
+		c.Request().Context(), domain.DomainName, requestBody,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = domain.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
+		return nil, err
+	}
+
+	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+		return nil, err
+	}
+
+	rrset := res.JSON201
+	if err = domain.Cache.SetRRsetByNameAndType(
+		domain.DomainName, subname, rrset.Type, *rrset,
+		domain.Server.NetworkCostWeight, domain.APISettings.ReadCacheTTL,
+	); err != nil {
+		return nil, err
+	}
+
+	if !domain.Cache.HasSubname(domain.DomainName, subname) {
+		domain.Cache.UnsetSubnames(domain.DomainName)
+	}
+
+	return rrset, nil
+}

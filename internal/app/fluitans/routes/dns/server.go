@@ -35,29 +35,6 @@ type ServerData struct {
 	SubnameRRsets    [][]desec.RRset
 }
 
-func getDomain(cg *client.Globals) (*client.DNSDomain, error) {
-	server, err := client.GetEnvVarDNSServer()
-	if err != nil {
-		return nil, err
-	}
-
-	apiSettings, err := client.GetEnvVarDesecAPISettings()
-	if err != nil {
-		return nil, err
-	}
-
-	readLimiter := cg.RateLimiters[client.DesecReadLimiterName]
-	domainName := client.GetEnvVarDomainName()
-	domain := client.DNSDomain{
-		Server:      *server,
-		APISettings: *apiSettings,
-		DomainName:  domainName,
-		Cache:       cg.Cache,
-		ReadLimiter: readLimiter,
-	}
-	return &domain, nil
-}
-
 func getReverseDomainNameFragments(domainName string) []string {
 	fragments := strings.Split(domainName, ".")
 	for i, j := 0, len(fragments)-1; i < j; i, j = i+1, j-1 {
@@ -96,7 +73,9 @@ func sortSubnameRRsets(rrsets map[string][]desec.RRset) [][]desec.RRset {
 func getServerData(c echo.Context, cg *client.Globals) (*ServerData, error) {
 	readLimiter := cg.RateLimiters[client.DesecReadLimiterName]
 	writeLimiter := cg.RateLimiters[client.DesecWriteLimiterName]
-	domain, err := getDomain(cg)
+	domain, err := client.NewDNSDomain(
+		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
+	)
 	if err != nil {
 		return nil, err
 	}

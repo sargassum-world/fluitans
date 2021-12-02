@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -40,17 +41,47 @@ func addNDPAddresses(
 	return nil
 }
 
+func checkNamedByDNS(
+	c echo.Context, networkName, networkID string, cg *client.Globals,
+) (bool, error) {
+	domain, err := client.NewDNSDomain(
+		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	domainSuffix := fmt.Sprintf(".%s", domain.DomainName)
+	if !strings.HasSuffix(networkName, domainSuffix) {
+		return false, nil
+	}
+
+	subname := strings.TrimSuffix(networkName, domainSuffix)
+	txtRRset, err := client.GetRRset(c, *domain, subname, "TXT")
+	if err != nil {
+		return false, err
+	}
+
+	if txtRRset != nil {
+		parsedID, txtHasNetworkID := client.GetNetworkID(txtRRset.Records)
+		return txtHasNetworkID && (parsedID == networkID), nil
+	}
+
+	return false, nil
+}
+
 type NetworkData struct {
 	Controller       client.Controller
 	Network          zerotier.ControllerNetwork
 	Members          map[string]zerotier.ControllerNetworkMember
 	JSONPrintedRules string
+	NamedByDNS       bool
 }
 
 func getNetworkData(
-	c echo.Context, address string, id string, cache *client.Cache,
+	c echo.Context, address string, id string, cg *client.Globals,
 ) (*NetworkData, error) {
-	controller, err := client.FindControllerByAddress(c, address, cache)
+	controller, err := client.FindControllerByAddress(c, address, cg.Cache)
 	if err != nil {
 		return nil, err
 	}
@@ -75,11 +106,18 @@ func getNetworkData(
 		return nil, err
 	}
 
+	namedByDNS, err := checkNamedByDNS(c, *network.Name, *network.Id, cg)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: also retrieve and get other records to render on the page
 	return &NetworkData{
 		Controller:       *controller,
 		Network:          *network,
 		Members:          members,
 		JSONPrintedRules: string(rules),
+		NamedByDNS:       namedByDNS,
 	}, nil
 }
 
@@ -104,7 +142,7 @@ func getNetwork(
 			address := client.GetControllerAddress(id)
 
 			// Run queries
-			networkData, err := getNetworkData(c, address, id, app.Cache)
+			networkData, err := getNetworkData(c, address, id, app)
 			if err != nil {
 				return err
 			}
@@ -136,12 +174,37 @@ func getNetwork(
 	}
 }
 
-func renameNetwork(c echo.Context, controller client.Controller, id string, name string) error {
-	var fqdn string
-	if len(name) > 0 {
-		fqdn = fmt.Sprintf("%s.%s", name, client.GetEnvVarDomainName())
-	} else {
-		fqdn = ""
+func nameNetwork(
+	c echo.Context, controller client.Controller, id string, name string,
+	cg *client.Globals,
+) error {
+	if len(name) == 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
+	}
+
+	// TODO: quit with an error if the network was already named by DNS (disallow renaming)
+	fqdn := fmt.Sprintf("%s.%s", name, client.GetEnvVarDomainName())
+	ttl, err := client.GetEnvVarZerotierNetworkTTL()
+	if err != nil {
+		return err
+	}
+
+	domain, err := client.NewDNSDomain(
+		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
+	)
+	if err != nil {
+		return err
+	}
+
+	if _, err := client.CreateRRset(
+		c, *domain, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)},
+	); err != nil {
+		// TODO: if a TXT RRset already exists but doesn't have the ID, just append a
+		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch
+		// to avoid data races)
+		return errors.Wrap(err, fmt.Sprintf(
+			"couldn't create a DNS TXT RRset at %s for network %s", fqdn, id,
+		))
 	}
 	return client.UpdateNetwork(
 		c, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
@@ -188,13 +251,21 @@ func postNetwork(
 			}
 
 			switch method {
-			case "RENAME":
-				return renameNetwork(c, *controller, id, c.FormValue("name"))
+			case "SETNAME":
+				if err = nameNetwork(
+					c, *controller, id, c.FormValue("name"), app,
+				); err != nil {
+					return err
+				}
 			case "SETRULES":
-				return setNetworkRules(c, *controller, id, c.FormValue("rules"))
+				if err = setNetworkRules(
+					c, *controller, id, c.FormValue("rules"),
+				); err != nil {
+					return err
+				}
 			case "DELETE":
-				err = client.DeleteNetwork(c, *controller, id)
-				if err != nil {
+				if err = client.DeleteNetwork(c, *controller, id); err != nil {
+					// TODO: add a tombstone to the TXT RRset?
 					return err
 				}
 

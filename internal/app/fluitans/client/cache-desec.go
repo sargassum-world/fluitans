@@ -53,6 +53,11 @@ func (c *Cache) SetSubnames(
 	return c.setEntry(key, subnames, costWeight, ttl)
 }
 
+func (c *Cache) UnsetSubnames(domainName string) {
+	key := keySubnames(domainName)
+	c.unsetEntry(key)
+}
+
 func (c *Cache) GetSubnames(domainName string) ([]string, error) {
 	key := keySubnames(domainName)
 	var value []string
@@ -62,6 +67,20 @@ func (c *Cache) GetSubnames(domainName string) ([]string, error) {
 	}
 
 	return value, nil
+}
+
+func (c *Cache) HasSubname(domainName string, subname string) bool {
+	cachedSubnames, err := c.GetSubnames(domainName)
+	if err != nil {
+		return false
+	}
+
+	for _, s := range cachedSubnames {
+		if s == subname {
+			return true
+		}
+	}
+	return false
 }
 
 // /dns/domains/:domain/rrsets/:subname
@@ -121,8 +140,8 @@ func keyRRsetByNameAndType(domainName, subname, rrsetType string) string {
 }
 
 func (c *Cache) SetRRsetByNameAndType(
-	domainName, subname, rrsetType string,
-	rrset desec.RRset, costWeight float32, ttl time.Duration,
+	domainName, subname, rrsetType string, rrset desec.RRset,
+	costWeight float32, ttl time.Duration,
 ) error {
 	key := keyRRsetByNameAndType(domainName, subname, rrsetType)
 	return c.setEntry(key, rrset, costWeight, ttl)

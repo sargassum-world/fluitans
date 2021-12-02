@@ -172,52 +172,36 @@ type ClientInterface interface {
 	// ListRRsets request
 	ListRRsets(ctx context.Context, name string, params *ListRRsetsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PartialUpdateRRsets request with any body
+	PartialUpdateRRsetsWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PartialUpdateRRsets(ctx context.Context, name string, body PartialUpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateRRsets request with any body
+	CreateRRsetsWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateRRsets(ctx context.Context, name string, body CreateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpdateRRsets request with any body
+	UpdateRRsetsWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpdateRRsets(ctx context.Context, name string, body UpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DestroyRRset request
+	DestroyRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// RetrieveRRset request
+	RetrieveRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PartialUpdateRRset request with any body
-	PartialUpdateRRsetWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PartialUpdateRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PartialUpdateRRset(ctx context.Context, name string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// CreateRRset request with any body
-	CreateRRsetWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	CreateRRset(ctx context.Context, name string, body CreateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PartialUpdateRRset(ctx context.Context, name string, subname string, pType string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateRRset request with any body
-	UpdateRRsetWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	UpdateRRset(ctx context.Context, name string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DestroyApexRRset request
-	DestroyApexRRset(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RetrieveApexRRset request
-	RetrieveApexRRset(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PartialUpdateApexRRset request with any body
-	PartialUpdateApexRRsetWithBody(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PartialUpdateApexRRset(ctx context.Context, name string, pType string, body PartialUpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateApexRRset request with any body
-	UpdateApexRRsetWithBody(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateApexRRset(ctx context.Context, name string, pType string, body UpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// DestroySubnameRRset request
-	DestroySubnameRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// RetrieveSubnameRRset request
-	RetrieveSubnameRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// PartialUpdateSubnameRRset request with any body
-	PartialUpdateSubnameRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	PartialUpdateSubnameRRset(ctx context.Context, name string, subname string, pType string, body PartialUpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	// UpdateSubnameRRset request with any body
-	UpdateSubnameRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
-
-	UpdateSubnameRRset(ctx context.Context, name string, subname string, pType string, body UpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateRRset(ctx context.Context, name string, subname string, pType string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// CreateDonation request with any body
 	CreateDonationWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -643,8 +627,8 @@ func (c *Client) ListRRsets(ctx context.Context, name string, params *ListRRsets
 	return c.Client.Do(req)
 }
 
-func (c *Client) PartialUpdateRRsetWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPartialUpdateRRsetRequestWithBody(c.Server, name, contentType, body)
+func (c *Client) PartialUpdateRRsetsWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPartialUpdateRRsetsRequestWithBody(c.Server, name, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -655,8 +639,8 @@ func (c *Client) PartialUpdateRRsetWithBody(ctx context.Context, name string, co
 	return c.Client.Do(req)
 }
 
-func (c *Client) PartialUpdateRRset(ctx context.Context, name string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPartialUpdateRRsetRequest(c.Server, name, body)
+func (c *Client) PartialUpdateRRsets(ctx context.Context, name string, body PartialUpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPartialUpdateRRsetsRequest(c.Server, name, body)
 	if err != nil {
 		return nil, err
 	}
@@ -667,8 +651,8 @@ func (c *Client) PartialUpdateRRset(ctx context.Context, name string, body Parti
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateRRsetWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRRsetRequestWithBody(c.Server, name, contentType, body)
+func (c *Client) CreateRRsetsWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRRsetsRequestWithBody(c.Server, name, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -679,8 +663,8 @@ func (c *Client) CreateRRsetWithBody(ctx context.Context, name string, contentTy
 	return c.Client.Do(req)
 }
 
-func (c *Client) CreateRRset(ctx context.Context, name string, body CreateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewCreateRRsetRequest(c.Server, name, body)
+func (c *Client) CreateRRsets(ctx context.Context, name string, body CreateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateRRsetsRequest(c.Server, name, body)
 	if err != nil {
 		return nil, err
 	}
@@ -691,8 +675,8 @@ func (c *Client) CreateRRset(ctx context.Context, name string, body CreateRRsetJ
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateRRsetWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateRRsetRequestWithBody(c.Server, name, contentType, body)
+func (c *Client) UpdateRRsetsWithBody(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRRsetsRequestWithBody(c.Server, name, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -703,8 +687,8 @@ func (c *Client) UpdateRRsetWithBody(ctx context.Context, name string, contentTy
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateRRset(ctx context.Context, name string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateRRsetRequest(c.Server, name, body)
+func (c *Client) UpdateRRsets(ctx context.Context, name string, body UpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRRsetsRequest(c.Server, name, body)
 	if err != nil {
 		return nil, err
 	}
@@ -715,8 +699,8 @@ func (c *Client) UpdateRRset(ctx context.Context, name string, body UpdateRRsetJ
 	return c.Client.Do(req)
 }
 
-func (c *Client) DestroyApexRRset(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDestroyApexRRsetRequest(c.Server, name, pType)
+func (c *Client) DestroyRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDestroyRRsetRequest(c.Server, name, subname, pType)
 	if err != nil {
 		return nil, err
 	}
@@ -727,8 +711,8 @@ func (c *Client) DestroyApexRRset(ctx context.Context, name string, pType string
 	return c.Client.Do(req)
 }
 
-func (c *Client) RetrieveApexRRset(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRetrieveApexRRsetRequest(c.Server, name, pType)
+func (c *Client) RetrieveRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewRetrieveRRsetRequest(c.Server, name, subname, pType)
 	if err != nil {
 		return nil, err
 	}
@@ -739,8 +723,8 @@ func (c *Client) RetrieveApexRRset(ctx context.Context, name string, pType strin
 	return c.Client.Do(req)
 }
 
-func (c *Client) PartialUpdateApexRRsetWithBody(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPartialUpdateApexRRsetRequestWithBody(c.Server, name, pType, contentType, body)
+func (c *Client) PartialUpdateRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPartialUpdateRRsetRequestWithBody(c.Server, name, subname, pType, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -751,8 +735,8 @@ func (c *Client) PartialUpdateApexRRsetWithBody(ctx context.Context, name string
 	return c.Client.Do(req)
 }
 
-func (c *Client) PartialUpdateApexRRset(ctx context.Context, name string, pType string, body PartialUpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPartialUpdateApexRRsetRequest(c.Server, name, pType, body)
+func (c *Client) PartialUpdateRRset(ctx context.Context, name string, subname string, pType string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPartialUpdateRRsetRequest(c.Server, name, subname, pType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -763,8 +747,8 @@ func (c *Client) PartialUpdateApexRRset(ctx context.Context, name string, pType 
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateApexRRsetWithBody(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateApexRRsetRequestWithBody(c.Server, name, pType, contentType, body)
+func (c *Client) UpdateRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRRsetRequestWithBody(c.Server, name, subname, pType, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -775,80 +759,8 @@ func (c *Client) UpdateApexRRsetWithBody(ctx context.Context, name string, pType
 	return c.Client.Do(req)
 }
 
-func (c *Client) UpdateApexRRset(ctx context.Context, name string, pType string, body UpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateApexRRsetRequest(c.Server, name, pType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) DestroySubnameRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDestroySubnameRRsetRequest(c.Server, name, subname, pType)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) RetrieveSubnameRRset(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewRetrieveSubnameRRsetRequest(c.Server, name, subname, pType)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PartialUpdateSubnameRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPartialUpdateSubnameRRsetRequestWithBody(c.Server, name, subname, pType, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) PartialUpdateSubnameRRset(ctx context.Context, name string, subname string, pType string, body PartialUpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPartialUpdateSubnameRRsetRequest(c.Server, name, subname, pType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateSubnameRRsetWithBody(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSubnameRRsetRequestWithBody(c.Server, name, subname, pType, contentType, body)
-	if err != nil {
-		return nil, err
-	}
-	req = req.WithContext(ctx)
-	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
-		return nil, err
-	}
-	return c.Client.Do(req)
-}
-
-func (c *Client) UpdateSubnameRRset(ctx context.Context, name string, subname string, pType string, body UpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewUpdateSubnameRRsetRequest(c.Server, name, subname, pType, body)
+func (c *Client) UpdateRRset(ctx context.Context, name string, subname string, pType string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpdateRRsetRequest(c.Server, name, subname, pType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -1901,19 +1813,19 @@ func NewListRRsetsRequest(server string, name string, params *ListRRsetsParams) 
 	return req, nil
 }
 
-// NewPartialUpdateRRsetRequest calls the generic PartialUpdateRRset builder with application/json body
-func NewPartialUpdateRRsetRequest(server string, name string, body PartialUpdateRRsetJSONRequestBody) (*http.Request, error) {
+// NewPartialUpdateRRsetsRequest calls the generic PartialUpdateRRsets builder with application/json body
+func NewPartialUpdateRRsetsRequest(server string, name string, body PartialUpdateRRsetsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPartialUpdateRRsetRequestWithBody(server, name, "application/json", bodyReader)
+	return NewPartialUpdateRRsetsRequestWithBody(server, name, "application/json", bodyReader)
 }
 
-// NewPartialUpdateRRsetRequestWithBody generates requests for PartialUpdateRRset with any type of body
-func NewPartialUpdateRRsetRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPartialUpdateRRsetsRequestWithBody generates requests for PartialUpdateRRsets with any type of body
+func NewPartialUpdateRRsetsRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1948,19 +1860,19 @@ func NewPartialUpdateRRsetRequestWithBody(server string, name string, contentTyp
 	return req, nil
 }
 
-// NewCreateRRsetRequest calls the generic CreateRRset builder with application/json body
-func NewCreateRRsetRequest(server string, name string, body CreateRRsetJSONRequestBody) (*http.Request, error) {
+// NewCreateRRsetsRequest calls the generic CreateRRsets builder with application/json body
+func NewCreateRRsetsRequest(server string, name string, body CreateRRsetsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewCreateRRsetRequestWithBody(server, name, "application/json", bodyReader)
+	return NewCreateRRsetsRequestWithBody(server, name, "application/json", bodyReader)
 }
 
-// NewCreateRRsetRequestWithBody generates requests for CreateRRset with any type of body
-func NewCreateRRsetRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
+// NewCreateRRsetsRequestWithBody generates requests for CreateRRsets with any type of body
+func NewCreateRRsetsRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -1995,19 +1907,19 @@ func NewCreateRRsetRequestWithBody(server string, name string, contentType strin
 	return req, nil
 }
 
-// NewUpdateRRsetRequest calls the generic UpdateRRset builder with application/json body
-func NewUpdateRRsetRequest(server string, name string, body UpdateRRsetJSONRequestBody) (*http.Request, error) {
+// NewUpdateRRsetsRequest calls the generic UpdateRRsets builder with application/json body
+func NewUpdateRRsetsRequest(server string, name string, body UpdateRRsetsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateRRsetRequestWithBody(server, name, "application/json", bodyReader)
+	return NewUpdateRRsetsRequestWithBody(server, name, "application/json", bodyReader)
 }
 
-// NewUpdateRRsetRequestWithBody generates requests for UpdateRRset with any type of body
-func NewUpdateRRsetRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
+// NewUpdateRRsetsRequestWithBody generates requests for UpdateRRsets with any type of body
+func NewUpdateRRsetsRequestWithBody(server string, name string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2042,8 +1954,8 @@ func NewUpdateRRsetRequestWithBody(server string, name string, contentType strin
 	return req, nil
 }
 
-// NewDestroyApexRRsetRequest generates requests for DestroyApexRRset
-func NewDestroyApexRRsetRequest(server string, name string, pType string) (*http.Request, error) {
+// NewDestroyRRsetRequest generates requests for DestroyRRset
+func NewDestroyRRsetRequest(server string, name string, subname string, pType string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2055,7 +1967,14 @@ func NewDestroyApexRRsetRequest(server string, name string, pType string) (*http
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subname", runtime.ParamLocationPath, subname)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
 	if err != nil {
 		return nil, err
 	}
@@ -2065,7 +1984,7 @@ func NewDestroyApexRRsetRequest(server string, name string, pType string) (*http
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/@/%s/", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s.../%s/", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2083,8 +2002,8 @@ func NewDestroyApexRRsetRequest(server string, name string, pType string) (*http
 	return req, nil
 }
 
-// NewRetrieveApexRRsetRequest generates requests for RetrieveApexRRset
-func NewRetrieveApexRRsetRequest(server string, name string, pType string) (*http.Request, error) {
+// NewRetrieveRRsetRequest generates requests for RetrieveRRset
+func NewRetrieveRRsetRequest(server string, name string, subname string, pType string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2096,7 +2015,14 @@ func NewRetrieveApexRRsetRequest(server string, name string, pType string) (*htt
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subname", runtime.ParamLocationPath, subname)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
 	if err != nil {
 		return nil, err
 	}
@@ -2106,7 +2032,7 @@ func NewRetrieveApexRRsetRequest(server string, name string, pType string) (*htt
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/@/%s/", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s.../%s/", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2124,19 +2050,19 @@ func NewRetrieveApexRRsetRequest(server string, name string, pType string) (*htt
 	return req, nil
 }
 
-// NewPartialUpdateApexRRsetRequest calls the generic PartialUpdateApexRRset builder with application/json body
-func NewPartialUpdateApexRRsetRequest(server string, name string, pType string, body PartialUpdateApexRRsetJSONRequestBody) (*http.Request, error) {
+// NewPartialUpdateRRsetRequest calls the generic PartialUpdateRRset builder with application/json body
+func NewPartialUpdateRRsetRequest(server string, name string, subname string, pType string, body PartialUpdateRRsetJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPartialUpdateApexRRsetRequestWithBody(server, name, pType, "application/json", bodyReader)
+	return NewPartialUpdateRRsetRequestWithBody(server, name, subname, pType, "application/json", bodyReader)
 }
 
-// NewPartialUpdateApexRRsetRequestWithBody generates requests for PartialUpdateApexRRset with any type of body
-func NewPartialUpdateApexRRsetRequestWithBody(server string, name string, pType string, contentType string, body io.Reader) (*http.Request, error) {
+// NewPartialUpdateRRsetRequestWithBody generates requests for PartialUpdateRRset with any type of body
+func NewPartialUpdateRRsetRequestWithBody(server string, name string, subname string, pType string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2148,7 +2074,14 @@ func NewPartialUpdateApexRRsetRequestWithBody(server string, name string, pType 
 
 	var pathParam1 string
 
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subname", runtime.ParamLocationPath, subname)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
 	if err != nil {
 		return nil, err
 	}
@@ -2158,7 +2091,7 @@ func NewPartialUpdateApexRRsetRequestWithBody(server string, name string, pType 
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/@/%s/", pathParam0, pathParam1)
+	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s.../%s/", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -2178,62 +2111,19 @@ func NewPartialUpdateApexRRsetRequestWithBody(server string, name string, pType 
 	return req, nil
 }
 
-// NewUpdateApexRRsetRequest calls the generic UpdateApexRRset builder with application/json body
-func NewUpdateApexRRsetRequest(server string, name string, pType string, body UpdateApexRRsetJSONRequestBody) (*http.Request, error) {
+// NewUpdateRRsetRequest calls the generic UpdateRRset builder with application/json body
+func NewUpdateRRsetRequest(server string, name string, subname string, pType string, body UpdateRRsetJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewUpdateApexRRsetRequestWithBody(server, name, pType, "application/json", bodyReader)
+	return NewUpdateRRsetRequestWithBody(server, name, subname, pType, "application/json", bodyReader)
 }
 
-// NewUpdateApexRRsetRequestWithBody generates requests for UpdateApexRRset with any type of body
-func NewUpdateApexRRsetRequestWithBody(server string, name string, pType string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/@/%s/", pathParam0, pathParam1)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PUT", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewDestroySubnameRRsetRequest generates requests for DestroySubnameRRset
-func NewDestroySubnameRRsetRequest(server string, name string, subname string, pType string) (*http.Request, error) {
+// NewUpdateRRsetRequestWithBody generates requests for UpdateRRset with any type of body
+func NewUpdateRRsetRequestWithBody(server string, name string, subname string, pType string, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2262,175 +2152,7 @@ func NewDestroySubnameRRsetRequest(server string, name string, subname string, p
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s/%s/", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewRetrieveSubnameRRsetRequest generates requests for RetrieveSubnameRRset
-func NewRetrieveSubnameRRsetRequest(server string, name string, subname string, pType string) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subname", runtime.ParamLocationPath, subname)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s/%s/", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("GET", queryURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-// NewPartialUpdateSubnameRRsetRequest calls the generic PartialUpdateSubnameRRset builder with application/json body
-func NewPartialUpdateSubnameRRsetRequest(server string, name string, subname string, pType string, body PartialUpdateSubnameRRsetJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewPartialUpdateSubnameRRsetRequestWithBody(server, name, subname, pType, "application/json", bodyReader)
-}
-
-// NewPartialUpdateSubnameRRsetRequestWithBody generates requests for PartialUpdateSubnameRRset with any type of body
-func NewPartialUpdateSubnameRRsetRequestWithBody(server string, name string, subname string, pType string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subname", runtime.ParamLocationPath, subname)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s/%s/", pathParam0, pathParam1, pathParam2)
-	if operationPath[0] == '/' {
-		operationPath = "." + operationPath
-	}
-
-	queryURL, err := serverURL.Parse(operationPath)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("PATCH", queryURL.String(), body)
-	if err != nil {
-		return nil, err
-	}
-
-	req.Header.Add("Content-Type", contentType)
-
-	return req, nil
-}
-
-// NewUpdateSubnameRRsetRequest calls the generic UpdateSubnameRRset builder with application/json body
-func NewUpdateSubnameRRsetRequest(server string, name string, subname string, pType string, body UpdateSubnameRRsetJSONRequestBody) (*http.Request, error) {
-	var bodyReader io.Reader
-	buf, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-	bodyReader = bytes.NewReader(buf)
-	return NewUpdateSubnameRRsetRequestWithBody(server, name, subname, pType, "application/json", bodyReader)
-}
-
-// NewUpdateSubnameRRsetRequestWithBody generates requests for UpdateSubnameRRset with any type of body
-func NewUpdateSubnameRRsetRequestWithBody(server string, name string, subname string, pType string, contentType string, body io.Reader) (*http.Request, error) {
-	var err error
-
-	var pathParam0 string
-
-	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "name", runtime.ParamLocationPath, name)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam1 string
-
-	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "subname", runtime.ParamLocationPath, subname)
-	if err != nil {
-		return nil, err
-	}
-
-	var pathParam2 string
-
-	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "type", runtime.ParamLocationPath, pType)
-	if err != nil {
-		return nil, err
-	}
-
-	serverURL, err := url.Parse(server)
-	if err != nil {
-		return nil, err
-	}
-
-	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s/%s/", pathParam0, pathParam1, pathParam2)
+	operationPath := fmt.Sprintf("/api/v1/domains/%s/rrsets/%s.../%s/", pathParam0, pathParam1, pathParam2)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3092,52 +2814,36 @@ type ClientWithResponsesInterface interface {
 	// ListRRsets request
 	ListRRsetsWithResponse(ctx context.Context, name string, params *ListRRsetsParams, reqEditors ...RequestEditorFn) (*ListRRsetsResponse, error)
 
+	// PartialUpdateRRsets request with any body
+	PartialUpdateRRsetsWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetsResponse, error)
+
+	PartialUpdateRRsetsWithResponse(ctx context.Context, name string, body PartialUpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetsResponse, error)
+
+	// CreateRRsets request with any body
+	CreateRRsetsWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRRsetsResponse, error)
+
+	CreateRRsetsWithResponse(ctx context.Context, name string, body CreateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRRsetsResponse, error)
+
+	// UpdateRRsets request with any body
+	UpdateRRsetsWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRRsetsResponse, error)
+
+	UpdateRRsetsWithResponse(ctx context.Context, name string, body UpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRRsetsResponse, error)
+
+	// DestroyRRset request
+	DestroyRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*DestroyRRsetResponse, error)
+
+	// RetrieveRRset request
+	RetrieveRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*RetrieveRRsetResponse, error)
+
 	// PartialUpdateRRset request with any body
-	PartialUpdateRRsetWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error)
+	PartialUpdateRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error)
 
-	PartialUpdateRRsetWithResponse(ctx context.Context, name string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error)
-
-	// CreateRRset request with any body
-	CreateRRsetWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRRsetResponse, error)
-
-	CreateRRsetWithResponse(ctx context.Context, name string, body CreateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRRsetResponse, error)
+	PartialUpdateRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error)
 
 	// UpdateRRset request with any body
-	UpdateRRsetWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error)
+	UpdateRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error)
 
-	UpdateRRsetWithResponse(ctx context.Context, name string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error)
-
-	// DestroyApexRRset request
-	DestroyApexRRsetWithResponse(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*DestroyApexRRsetResponse, error)
-
-	// RetrieveApexRRset request
-	RetrieveApexRRsetWithResponse(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*RetrieveApexRRsetResponse, error)
-
-	// PartialUpdateApexRRset request with any body
-	PartialUpdateApexRRsetWithBodyWithResponse(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateApexRRsetResponse, error)
-
-	PartialUpdateApexRRsetWithResponse(ctx context.Context, name string, pType string, body PartialUpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateApexRRsetResponse, error)
-
-	// UpdateApexRRset request with any body
-	UpdateApexRRsetWithBodyWithResponse(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateApexRRsetResponse, error)
-
-	UpdateApexRRsetWithResponse(ctx context.Context, name string, pType string, body UpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateApexRRsetResponse, error)
-
-	// DestroySubnameRRset request
-	DestroySubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*DestroySubnameRRsetResponse, error)
-
-	// RetrieveSubnameRRset request
-	RetrieveSubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*RetrieveSubnameRRsetResponse, error)
-
-	// PartialUpdateSubnameRRset request with any body
-	PartialUpdateSubnameRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateSubnameRRsetResponse, error)
-
-	PartialUpdateSubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body PartialUpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateSubnameRRsetResponse, error)
-
-	// UpdateSubnameRRset request with any body
-	UpdateSubnameRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSubnameRRsetResponse, error)
-
-	UpdateSubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body UpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSubnameRRsetResponse, error)
+	UpdateRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error)
 
 	// CreateDonation request with any body
 	CreateDonationWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDonationResponse, error)
@@ -3633,6 +3339,115 @@ func (r ListRRsetsResponse) StatusCode() int {
 	return 0
 }
 
+type PartialUpdateRRsetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RRset
+}
+
+// Status returns HTTPResponse.Status
+func (r PartialUpdateRRsetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PartialUpdateRRsetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type CreateRRsetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *RRset
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateRRsetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateRRsetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type UpdateRRsetsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RRset
+}
+
+// Status returns HTTPResponse.Status
+func (r UpdateRRsetsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpdateRRsetsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DestroyRRsetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DestroyRRsetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DestroyRRsetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type RetrieveRRsetResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *RRset
+}
+
+// Status returns HTTPResponse.Status
+func (r RetrieveRRsetResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r RetrieveRRsetResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type PartialUpdateRRsetResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3655,28 +3470,6 @@ func (r PartialUpdateRRsetResponse) StatusCode() int {
 	return 0
 }
 
-type CreateRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON201      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r CreateRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r CreateRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
 type UpdateRRsetResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -3693,180 +3486,6 @@ func (r UpdateRRsetResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r UpdateRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DestroyApexRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r DestroyApexRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DestroyApexRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RetrieveApexRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r RetrieveApexRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RetrieveApexRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PartialUpdateApexRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r PartialUpdateApexRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PartialUpdateApexRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateApexRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateApexRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateApexRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type DestroySubnameRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-}
-
-// Status returns HTTPResponse.Status
-func (r DestroySubnameRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r DestroySubnameRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type RetrieveSubnameRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r RetrieveSubnameRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r RetrieveSubnameRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type PartialUpdateSubnameRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r PartialUpdateSubnameRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r PartialUpdateSubnameRRsetResponse) StatusCode() int {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.StatusCode
-	}
-	return 0
-}
-
-type UpdateSubnameRRsetResponse struct {
-	Body         []byte
-	HTTPResponse *http.Response
-	JSON200      *RRset
-}
-
-// Status returns HTTPResponse.Status
-func (r UpdateSubnameRRsetResponse) Status() string {
-	if r.HTTPResponse != nil {
-		return r.HTTPResponse.Status
-	}
-	return http.StatusText(0)
-}
-
-// StatusCode returns HTTPResponse.StatusCode
-func (r UpdateSubnameRRsetResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -4426,159 +4045,107 @@ func (c *ClientWithResponses) ListRRsetsWithResponse(ctx context.Context, name s
 	return ParseListRRsetsResponse(rsp)
 }
 
+// PartialUpdateRRsetsWithBodyWithResponse request with arbitrary body returning *PartialUpdateRRsetsResponse
+func (c *ClientWithResponses) PartialUpdateRRsetsWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetsResponse, error) {
+	rsp, err := c.PartialUpdateRRsetsWithBody(ctx, name, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePartialUpdateRRsetsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PartialUpdateRRsetsWithResponse(ctx context.Context, name string, body PartialUpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetsResponse, error) {
+	rsp, err := c.PartialUpdateRRsets(ctx, name, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePartialUpdateRRsetsResponse(rsp)
+}
+
+// CreateRRsetsWithBodyWithResponse request with arbitrary body returning *CreateRRsetsResponse
+func (c *ClientWithResponses) CreateRRsetsWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRRsetsResponse, error) {
+	rsp, err := c.CreateRRsetsWithBody(ctx, name, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRRsetsResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateRRsetsWithResponse(ctx context.Context, name string, body CreateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRRsetsResponse, error) {
+	rsp, err := c.CreateRRsets(ctx, name, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateRRsetsResponse(rsp)
+}
+
+// UpdateRRsetsWithBodyWithResponse request with arbitrary body returning *UpdateRRsetsResponse
+func (c *ClientWithResponses) UpdateRRsetsWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRRsetsResponse, error) {
+	rsp, err := c.UpdateRRsetsWithBody(ctx, name, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRRsetsResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpdateRRsetsWithResponse(ctx context.Context, name string, body UpdateRRsetsJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRRsetsResponse, error) {
+	rsp, err := c.UpdateRRsets(ctx, name, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpdateRRsetsResponse(rsp)
+}
+
+// DestroyRRsetWithResponse request returning *DestroyRRsetResponse
+func (c *ClientWithResponses) DestroyRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*DestroyRRsetResponse, error) {
+	rsp, err := c.DestroyRRset(ctx, name, subname, pType, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDestroyRRsetResponse(rsp)
+}
+
+// RetrieveRRsetWithResponse request returning *RetrieveRRsetResponse
+func (c *ClientWithResponses) RetrieveRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*RetrieveRRsetResponse, error) {
+	rsp, err := c.RetrieveRRset(ctx, name, subname, pType, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseRetrieveRRsetResponse(rsp)
+}
+
 // PartialUpdateRRsetWithBodyWithResponse request with arbitrary body returning *PartialUpdateRRsetResponse
-func (c *ClientWithResponses) PartialUpdateRRsetWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error) {
-	rsp, err := c.PartialUpdateRRsetWithBody(ctx, name, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PartialUpdateRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error) {
+	rsp, err := c.PartialUpdateRRsetWithBody(ctx, name, subname, pType, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePartialUpdateRRsetResponse(rsp)
 }
 
-func (c *ClientWithResponses) PartialUpdateRRsetWithResponse(ctx context.Context, name string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error) {
-	rsp, err := c.PartialUpdateRRset(ctx, name, body, reqEditors...)
+func (c *ClientWithResponses) PartialUpdateRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body PartialUpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateRRsetResponse, error) {
+	rsp, err := c.PartialUpdateRRset(ctx, name, subname, pType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePartialUpdateRRsetResponse(rsp)
-}
-
-// CreateRRsetWithBodyWithResponse request with arbitrary body returning *CreateRRsetResponse
-func (c *ClientWithResponses) CreateRRsetWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateRRsetResponse, error) {
-	rsp, err := c.CreateRRsetWithBody(ctx, name, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRRsetResponse(rsp)
-}
-
-func (c *ClientWithResponses) CreateRRsetWithResponse(ctx context.Context, name string, body CreateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateRRsetResponse, error) {
-	rsp, err := c.CreateRRset(ctx, name, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseCreateRRsetResponse(rsp)
 }
 
 // UpdateRRsetWithBodyWithResponse request with arbitrary body returning *UpdateRRsetResponse
-func (c *ClientWithResponses) UpdateRRsetWithBodyWithResponse(ctx context.Context, name string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error) {
-	rsp, err := c.UpdateRRsetWithBody(ctx, name, contentType, body, reqEditors...)
+func (c *ClientWithResponses) UpdateRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error) {
+	rsp, err := c.UpdateRRsetWithBody(ctx, name, subname, pType, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateRRsetResponse(rsp)
 }
 
-func (c *ClientWithResponses) UpdateRRsetWithResponse(ctx context.Context, name string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error) {
-	rsp, err := c.UpdateRRset(ctx, name, body, reqEditors...)
+func (c *ClientWithResponses) UpdateRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body UpdateRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateRRsetResponse, error) {
+	rsp, err := c.UpdateRRset(ctx, name, subname, pType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParseUpdateRRsetResponse(rsp)
-}
-
-// DestroyApexRRsetWithResponse request returning *DestroyApexRRsetResponse
-func (c *ClientWithResponses) DestroyApexRRsetWithResponse(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*DestroyApexRRsetResponse, error) {
-	rsp, err := c.DestroyApexRRset(ctx, name, pType, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDestroyApexRRsetResponse(rsp)
-}
-
-// RetrieveApexRRsetWithResponse request returning *RetrieveApexRRsetResponse
-func (c *ClientWithResponses) RetrieveApexRRsetWithResponse(ctx context.Context, name string, pType string, reqEditors ...RequestEditorFn) (*RetrieveApexRRsetResponse, error) {
-	rsp, err := c.RetrieveApexRRset(ctx, name, pType, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRetrieveApexRRsetResponse(rsp)
-}
-
-// PartialUpdateApexRRsetWithBodyWithResponse request with arbitrary body returning *PartialUpdateApexRRsetResponse
-func (c *ClientWithResponses) PartialUpdateApexRRsetWithBodyWithResponse(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateApexRRsetResponse, error) {
-	rsp, err := c.PartialUpdateApexRRsetWithBody(ctx, name, pType, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePartialUpdateApexRRsetResponse(rsp)
-}
-
-func (c *ClientWithResponses) PartialUpdateApexRRsetWithResponse(ctx context.Context, name string, pType string, body PartialUpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateApexRRsetResponse, error) {
-	rsp, err := c.PartialUpdateApexRRset(ctx, name, pType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePartialUpdateApexRRsetResponse(rsp)
-}
-
-// UpdateApexRRsetWithBodyWithResponse request with arbitrary body returning *UpdateApexRRsetResponse
-func (c *ClientWithResponses) UpdateApexRRsetWithBodyWithResponse(ctx context.Context, name string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateApexRRsetResponse, error) {
-	rsp, err := c.UpdateApexRRsetWithBody(ctx, name, pType, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateApexRRsetResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateApexRRsetWithResponse(ctx context.Context, name string, pType string, body UpdateApexRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateApexRRsetResponse, error) {
-	rsp, err := c.UpdateApexRRset(ctx, name, pType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateApexRRsetResponse(rsp)
-}
-
-// DestroySubnameRRsetWithResponse request returning *DestroySubnameRRsetResponse
-func (c *ClientWithResponses) DestroySubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*DestroySubnameRRsetResponse, error) {
-	rsp, err := c.DestroySubnameRRset(ctx, name, subname, pType, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseDestroySubnameRRsetResponse(rsp)
-}
-
-// RetrieveSubnameRRsetWithResponse request returning *RetrieveSubnameRRsetResponse
-func (c *ClientWithResponses) RetrieveSubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, reqEditors ...RequestEditorFn) (*RetrieveSubnameRRsetResponse, error) {
-	rsp, err := c.RetrieveSubnameRRset(ctx, name, subname, pType, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseRetrieveSubnameRRsetResponse(rsp)
-}
-
-// PartialUpdateSubnameRRsetWithBodyWithResponse request with arbitrary body returning *PartialUpdateSubnameRRsetResponse
-func (c *ClientWithResponses) PartialUpdateSubnameRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PartialUpdateSubnameRRsetResponse, error) {
-	rsp, err := c.PartialUpdateSubnameRRsetWithBody(ctx, name, subname, pType, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePartialUpdateSubnameRRsetResponse(rsp)
-}
-
-func (c *ClientWithResponses) PartialUpdateSubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body PartialUpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*PartialUpdateSubnameRRsetResponse, error) {
-	rsp, err := c.PartialUpdateSubnameRRset(ctx, name, subname, pType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParsePartialUpdateSubnameRRsetResponse(rsp)
-}
-
-// UpdateSubnameRRsetWithBodyWithResponse request with arbitrary body returning *UpdateSubnameRRsetResponse
-func (c *ClientWithResponses) UpdateSubnameRRsetWithBodyWithResponse(ctx context.Context, name string, subname string, pType string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateSubnameRRsetResponse, error) {
-	rsp, err := c.UpdateSubnameRRsetWithBody(ctx, name, subname, pType, contentType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateSubnameRRsetResponse(rsp)
-}
-
-func (c *ClientWithResponses) UpdateSubnameRRsetWithResponse(ctx context.Context, name string, subname string, pType string, body UpdateSubnameRRsetJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateSubnameRRsetResponse, error) {
-	rsp, err := c.UpdateSubnameRRset(ctx, name, subname, pType, body, reqEditors...)
-	if err != nil {
-		return nil, err
-	}
-	return ParseUpdateSubnameRRsetResponse(rsp)
 }
 
 // CreateDonationWithBodyWithResponse request with arbitrary body returning *CreateDonationResponse
@@ -5232,6 +4799,122 @@ func ParseListRRsetsResponse(rsp *http.Response) (*ListRRsetsResponse, error) {
 	return response, nil
 }
 
+// ParsePartialUpdateRRsetsResponse parses an HTTP response from a PartialUpdateRRsetsWithResponse call
+func ParsePartialUpdateRRsetsResponse(rsp *http.Response) (*PartialUpdateRRsetsResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PartialUpdateRRsetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RRset
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+	}
+
+	return response, nil
+}
+
+// ParseCreateRRsetsResponse parses an HTTP response from a CreateRRsetsWithResponse call
+func ParseCreateRRsetsResponse(rsp *http.Response) (*CreateRRsetsResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateRRsetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest RRset
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+	}
+
+	return response, nil
+}
+
+// ParseUpdateRRsetsResponse parses an HTTP response from a UpdateRRsetsWithResponse call
+func ParseUpdateRRsetsResponse(rsp *http.Response) (*UpdateRRsetsResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpdateRRsetsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RRset
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+	}
+
+	return response, nil
+}
+
+// ParseDestroyRRsetResponse parses an HTTP response from a DestroyRRsetWithResponse call
+func ParseDestroyRRsetResponse(rsp *http.Response) (*DestroyRRsetResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DestroyRRsetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseRetrieveRRsetResponse parses an HTTP response from a RetrieveRRsetWithResponse call
+func ParseRetrieveRRsetResponse(rsp *http.Response) (*RetrieveRRsetResponse, error) {
+	bodyBytes, err := ioutil.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &RetrieveRRsetResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest RRset
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+	}
+
+	return response, nil
+}
+
 // ParsePartialUpdateRRsetResponse parses an HTTP response from a PartialUpdateRRsetWithResponse call
 func ParsePartialUpdateRRsetResponse(rsp *http.Response) (*PartialUpdateRRsetResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -5257,31 +4940,6 @@ func ParsePartialUpdateRRsetResponse(rsp *http.Response) (*PartialUpdateRRsetRes
 	return response, nil
 }
 
-// ParseCreateRRsetResponse parses an HTTP response from a CreateRRsetWithResponse call
-func ParseCreateRRsetResponse(rsp *http.Response) (*CreateRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &CreateRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON201 = &dest
-	}
-
-	return response, nil
-}
-
 // ParseUpdateRRsetResponse parses an HTTP response from a UpdateRRsetWithResponse call
 func ParseUpdateRRsetResponse(rsp *http.Response) (*UpdateRRsetResponse, error) {
 	bodyBytes, err := ioutil.ReadAll(rsp.Body)
@@ -5291,188 +4949,6 @@ func ParseUpdateRRsetResponse(rsp *http.Response) (*UpdateRRsetResponse, error) 
 	}
 
 	response := &UpdateRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-	}
-
-	return response, nil
-}
-
-// ParseDestroyApexRRsetResponse parses an HTTP response from a DestroyApexRRsetWithResponse call
-func ParseDestroyApexRRsetResponse(rsp *http.Response) (*DestroyApexRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DestroyApexRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseRetrieveApexRRsetResponse parses an HTTP response from a RetrieveApexRRsetWithResponse call
-func ParseRetrieveApexRRsetResponse(rsp *http.Response) (*RetrieveApexRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RetrieveApexRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-	}
-
-	return response, nil
-}
-
-// ParsePartialUpdateApexRRsetResponse parses an HTTP response from a PartialUpdateApexRRsetWithResponse call
-func ParsePartialUpdateApexRRsetResponse(rsp *http.Response) (*PartialUpdateApexRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PartialUpdateApexRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-	}
-
-	return response, nil
-}
-
-// ParseUpdateApexRRsetResponse parses an HTTP response from a UpdateApexRRsetWithResponse call
-func ParseUpdateApexRRsetResponse(rsp *http.Response) (*UpdateApexRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateApexRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-	}
-
-	return response, nil
-}
-
-// ParseDestroySubnameRRsetResponse parses an HTTP response from a DestroySubnameRRsetWithResponse call
-func ParseDestroySubnameRRsetResponse(rsp *http.Response) (*DestroySubnameRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &DestroySubnameRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	return response, nil
-}
-
-// ParseRetrieveSubnameRRsetResponse parses an HTTP response from a RetrieveSubnameRRsetWithResponse call
-func ParseRetrieveSubnameRRsetResponse(rsp *http.Response) (*RetrieveSubnameRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RetrieveSubnameRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-	}
-
-	return response, nil
-}
-
-// ParsePartialUpdateSubnameRRsetResponse parses an HTTP response from a PartialUpdateSubnameRRsetWithResponse call
-func ParsePartialUpdateSubnameRRsetResponse(rsp *http.Response) (*PartialUpdateSubnameRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &PartialUpdateSubnameRRsetResponse{
-		Body:         bodyBytes,
-		HTTPResponse: rsp,
-	}
-
-	switch {
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON200 = &dest
-	}
-
-	return response, nil
-}
-
-// ParseUpdateSubnameRRsetResponse parses an HTTP response from a UpdateSubnameRRsetWithResponse call
-func ParseUpdateSubnameRRsetResponse(rsp *http.Response) (*UpdateSubnameRRsetResponse, error) {
-	bodyBytes, err := ioutil.ReadAll(rsp.Body)
-	defer func() { _ = rsp.Body.Close() }()
-	if err != nil {
-		return nil, err
-	}
-
-	response := &UpdateSubnameRRsetResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

@@ -2,9 +2,7 @@
 package fluitans
 
 import (
-	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -21,27 +19,6 @@ func NewRenderer() *templates.TemplateRenderer {
 	return templates.New(web.AppHFS.HashName, web.StaticHFS.HashName, web.TemplatesFS)
 }
 
-func launchBackgroundWorkers(ag *client.Globals) {
-	go func() {
-		var writeInterval time.Duration = 5000
-		writeLimiter := ag.RateLimiters[client.DesecWriteLimiterName]
-		for {
-			if writeLimiter.TryAdd(time.Now(), 1) {
-				/*fmt.Printf(
-					"Bumped the write limiter: %+v\n",
-					writeLimiter.EstimateFillRatios(time.Now()),
-				)*/
-			} else {
-				fmt.Printf(
-					"Write limiter throttled: wait %f sec\n",
-					writeLimiter.EstimateWaitDuration(time.Now(), 1).Seconds(),
-				)
-			}
-			time.Sleep(writeInterval * time.Millisecond)
-		}
-	}()
-}
-
 func RegisterRoutes(e route.EchoRouter) (*Globals, error) {
 	f, err := computeTemplateFingerprints()
 	if err != nil {
@@ -52,8 +29,6 @@ func RegisterRoutes(e route.EchoRouter) (*Globals, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
-
-	launchBackgroundWorkers(ag)
 
 	g := &Globals{
 		Template: route.TemplateGlobals{
