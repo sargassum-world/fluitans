@@ -1,6 +1,7 @@
 package networks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -21,18 +22,18 @@ type NetworksData struct {
 	Networks   map[string]zerotier.ControllerNetwork
 }
 
-func getNetworksData(c echo.Context, cache *client.Cache) ([]NetworksData, error) {
+func getNetworksData(ctx context.Context, cache *client.Cache) ([]NetworksData, error) {
 	controllers, err := client.GetControllers()
 	if err != nil {
 		return nil, err
 	}
 
-	networkIDs, err := client.GetNetworkIDs(c, controllers, cache)
+	networkIDs, err := client.GetNetworkIDs(ctx, controllers, cache)
 	if err != nil {
 		return nil, err
 	}
 
-	networks, err := client.GetNetworks(c, controllers, networkIDs)
+	networks, err := client.GetNetworks(ctx, controllers, networkIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +62,11 @@ func getNetworks(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+
 			// Run queries
-			networksData, err := getNetworksData(c, app.Cache)
+			networksData, err := getNetworksData(ctx, app.Cache)
 			if err != nil {
 				return err
 			}
@@ -98,6 +102,9 @@ func postNetworks(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	return func(c echo.Context) error {
+		// Extract context
+		ctx := c.Request().Context()
+
 		// Parse params
 		name := c.FormValue("controller")
 		if name == "" {
@@ -118,7 +125,7 @@ func postNetworks(
 			)
 		}
 
-		createdNetwork, err := client.CreateNetwork(c, *controller)
+		createdNetwork, err := client.CreateNetwork(ctx, *controller)
 		if err != nil {
 			return err
 		}

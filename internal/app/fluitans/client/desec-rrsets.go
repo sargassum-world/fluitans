@@ -1,12 +1,13 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
 )
 
@@ -41,12 +42,12 @@ func FilterAndSortRRsets(rrsets []desec.RRset) []desec.RRset {
 // All RRsets
 
 func getRRsetsFromCache(
-	c echo.Context, domainName string, cache *Cache,
+	domainName string, cache *Cache, l log.Logger,
 ) map[string][]desec.RRset {
 	subnames, err := cache.GetSubnames(domainName)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger().Error(errors.Wrap(err, fmt.Sprintf(
+		l.Error(errors.Wrap(err, fmt.Sprintf(
 			"couldn't get the cache entry for the RRsets for %s", domainName,
 		)))
 		return nil // treat an unparseable cache entry like a cache miss
@@ -58,7 +59,7 @@ func getRRsetsFromCache(
 
 	rrsets := make(map[string][]desec.RRset)
 	for _, subname := range subnames {
-		subnameRRsets := getSubnameRRsetsFromCache(c, domainName, subname, cache)
+		subnameRRsets := getSubnameRRsetsFromCache(domainName, subname, cache, l)
 		if subnameRRsets == nil {
 			return nil // cache miss for any subname is cache miss for the overall query
 		}
@@ -69,22 +70,22 @@ func getRRsetsFromCache(
 	return rrsets
 }
 
-func getRRsetsFromDesec(c echo.Context, domain DNSDomain) (map[string][]desec.RRset, error) {
+func getRRsetsFromDesec(
+	ctx context.Context, domain DNSDomain, l log.Logger,
+) (map[string][]desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
 		return nil, cerr
 	}
 
 	params := desec.ListRRsetsParams{}
-	res, err := client.ListRRsetsWithResponse(
-		c.Request().Context(), domain.DomainName, &params,
-	)
+	res, err := client.ListRRsetsWithResponse(ctx, domain.DomainName, &params)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: handle pagination
-	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+	if err = domain.handleDesecClientError(*res.HTTPResponse, l); err != nil {
 		return nil, err
 	}
 
@@ -116,8 +117,10 @@ func getRRsetsFromDesec(c echo.Context, domain DNSDomain) (map[string][]desec.RR
 	return rrsets, nil
 }
 
-func GetRRsets(c echo.Context, domain DNSDomain) (map[string][]desec.RRset, error) {
-	if rrsets := getRRsetsFromCache(c, domain.DomainName, domain.Cache); rrsets != nil {
+func GetRRsets(
+	ctx context.Context, domain DNSDomain, l log.Logger,
+) (map[string][]desec.RRset, error) {
+	if rrsets := getRRsetsFromCache(domain.DomainName, domain.Cache, l); rrsets != nil {
 		return rrsets, nil
 	}
 
@@ -127,18 +130,18 @@ func GetRRsets(c echo.Context, domain DNSDomain) (map[string][]desec.RRset, erro
 	}
 
 	// fmt.Println("Performing a desec API read operation for GetRRsets...")
-	return getRRsetsFromDesec(c, domain)
+	return getRRsetsFromDesec(ctx, domain, l)
 }
 
 // Subname RRsets
 
 func getSubnameRRsetsFromCache(
-	c echo.Context, domainName, subname string, cache *Cache,
+	domainName, subname string, cache *Cache, l log.Logger,
 ) []desec.RRset {
 	rrsets, err := cache.GetRRsetsByName(domainName, subname)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger().Error(errors.Wrap(err, fmt.Sprintf(
+		l.Error(errors.Wrap(err, fmt.Sprintf(
 			"couldn't get the cache entry for one of the RRsets for %s.%s",
 			subname, domainName,
 		)))
@@ -149,7 +152,7 @@ func getSubnameRRsetsFromCache(
 }
 
 func getSubnameRRsetsFromDesec(
-	c echo.Context, domain DNSDomain, subname string,
+	ctx context.Context, domain DNSDomain, subname string, l log.Logger,
 ) ([]desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -157,15 +160,13 @@ func getSubnameRRsetsFromDesec(
 	}
 
 	params := desec.ListRRsetsParams{Subname: &subname}
-	res, err := client.ListRRsetsWithResponse(
-		c.Request().Context(), domain.DomainName, &params,
-	)
+	res, err := client.ListRRsetsWithResponse(ctx, domain.DomainName, &params)
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: handle pagination
-	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+	if err = domain.handleDesecClientError(*res.HTTPResponse, l); err != nil {
 		return nil, err
 	}
 
@@ -181,10 +182,10 @@ func getSubnameRRsetsFromDesec(
 }
 
 func GetSubnameRRsets(
-	c echo.Context, domain DNSDomain, subname string,
+	ctx context.Context, domain DNSDomain, subname string, l log.Logger,
 ) ([]desec.RRset, error) {
 	if rrsets := getSubnameRRsetsFromCache(
-		c, domain.DomainName, subname, domain.Cache,
+		domain.DomainName, subname, domain.Cache, l,
 	); rrsets != nil {
 		return rrsets, nil
 	}
@@ -195,18 +196,18 @@ func GetSubnameRRsets(
 	}
 
 	// fmt.Println("Performing a desec API read operation for GetSubnameRRsets...")
-	return getSubnameRRsetsFromDesec(c, domain, subname)
+	return getSubnameRRsetsFromDesec(ctx, domain, subname, l)
 }
 
 // Individual RRset
 
 func getRRsetFromCache(
-	c echo.Context, domainName, subname, recordType string, cache *Cache,
+	domainName, subname, recordType string, cache *Cache, l log.Logger,
 ) (*desec.RRset, bool) {
 	rrset, cacheHit, err := cache.GetRRsetByNameAndType(domainName, subname, recordType)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger().Error(errors.Wrap(err, fmt.Sprintf(
+		l.Error(errors.Wrap(err, fmt.Sprintf(
 			"couldn't get the cache entry for the %s RRsets for %s.%s",
 			recordType, subname, domainName,
 		)))
@@ -217,7 +218,7 @@ func getRRsetFromCache(
 }
 
 func getRRsetFromDesec(
-	c echo.Context, domain DNSDomain, subname, recordType string,
+	ctx context.Context, domain DNSDomain, subname, recordType string, l log.Logger,
 ) (*desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -225,7 +226,7 @@ func getRRsetFromDesec(
 	}
 
 	res, err := client.RetrieveRRsetWithResponse(
-		c.Request().Context(), domain.DomainName, subname, recordType,
+		ctx, domain.DomainName, subname, recordType,
 	)
 	if err != nil {
 		return nil, err
@@ -241,7 +242,7 @@ func getRRsetFromDesec(
 		return nil, nil // treat this as a nonexistent RRset
 	}
 
-	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+	if err = domain.handleDesecClientError(*res.HTTPResponse, l); err != nil {
 		return nil, err
 	}
 
@@ -257,10 +258,10 @@ func getRRsetFromDesec(
 }
 
 func GetRRset(
-	c echo.Context, domain DNSDomain, subname, recordType string,
+	ctx context.Context, domain DNSDomain, subname, recordType string, l log.Logger,
 ) (*desec.RRset, error) {
 	rrset, cacheHit := getRRsetFromCache(
-		c, domain.DomainName, subname, recordType, domain.Cache,
+		domain.DomainName, subname, recordType, domain.Cache, l,
 	)
 	if cacheHit {
 		return rrset, nil // nil rrset indicates nonexistent RRset
@@ -272,12 +273,13 @@ func GetRRset(
 	}
 
 	// fmt.Println("Performing a desec API read operation for GetRRset...")
-	return getRRsetFromDesec(c, domain, subname, recordType)
+	return getRRsetFromDesec(ctx, domain, subname, recordType, l)
 }
 
 func CreateRRset(
-	c echo.Context, domain DNSDomain,
+	ctx context.Context, domain DNSDomain,
 	subname string, recordType string, ttl int64, records []string,
+	l log.Logger,
 ) (*desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -291,9 +293,7 @@ func CreateRRset(
 		Ttl:     int(ttl),
 		Records: records,
 	}
-	res, err := client.CreateRRsetsWithResponse(
-		c.Request().Context(), domain.DomainName, requestBody,
-	)
+	res, err := client.CreateRRsetsWithResponse(ctx, domain.DomainName, requestBody)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +302,7 @@ func CreateRRset(
 		return nil, err
 	}
 
-	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+	if err = domain.handleDesecClientError(*res.HTTPResponse, l); err != nil {
 		return nil, err
 	}
 
@@ -322,7 +322,8 @@ func CreateRRset(
 }
 
 func DeleteRRset(
-	c echo.Context, domain DNSDomain, subname string, recordType string,
+	ctx context.Context, domain DNSDomain, subname string, recordType string,
+	l log.Logger,
 ) error {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -331,7 +332,7 @@ func DeleteRRset(
 
 	// TODO: handle rate-limiting
 	res, err := client.DestroyRRsetWithResponse(
-		c.Request().Context(), domain.DomainName, subname, recordType,
+		ctx, domain.DomainName, subname, recordType,
 	)
 	if err != nil {
 		return err
@@ -341,7 +342,7 @@ func DeleteRRset(
 		return err
 	}
 
-	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+	if err = domain.handleDesecClientError(*res.HTTPResponse, l); err != nil {
 		return err
 	}
 

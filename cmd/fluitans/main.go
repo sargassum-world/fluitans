@@ -31,26 +31,12 @@ func main() {
 	// TODO: enable CORS, CSRF, auth, Prometheus, rate-limiting, and security
 	e.Pre(middleware.RemoveTrailingSlash())
 
-	// Renderer
-	e.Renderer = fluitans.NewRenderer()
-
-	// Handlers
-	globals, err := fluitans.RegisterRoutes(e)
-	if err != nil {
-		fmt.Printf("%+v\n", err)
-		panic(err)
-	}
-
-	e.HTTPErrorHandler = fluitans.NewHTTPErrorHandler(globals)
-
-	// Start background tasks
-	err = fluitans.LaunchBackgroundWorkers(e, globals)
-	if err != nil {
+	// Prepare server
+	if err := fluitans.PrepareServer(e); err != nil {
 		fmt.Printf("%+v\n", err)
 		panic(err)
 	}
 
 	// Start server
-
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

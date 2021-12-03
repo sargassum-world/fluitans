@@ -1,6 +1,7 @@
 package networks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -42,7 +43,8 @@ func addNDPAddresses(
 }
 
 func checkNamedByDNS(
-	c echo.Context, networkName, networkID string, cg *client.Globals,
+	ctx context.Context, networkName, networkID string,
+	cg *client.Globals, l echo.Logger,
 ) (bool, error) {
 	domain, err := client.NewDNSDomain(
 		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
@@ -57,7 +59,7 @@ func checkNamedByDNS(
 	}
 
 	subname := strings.TrimSuffix(networkName, domainSuffix)
-	txtRRset, err := client.GetRRset(c, *domain, subname, "TXT")
+	txtRRset, err := client.GetRRset(ctx, *domain, subname, "TXT", l)
 	if err != nil {
 		return false, err
 	}
@@ -79,19 +81,20 @@ type NetworkData struct {
 }
 
 func getNetworkData(
-	c echo.Context, address string, id string, cg *client.Globals,
+	ctx context.Context, address string, id string,
+	cg *client.Globals, l echo.Logger,
 ) (*NetworkData, error) {
-	controller, err := client.FindControllerByAddress(c, address, cg.Cache)
+	controller, err := client.FindControllerByAddress(ctx, address, cg.Cache, l)
 	if err != nil {
 		return nil, err
 	}
 
-	network, memberAddresses, err := client.GetNetworkInfo(c, *controller, id)
+	network, memberAddresses, err := client.GetNetworkInfo(ctx, *controller, id)
 	if err != nil {
 		return nil, err
 	}
 
-	members, err := client.GetNetworkMembersInfo(c, *controller, id, memberAddresses)
+	members, err := client.GetNetworkMembersInfo(ctx, *controller, id, memberAddresses)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +109,7 @@ func getNetworkData(
 		return nil, err
 	}
 
-	namedByDNS, err := checkNamedByDNS(c, *network.Name, *network.Id, cg)
+	namedByDNS, err := checkNamedByDNS(ctx, *network.Name, *network.Id, cg, l)
 	if err != nil {
 		return nil, err
 	}
@@ -137,12 +140,16 @@ func getNetwork(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+			l := c.Logger()
+
 			// Parse params
 			id := c.Param("id")
 			address := client.GetControllerAddress(id)
 
 			// Run queries
-			networkData, err := getNetworkData(c, address, id, app)
+			networkData, err := getNetworkData(ctx, address, id, app, l)
 			if err != nil {
 				return err
 			}
@@ -175,8 +182,8 @@ func getNetwork(
 }
 
 func nameNetwork(
-	c echo.Context, controller client.Controller, id string, name string,
-	cg *client.Globals,
+	ctx context.Context, controller client.Controller, id string, name string,
+	cg *client.Globals, l echo.Logger,
 ) error {
 	if len(name) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
@@ -197,7 +204,7 @@ func nameNetwork(
 	}
 
 	if _, err := client.CreateRRset(
-		c, *domain, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)},
+		ctx, *domain, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)}, l,
 	); err != nil {
 		// TODO: if a TXT RRset already exists but doesn't have the ID, just append a
 		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch
@@ -207,12 +214,12 @@ func nameNetwork(
 		))
 	}
 	return client.UpdateNetwork(
-		c, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
+		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
 	)
 }
 
 func setNetworkRules(
-	c echo.Context, controller client.Controller, id string, jsonRules string,
+	ctx context.Context, controller client.Controller, id string, jsonRules string,
 ) error {
 	rules := make([]map[string]interface{}, 0)
 	if err := json.Unmarshal([]byte(jsonRules), &rules); err != nil {
@@ -220,15 +227,13 @@ func setNetworkRules(
 	}
 
 	err := client.UpdateNetwork(
-		c, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
+		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
 	)
 	if err != nil {
 		return err
 	}
 
-	return c.Redirect(
-		http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
-	)
+	return nil
 }
 
 func postNetwork(
@@ -239,32 +244,44 @@ func postNetwork(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+			l := c.Logger()
+
 			// Parse params
 			id := c.Param("id")
 			address := client.GetControllerAddress(id)
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(c, address, app.Cache)
+			controller, err := client.FindControllerByAddress(ctx, address, app.Cache, l)
 			if err != nil {
 				return err
 			}
 
 			switch method {
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"invalid POST method %s", method,
+				))
 			case "SETNAME":
 				if err = nameNetwork(
-					c, *controller, id, c.FormValue("name"), app,
+					ctx, *controller, id, c.FormValue("name"), app, l,
 				); err != nil {
 					return err
 				}
 			case "SETRULES":
 				if err = setNetworkRules(
-					c, *controller, id, c.FormValue("rules"),
+					ctx, *controller, id, c.FormValue("rules"),
 				); err != nil {
 					return err
 				}
+
+				return c.Redirect(
+					http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
+				)
 			case "DELETE":
-				if err = client.DeleteNetwork(c, *controller, id); err != nil {
+				if err = client.DeleteNetwork(ctx, *controller, id); err != nil {
 					// TODO: add a tombstone to the TXT RRset?
 					return err
 				}

@@ -1,6 +1,7 @@
 package dns
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sort"
@@ -70,7 +71,9 @@ func sortSubnameRRsets(rrsets map[string][]desec.RRset) [][]desec.RRset {
 	return sorted
 }
 
-func getServerData(c echo.Context, cg *client.Globals) (*ServerData, error) {
+func getServerData(
+	ctx context.Context, cg *client.Globals, l echo.Logger,
+) (*ServerData, error) {
 	readLimiter := cg.RateLimiters[client.DesecReadLimiterName]
 	writeLimiter := cg.RateLimiters[client.DesecWriteLimiterName]
 	domain, err := client.NewDNSDomain(
@@ -80,12 +83,12 @@ func getServerData(c echo.Context, cg *client.Globals) (*ServerData, error) {
 		return nil, err
 	}
 
-	desecDomain, err := client.GetDomain(c, *domain)
+	desecDomain, err := client.GetDomain(ctx, *domain, l)
 	if err != nil {
 		return nil, err
 	}
 
-	subnameRRsets, err := client.GetRRsets(c, *domain)
+	subnameRRsets, err := client.GetRRsets(ctx, *domain, l)
 	if err != nil {
 		return nil, err
 	}
@@ -126,8 +129,12 @@ func getServer(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+			l := c.Logger()
+
 			// Run queries
-			serverData, err := getServerData(c, app)
+			serverData, err := getServerData(ctx, app, l)
 			if err != nil {
 				return err
 			}

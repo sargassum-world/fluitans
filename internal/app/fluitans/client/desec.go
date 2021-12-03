@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 )
@@ -49,12 +50,12 @@ func newReadRateLimitError(retryWaitSec float64) error {
 	)
 }
 
-func getRetryWait(c echo.Context, header http.Header) float64 {
+func getRetryWait(header http.Header, l log.Logger) float64 {
 	retryWait := header.Get("Retry-After")
 	floatWidth := 64
 	retryWaitSec, err := strconv.ParseFloat(retryWait, floatWidth)
 	if err != nil {
-		c.Logger().Error(errors.Wrap(err, "couldn't get parse Retry-After header value from deSEC API"))
+		l.Error(errors.Wrap(err, "couldn't get parse Retry-After header value from deSEC API"))
 		retryWaitSec = 1.0 // default to a retry period of 1 sec
 	}
 	return retryWaitSec
@@ -135,10 +136,10 @@ func (domain *DNSDomain) handleDesecMissingRRsetError(
 	return nil
 }
 
-func (domain *DNSDomain) handleDesecClientError(c echo.Context, res http.Response) error {
+func (domain *DNSDomain) handleDesecClientError(res http.Response, l log.Logger) error {
 	switch res.StatusCode {
 	case http.StatusTooManyRequests:
-		retryWaitSec := getRetryWait(c, res.Header)
+		retryWaitSec := getRetryWait(res.Header, l)
 		// The read limiter expected not to be throttled, so its estimates of API usage
 		// need to be adjusted upwards
 		domain.ReadLimiter.Throttled(time.Now(), retryWaitSec)

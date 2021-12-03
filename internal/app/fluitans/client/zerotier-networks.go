@@ -1,9 +1,9 @@
 package client
 
 import (
+	"context"
 	"encoding/json"
 
-	"github.com/labstack/echo/v4"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
@@ -17,9 +17,9 @@ func GetControllerAddress(networkID string) string {
 }
 
 func GetNetworkIDs(
-	c echo.Context, controllers []Controller, cache *Cache,
+	ctx context.Context, controllers []Controller, cache *Cache,
 ) ([][]string, error) {
-	eg, ctx := errgroup.WithContext(c.Request().Context())
+	eg, ctx := errgroup.WithContext(ctx)
 	networkIDs := make([][]string, len(controllers))
 	for i := range controllers {
 		networkIDs[i] = []string{}
@@ -63,9 +63,9 @@ func GetNetworkIDs(
 }
 
 func GetNetworks(
-	c echo.Context, controllers []Controller, ids [][]string,
+	ctx context.Context, controllers []Controller, ids [][]string,
 ) ([]map[string]zerotier.ControllerNetwork, error) {
-	eg, ctx := errgroup.WithContext(c.Request().Context())
+	eg, ctx := errgroup.WithContext(ctx)
 	networks := make([][]zerotier.ControllerNetwork, len(controllers))
 	for i := range controllers {
 		networks[i] = make([]zerotier.ControllerNetwork, len(ids[i]))
@@ -111,7 +111,7 @@ func GetNetworks(
 // Individual Network
 
 func GetNetworkInfo(
-	c echo.Context, controller Controller, id string,
+	ctx context.Context, controller Controller, id string,
 ) (*zerotier.ControllerNetwork, []string, error) {
 	client, cerr := zerotier.NewAuthClientWithResponses(
 		controller.Server, controller.Authtoken,
@@ -122,7 +122,7 @@ func GetNetworkInfo(
 
 	var network *zerotier.ControllerNetwork
 	var memberRevisions map[string]int
-	eg, ctx := errgroup.WithContext(c.Request().Context())
+	eg, ctx := errgroup.WithContext(ctx)
 	eg.Go(func() error {
 		res, err := client.GetControllerNetworkWithResponse(ctx, id)
 		if err != nil {
@@ -153,13 +153,12 @@ func GetNetworkInfo(
 	return network, memberAddresses, nil
 }
 
-func CreateNetwork(c echo.Context, controller Controller) (*zerotier.ControllerNetwork, error) {
+func CreateNetwork(ctx context.Context, controller Controller) (*zerotier.ControllerNetwork, error) {
 	client, cerr := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
 	if cerr != nil {
 		return nil, cerr
 	}
 
-	ctx := c.Request().Context()
 	sRes, err := client.GetStatusWithResponse(ctx)
 	if err != nil {
 		return nil, err
@@ -216,7 +215,7 @@ func CreateNetwork(c echo.Context, controller Controller) (*zerotier.ControllerN
 }
 
 func UpdateNetwork(
-	c echo.Context,
+	ctx context.Context,
 	controller Controller,
 	id string,
 	network zerotier.SetControllerNetworkJSONRequestBody,
@@ -226,18 +225,16 @@ func UpdateNetwork(
 		return err
 	}
 
-	ctx := c.Request().Context()
 	_, err = client.SetControllerNetworkWithResponse(ctx, id, network)
 	return err
 }
 
-func DeleteNetwork(c echo.Context, controller Controller, id string) error {
+func DeleteNetwork(ctx context.Context, controller Controller, id string) error {
 	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
 	if err != nil {
 		return err
 	}
 
-	ctx := c.Request().Context()
 	_, err = client.DeleteControllerNetworkWithResponse(ctx, id)
 	return err
 }

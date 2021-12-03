@@ -1,24 +1,26 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
 )
 
 // Domain
 
 func getDomainFromCache(
-	c echo.Context, domainName string, cache *Cache,
+	domainName string, cache *Cache, l log.Logger,
 ) (*desec.Domain, error) {
 	domain, cacheHit, err := cache.GetDomainByName(domainName)
 	if err != nil {
 		// Log the error and proceed to manually query all controllers
-		c.Logger().Error(errors.Wrap(err, fmt.Sprintf(
+		l.Error(errors.Wrap(err, fmt.Sprintf(
 			"couldn't get the cache entry for the domain with name %s", domainName,
 		)))
 		return nil, nil // treat an unparseable cache entry like a cache miss
@@ -40,20 +42,20 @@ func getDomainFromCache(
 	return domain, nil
 }
 
-func getDomainFromDesec(c echo.Context, domain DNSDomain) (*desec.Domain, error) {
+func getDomainFromDesec(
+	ctx context.Context, domain DNSDomain, l log.Logger,
+) (*desec.Domain, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
 		return nil, cerr
 	}
 
-	res, err := client.RetrieveDomainWithResponse(
-		c.Request().Context(), domain.DomainName,
-	)
+	res, err := client.RetrieveDomainWithResponse(ctx, domain.DomainName)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = domain.handleDesecClientError(c, *res.HTTPResponse); err != nil {
+	if err = domain.handleDesecClientError(*res.HTTPResponse, l); err != nil {
 		return nil, err
 	}
 
@@ -68,8 +70,10 @@ func getDomainFromDesec(c echo.Context, domain DNSDomain) (*desec.Domain, error)
 	return desecDomain, nil
 }
 
-func GetDomain(c echo.Context, domain DNSDomain) (*desec.Domain, error) {
-	desecDomain, err := getDomainFromCache(c, domain.DomainName, domain.Cache)
+func GetDomain(
+	ctx context.Context, domain DNSDomain, l log.Logger,
+) (*desec.Domain, error) {
+	desecDomain, err := getDomainFromCache(domain.DomainName, domain.Cache, l)
 	if err != nil {
 		return nil, err
 	}
@@ -83,5 +87,5 @@ func GetDomain(c echo.Context, domain DNSDomain) (*desec.Domain, error) {
 		return nil, err
 	}
 
-	return getDomainFromDesec(c, domain)
+	return getDomainFromDesec(ctx, domain, l)
 }

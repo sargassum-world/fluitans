@@ -22,17 +22,17 @@ func MakeEtag(segments ...string) string {
 
 // Headers for Etags
 
-func SetNoEtag(c echo.Context) {
-	c.Response().Header().Set("Cache-Control", "no-store, max-age=0")
+func SetNoEtag(resh http.Header) {
+	resh.Set("Cache-Control", "no-store, max-age=0")
 }
 
-func SetEtag(c echo.Context, etag string) {
-	c.Response().Header().Set("Cache-Control", "no-cache")
-	c.Response().Header().Set("Etag", etag)
+func SetEtag(resh http.Header, etag string) {
+	resh.Set("Cache-Control", "no-cache")
+	resh.Set("Etag", etag)
 }
 
-func CheckEtagMatch(c echo.Context, etag string) bool {
-	match := c.Request().Header.Get("If-None-Match")
+func CheckEtagMatch(reqh http.Header, etag string) bool {
+	match := reqh.Get("If-None-Match")
 	if match == "" || etag == "" {
 		return false
 	}
@@ -44,8 +44,8 @@ func ProcessEtag(c echo.Context, templateEtagSegments []string, dataEtagSegments
 	etag := MakeEtag(JoinEtagSegments(
 		append(templateEtagSegments, dataEtagSegments...)...,
 	))
-	SetEtag(c, etag)
-	if CheckEtagMatch(c, etag) {
+	SetEtag(c.Response().Header(), etag)
+	if CheckEtagMatch(c.Request().Header, etag) {
 		return true, c.NoContent(http.StatusNotModified)
 	}
 

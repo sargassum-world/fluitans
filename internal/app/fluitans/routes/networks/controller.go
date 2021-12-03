@@ -1,6 +1,7 @@
 package networks
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -24,7 +25,7 @@ type ControllerData struct {
 }
 
 func getControllerData(
-	c echo.Context, name string, templateName string, cache *client.Cache,
+	ctx context.Context, name string, templateName string, cache *client.Cache,
 ) (*ControllerData, error) {
 	controller, ok, err := client.FindController(name)
 	if err != nil {
@@ -38,13 +39,15 @@ func getControllerData(
 		)
 	}
 
-	status, controllerStatus, networkIDs, err := client.GetController(c, *controller, cache)
+	status, controllerStatus, networkIDs, err := client.GetController(
+		ctx, *controller, cache,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	networks, err := client.GetNetworks(
-		c, []client.Controller{*controller}, [][]string{networkIDs},
+		ctx, []client.Controller{*controller}, [][]string{networkIDs},
 	)
 	if err != nil {
 		return nil, err
@@ -74,11 +77,14 @@ func getController(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+
 			// Parse params
 			name := c.Param("name")
 
 			// Run queries
-			controllerData, err := getControllerData(c, name, t, app.Cache)
+			controllerData, err := getControllerData(ctx, name, t, app.Cache)
 			if err != nil {
 				return err
 			}

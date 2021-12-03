@@ -1,7 +1,8 @@
 package client
 
 import (
-	"github.com/labstack/echo/v4"
+	"context"
+
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
@@ -10,7 +11,8 @@ import (
 // All Network Members
 
 func GetNetworkMembersInfo(
-	c echo.Context, controller Controller, networkID string, memberAddresses []string,
+	ctx context.Context, controller Controller,
+	networkID string, memberAddresses []string,
 ) (map[string]zerotier.ControllerNetworkMember, error) {
 	client, cerr := zerotier.NewAuthClientWithResponses(
 		controller.Server, controller.Authtoken,
@@ -19,7 +21,7 @@ func GetNetworkMembersInfo(
 		return nil, cerr
 	}
 
-	eg, ctx := errgroup.WithContext(c.Request().Context())
+	eg, ctx := errgroup.WithContext(ctx)
 	members := make([]zerotier.ControllerNetworkMember, len(memberAddresses))
 	for i := range memberAddresses {
 		members[i] = zerotier.ControllerNetworkMember{}
@@ -54,10 +56,8 @@ func GetNetworkMembersInfo(
 // Individual Network Member
 
 func UpdateMember(
-	c echo.Context,
-	controller Controller,
-	networkID string,
-	memberAddress string,
+	ctx context.Context, controller Controller,
+	networkID string, memberAddress string,
 	member zerotier.SetControllerNetworkMemberJSONRequestBody,
 ) error {
 	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
@@ -65,7 +65,6 @@ func UpdateMember(
 		return err
 	}
 
-	ctx := c.Request().Context()
 	_, err = client.SetControllerNetworkMemberWithResponse(
 		ctx, networkID, memberAddress, member,
 	)

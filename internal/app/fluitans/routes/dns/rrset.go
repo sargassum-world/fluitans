@@ -19,6 +19,10 @@ func postRRset(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+			l := c.Logger()
+
 			// Parse params
 			subname := c.Param("subname")
 			if subname == "@" {
@@ -36,15 +40,17 @@ func postRRset(
 			}
 
 			switch method {
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"invalid POST method %s", method,
+				))
 			case "DELETE":
-				if err = client.DeleteRRset(c, *domain, subname, recordType); err != nil {
+				if err = client.DeleteRRset(ctx, *domain, subname, recordType, l); err != nil {
 					return err
 				}
 
 				return c.Redirect(http.StatusSeeOther, "/dns")
 			}
-
-			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/dns/%s...", subname))
 		}, nil
 	}
 }

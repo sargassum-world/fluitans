@@ -1,6 +1,7 @@
 package networks
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -13,15 +14,12 @@ import (
 )
 
 func setMemberAuthorization(
-	c echo.Context,
-	controller client.Controller,
-	networkID string,
-	memberAddress string,
-	authorized bool,
+	ctx context.Context, controller client.Controller, networkID string,
+	memberAddress string, authorized bool,
 ) error {
 	auth := authorized
 	err := client.UpdateMember(
-		c, controller, networkID, memberAddress,
+		ctx, controller, networkID, memberAddress,
 		zerotier.SetControllerNetworkMemberJSONRequestBody{Authorized: &auth},
 	)
 	return err
@@ -35,6 +33,10 @@ func postDevice(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+			l := c.Logger()
+
 			// Parse params
 			networkID := c.Param("id")
 			controllerAddress := client.GetControllerAddress(networkID)
@@ -42,27 +44,36 @@ func postDevice(
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(c, controllerAddress, app.Cache)
+			controller, err := client.FindControllerByAddress(
+				ctx, controllerAddress, app.Cache, l,
+			)
 			if err != nil {
 				return err
 			}
 
 			switch method {
+			default:
+				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+					"invalid POST method %s", method,
+				))
 			case "AUTHORIZE":
-				err = setMemberAuthorization(c, *controller, networkID, memberAddress, true)
-				if err != nil {
+
+				if err = setMemberAuthorization(
+					ctx, *controller, networkID, memberAddress, true,
+				); err != nil {
 					return err
 				}
 			case "DEAUTHORIZE":
-				err = setMemberAuthorization(c, *controller, networkID, memberAddress, false)
-				if err != nil {
+				if err = setMemberAuthorization(
+					ctx, *controller, networkID, memberAddress, false,
+				); err != nil {
 					return err
 				}
 			}
 
-			return c.Redirect(
-				http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
-			)
+			return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
+				"/networks/%s#device-%s", networkID, memberAddress,
+			))
 		}, nil
 	}
 }
@@ -75,18 +86,24 @@ func postDevices(
 		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
 	case *client.Globals:
 		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
+			l := c.Logger()
+
 			// Parse params
 			networkID := c.Param("id")
 			controllerAddress := client.GetControllerAddress(networkID)
 			memberAddress := c.FormValue("address")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(c, controllerAddress, app.Cache)
+			controller, err := client.FindControllerByAddress(
+				ctx, controllerAddress, app.Cache, l,
+			)
 			if err != nil {
 				return err
 			}
 
-			err = setMemberAuthorization(c, *controller, networkID, memberAddress, true)
+			err = setMemberAuthorization(ctx, *controller, networkID, memberAddress, true)
 			if err != nil {
 				return err
 			}
