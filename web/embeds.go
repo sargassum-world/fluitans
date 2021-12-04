@@ -7,41 +7,58 @@ import (
 	"io/fs"
 
 	"github.com/benbjohnson/hashfs"
+
+	"github.com/sargassum-eco/fluitans/pkg/framework/embeds"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
 var (
 	//go:embed static/*
-	staticFS    embed.FS
-	StaticFS, _ = fs.Sub(staticFS, "static")
-	StaticHFS   = hashfs.NewFS(StaticFS)
+	staticEFS   embed.FS
+	staticFS, _ = fs.Sub(staticEFS, "static")
+	staticHFS   = hashfs.NewFS(staticFS)
 )
 
 var (
 	//go:embed templates/*.tmpl templates/*/*.tmpl
-	templatesFS    embed.FS
-	TemplatesFS, _ = fs.Sub(templatesFS, "templates")
+	templatesEFS   embed.FS
+	templatesFS, _ = fs.Sub(templatesEFS, "templates")
 )
 
 var (
 	//go:embed app/public/build/*
-	appFS    embed.FS
-	AppFS, _ = fs.Sub(appFS, "app/public/build")
-	AppHFS   = hashfs.NewFS(AppFS)
+	appEFS   embed.FS
+	appFS, _ = fs.Sub(appEFS, "app/public/build")
+	appHFS   = hashfs.NewFS(appFS)
 )
 
 var (
 	//go:embed app/public/build/fonts/*
-	fontsFS    embed.FS
-	FontsFS, _ = fs.Sub(fontsFS, "app/public/build/fonts")
+	fontsEFS   embed.FS
+	fontsFS, _ = fs.Sub(fontsEFS, "app/public/build/fonts")
 )
 
-var EmbedAssets = []string{
-	"bundle-eager.js",
-	"theme-eager.css",
-}
-
 //go:embed app/public/build/bundle-eager.js
-var BundleEagerJS string
+var bundleEagerJS string
 
 //go:embed app/public/build/theme-eager.min.css
-var BundleEagerCSS string
+var bundleEagerCSS string
+
+func NewEmbeds() embeds.Embeds {
+	return embeds.Embeds{
+		StaticFS:    staticFS,
+		StaticHFS:   staticHFS,
+		TemplatesFS: templatesFS,
+		AppFS:       appFS,
+		AppHFS:      appHFS,
+		FontsFS:     fontsFS,
+		Inlines: route.NewInlines(
+			map[string]string{
+				"BundleEager": bundleEagerCSS,
+			},
+			map[string]string{
+				"BundleEager": bundleEagerJS,
+			},
+		),
+	}
+}

@@ -10,9 +10,16 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/template"
 )
 
-type Embeds struct {
+type Inlines struct {
 	CSS template.EmbeddedCSSAssets
 	JS  template.EmbeddedJSAssets
+}
+
+func NewInlines(css map[string]string, js map[string]string) Inlines {
+	return Inlines{
+		CSS: template.PreprocessCSS(css),
+		JS:  template.PreprocessJS(js),
+	}
 }
 
 type TemplateFingerprints struct {
@@ -50,7 +57,7 @@ func ComputeTemplateFingerprints(
 }
 
 type TemplateGlobals struct {
-	Embeds               Embeds
+	Inlines              Inlines
 	TemplateFingerprints TemplateFingerprints
 	App                  interface{}
 }

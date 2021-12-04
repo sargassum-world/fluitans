@@ -1,45 +1,14 @@
 package fluitans
 
 import (
-	"io/fs"
-
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/framework/fsutil"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
-	"github.com/sargassum-eco/fluitans/pkg/framework/template"
+	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
-	"github.com/sargassum-eco/fluitans/web"
 )
-
-type Globals struct {
-	Template route.TemplateGlobals
-	Static   route.StaticGlobals
-}
-
-func computeTemplateFingerprints() (*route.TemplateFingerprints, error) {
-	layoutFiles, err := fsutil.ListFiles(web.TemplatesFS, template.FilterApp)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't load template layouts & partials")
-	}
-
-	pageFiles, err := fsutil.ListFiles(web.TemplatesFS, template.FilterPage)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't load template pages")
-	}
-
-	appFiles, err := fsutil.ListFiles(web.AppFS, template.FilterAsset)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't load app assets")
-	}
-
-	return route.ComputeTemplateFingerprints(
-		layoutFiles, pageFiles, appFiles, web.TemplatesFS, web.AppFS,
-	)
-}
 
 func setupRateLimiters(
 	config conf.Config,
@@ -56,31 +25,7 @@ func setupRateLimiters(
 	}
 }
 
-func makeTemplatedRouteEmbeds() route.Embeds {
-	return route.Embeds{
-		CSS: template.PreprocessCSS(template.EmbeddableAssets{
-			"BundleEager": web.BundleEagerCSS,
-		}),
-		JS: template.PreprocessJS(template.EmbeddableAssets{
-			"BundleEager": web.BundleEagerJS,
-		}),
-	}
-}
-
-func makeStaticGlobals() route.StaticGlobals {
-	return route.StaticGlobals{
-		FS: map[string]fs.FS{
-			"Web":   web.StaticFS,
-			"Fonts": web.FontsFS,
-		},
-		HFS: map[string]fs.FS{
-			"Static": web.StaticHFS,
-			"App":    web.AppHFS,
-		},
-	}
-}
-
-func makeAppGlobals() (*client.Globals, error) {
+func MakeAppGlobals(l log.Logger) (*client.Globals, error) {
 	config, err := conf.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")
@@ -98,6 +43,7 @@ func makeAppGlobals() (*client.Globals, error) {
 
 	return &client.Globals{
 		Config:       *config,
+		Logger:       l,
 		Cache:        cache,
 		RateLimiters: rateLimiters,
 		DNSDomain: &client.DNSDomain{

@@ -6,12 +6,11 @@ import (
 )
 
 type (
-	EmbeddableAssets  map[string]string
 	EmbeddedCSSAssets map[string]template.CSS
 	EmbeddedJSAssets  map[string]template.JS
 )
 
-func PreprocessCSS(assets EmbeddableAssets) EmbeddedCSSAssets {
+func PreprocessCSS(assets map[string]string) EmbeddedCSSAssets {
 	e := make(EmbeddedCSSAssets)
 	for key, value := range assets {
 		e[key] = template.CSS(value)
@@ -19,7 +18,7 @@ func PreprocessCSS(assets EmbeddableAssets) EmbeddedCSSAssets {
 	return e
 }
 
-func PreprocessJS(assets EmbeddableAssets) EmbeddedJSAssets {
+func PreprocessJS(assets map[string]string) EmbeddedJSAssets {
 	e := make(EmbeddedJSAssets)
 	for key, value := range assets {
 		//nolint:gosec // This bundle is generated from code in web/app/src, so we know it's well-formed.

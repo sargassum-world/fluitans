@@ -22,15 +22,7 @@ func (t *TemplateRenderer) Render(
 	return tmpl.ExecuteTemplate(w, name, data)
 }
 
-func FuncMap(appNamer, staticNamer HashNamer) template.FuncMap {
-	return template.FuncMap{
-		"appHashed":     getHashedName("app", appNamer),
-		"staticHashed":  getHashedName("static", staticNamer),
-		"describeError": describeError,
-	}
-}
-
-func NewRenderer(fsys fs.FS, functions ...template.FuncMap) *TemplateRenderer {
+func NewTemplateRenderer(fsys fs.FS, functions ...template.FuncMap) *TemplateRenderer {
 	tmpl := template.New("App").Funcs(sprig.FuncMap())
 	for _, f := range functions {
 		tmpl = tmpl.Funcs(f)

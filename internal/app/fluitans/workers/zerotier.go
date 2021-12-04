@@ -7,10 +7,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
-func PrescanZerotierControllers(cg *client.Globals, l log.Logger) {
+func PrescanZerotierControllers(cg *client.Globals) {
+	l := cg.Logger
 	for {
 		controllers, err := client.GetControllers(cg.Config)
 		if err != nil {

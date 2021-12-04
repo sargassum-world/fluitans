@@ -8,10 +8,10 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
-func PrefetchDNSRecords(cg *client.Globals, l log.Logger) {
+func PrefetchDNSRecords(cg *client.Globals) {
+	l := cg.Logger
 	for {
 		if _, err := client.GetRRsets(context.Background(), cg.DNSDomain, l); err != nil {
 			l.Error(errors.Wrap(err, "couldn't prefetch DNS records for cache"))

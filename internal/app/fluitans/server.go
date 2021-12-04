@@ -2,7 +2,6 @@
 package fluitans
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -12,58 +11,12 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/tmplfunc"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
-	"github.com/sargassum-eco/fluitans/pkg/framework/log"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
-	"github.com/sargassum-eco/fluitans/pkg/framework/template"
 	"github.com/sargassum-eco/fluitans/web"
 )
 
-func NewRenderer() *template.TemplateRenderer {
-	return template.NewRenderer(
-		web.TemplatesFS,
-		template.FuncMap(web.AppHFS.HashName, web.StaticHFS.HashName),
-		tmplfunc.FuncMap,
-	)
-}
-
-func MakeGlobals() (*Globals, error) {
-	f, err := computeTemplateFingerprints()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't compute template fingerprints")
-	}
-
-	ag, err := makeAppGlobals()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make app globals")
-	}
-
-	return &Globals{
-		Template: route.TemplateGlobals{
-			Embeds:               makeTemplatedRouteEmbeds(),
-			TemplateFingerprints: *f,
-			App:                  ag,
-		},
-		Static: makeStaticGlobals(),
-	}, nil
-}
-
-func RegisterRoutes(e route.EchoRouter, g *Globals) error {
-	if err := route.RegisterTemplated(e, routes.TemplatedAssets, g.Template); err != nil {
-		return errors.Wrap(err, "couldn't register templated assets")
-	}
-
-	if err := route.RegisterStatic(e, routes.StaticAssets, g.Static); err != nil {
-		return errors.Wrap(err, "couldn't register static assets")
-	}
-
-	if err := route.RegisterTemplated(e, routes.Pages, g.Template); err != nil {
-		return errors.Wrap(err, "couldn't register templated routes")
-	}
-
-	return nil
-}
-
-func NewHTTPErrorHandler(g *Globals) (func(err error, c echo.Context), error) {
+func NewHTTPErrorHandler(g *framework.Globals) (func(err error, c echo.Context), error) {
 	return func(err error, c echo.Context) {
 		code := http.StatusInternalServerError
 		if herr, ok := err.(*echo.HTTPError); ok {
@@ -79,39 +32,45 @@ func NewHTTPErrorHandler(g *Globals) (func(err error, c echo.Context), error) {
 	}, nil
 }
 
-func LaunchBackgroundWorkers(g *Globals, l log.Logger) error {
-	switch app := g.Template.App.(type) {
-	default:
-		return fmt.Errorf("app globals are of unexpected type %T", g.Template.App)
-	case *client.Globals:
-		go workers.PrescanZerotierControllers(app, l)
-		go workers.PrefetchDNSRecords(app, l)
-		go workers.TestWriteLimiter(app)
-	}
-	return nil
+func RegisterRoutes(g *framework.Globals, e route.EchoRouter) error {
+	return g.RegisterRoutes(e, routes.TemplatedAssets, routes.StaticAssets, routes.Pages)
+}
+
+func LaunchBackgroundWorkers(ag *client.Globals) {
+	go workers.PrescanZerotierControllers(ag)
+	go workers.PrefetchDNSRecords(ag)
+	go workers.TestWriteLimiter(ag)
 }
 
 func PrepareServer(e *echo.Echo) error {
-	e.Renderer = NewRenderer()
+	embeds := web.NewEmbeds()
+	e.Renderer = embeds.NewTemplateRenderer(tmplfunc.FuncMap)
 
-	g, err := MakeGlobals()
+	// Globals
+	ag, err := MakeAppGlobals(e.Logger)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "couldn't make app globals")
 	}
 
+	g, err := framework.NewGlobals(embeds, ag)
+	if err != nil {
+		return errors.Wrap(err, "couldn't make server globals")
+	}
+
+	// Routes
+	if err = RegisterRoutes(g, e); err != nil {
+		return errors.Wrap(err, "couldn't register routes")
+	}
+
+	// Error Handling
 	errorHandler, err := NewHTTPErrorHandler(g)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "couldn't register HTTP error handler")
 	}
 	e.HTTPErrorHandler = errorHandler
 
-	if err = RegisterRoutes(e, g); err != nil {
-		return err
-	}
-
-	if err = LaunchBackgroundWorkers(g, e.Logger); err != nil {
-		return err
-	}
+	// Background Workers
+	LaunchBackgroundWorkers(ag)
 
 	return nil
 }

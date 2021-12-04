@@ -2,8 +2,19 @@ package template
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 )
+
+// All functions
+
+func FuncMap(appNamer, staticNamer HashNamer) template.FuncMap {
+	return template.FuncMap{
+		"appHashed":     getHashedName("app", appNamer),
+		"staticHashed":  getHashedName("static", staticNamer),
+		"describeError": describeError,
+	}
+}
 
 // Asset hashed naming
 

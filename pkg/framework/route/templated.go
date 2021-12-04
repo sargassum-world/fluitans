@@ -15,9 +15,9 @@ type Meta struct {
 }
 
 type RenderData struct {
-	Meta   Meta
-	Embeds Embeds
-	Data   interface{}
+	Meta    Meta
+	Inlines Inlines
+	Data    interface{}
 }
 
 func MakeRenderData(
@@ -27,8 +27,8 @@ func MakeRenderData(
 		Meta: Meta{
 			Path: c.Request().URL.Path,
 		},
-		Embeds: g.Embeds,
-		Data:   data,
+		Inlines: g.Inlines,
+		Data:    data,
 	}
 }
 
