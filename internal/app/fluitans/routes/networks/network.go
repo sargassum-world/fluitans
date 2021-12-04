@@ -12,10 +12,8 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/caching"
-	"github.com/sargassum-eco/fluitans/internal/fingerprint"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/route"
-	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -72,6 +70,7 @@ type NetworkData struct {
 	Network          zerotier.ControllerNetwork
 	Members          map[string]zerotier.ControllerNetworkMember
 	JSONPrintedRules string
+	DomainName       string
 	NamedByDNS       bool
 }
 
@@ -117,6 +116,7 @@ func getNetworkData(
 		Network:          *network,
 		Members:          members,
 		JSONPrintedRules: string(rules),
+		DomainName:       cg.Config.DomainName,
 		NamedByDNS:       namedByDNS,
 	}, nil
 }
@@ -125,11 +125,9 @@ func getNetwork(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/network.page.tmpl"
-	tte, ok := te[t]
-	if !ok {
-		return nil, errors.Wrap(
-			te.NewNotFoundError(t), "couldn't find template for networks.getNetwork",
-		)
+	tte, err := templates.GetTemplate(te, t, "networks.getNetwork")
+	if err != nil {
+		return nil, err
 	}
 
 	switch app := g.App.(type) {
@@ -151,31 +149,12 @@ func getNetwork(
 				return err
 			}
 
-			// Handle Etag
-			etagData, err := json.Marshal(networkData)
-			if err != nil {
+			// Produce output
+			noContent, err := templates.ProcessEtag(c, tte, networkData)
+			if err != nil || noContent {
 				return err
 			}
-
-			if noContent, err := caching.ProcessEtag(
-				c, tte, fingerprint.Compute(etagData),
-			); noContent {
-				return err
-			}
-
-			// Render template
-			return c.Render(http.StatusOK, t, struct {
-				Meta   template.Meta
-				Embeds template.Embeds
-				Data   NetworkData
-			}{
-				Meta: template.Meta{
-					Path:       c.Request().URL.Path,
-					DomainName: app.Config.DomainName,
-				},
-				Embeds: g.Embeds,
-				Data:   *networkData,
-			})
+			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, *networkData))
 		}, nil
 	}
 }

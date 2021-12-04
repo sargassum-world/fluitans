@@ -2,7 +2,6 @@ package dns
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"sort"
 	"strings"
@@ -13,10 +12,8 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/caching"
-	"github.com/sargassum-eco/fluitans/internal/fingerprint"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/route"
-	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 )
@@ -112,11 +109,9 @@ func getServer(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "dns/server.page.tmpl"
-	tte, ok := te[t]
-	if !ok {
-		return nil, errors.Wrap(
-			te.NewNotFoundError(t), "couldn't find template for dns.getServer",
-		)
+	tte, err := templates.GetTemplate(te, t, "dns.getServer")
+	if err != nil {
+		return nil, err
 	}
 
 	switch app := g.App.(type) {
@@ -134,31 +129,12 @@ func getServer(
 				return err
 			}
 
-			// Handle Etag
-			etagData, err := json.Marshal(serverData)
-			if err != nil {
+			// Produce output
+			noContent, err := templates.ProcessEtag(c, tte, serverData)
+			if err != nil || noContent {
 				return err
 			}
-
-			if noContent, err := caching.ProcessEtag(
-				c, tte, fingerprint.Compute(etagData),
-			); noContent {
-				return err
-			}
-
-			// Render template
-			return c.Render(http.StatusOK, t, struct {
-				Meta   template.Meta
-				Embeds template.Embeds
-				Data   ServerData
-			}{
-				Meta: template.Meta{
-					Path:       c.Request().URL.Path,
-					DomainName: app.Config.DomainName,
-				},
-				Embeds: g.Embeds,
-				Data:   *serverData,
-			})
+			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, *serverData))
 		}, nil
 	}
 }

@@ -40,10 +40,8 @@ func CheckEtagMatch(reqh http.Header, etag string) bool {
 	return match == etag
 }
 
-func ProcessEtag(c echo.Context, templateEtagSegments []string, dataEtagSegments ...string) (bool, error) {
-	etag := MakeEtag(JoinEtagSegments(
-		append(templateEtagSegments, dataEtagSegments...)...,
-	))
+func ProcessEtag(c echo.Context, etagSegments []string) (bool, error) {
+	etag := MakeEtag(JoinEtagSegments(etagSegments...))
 	SetEtag(c.Response().Header(), etag)
 	if CheckEtagMatch(c.Request().Header, etag) {
 		return true, c.NoContent(http.StatusNotModified)

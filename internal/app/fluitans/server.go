@@ -14,12 +14,12 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
 	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/internal/route"
-	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/web"
 )
 
 func NewRenderer() *templates.TemplateRenderer {
-	return templates.New(web.AppHFS.HashName, web.StaticHFS.HashName, web.TemplatesFS)
+	functions := templates.FuncMap(web.AppHFS.HashName, web.StaticHFS.HashName)
+	return templates.NewRenderer(functions, web.TemplatesFS)
 }
 
 func MakeGlobals() (*Globals, error) {
@@ -60,33 +60,19 @@ func RegisterRoutes(e route.EchoRouter, g *Globals) error {
 }
 
 func NewHTTPErrorHandler(g *Globals) (func(err error, c echo.Context), error) {
-	switch app := g.Template.App.(type) {
-	default:
-		return nil, fmt.Errorf("app globals are of unexpected type %T", g.Template.App)
-	case *client.Globals:
-		return func(err error, c echo.Context) {
-			code := http.StatusInternalServerError
-			if herr, ok := err.(*echo.HTTPError); ok {
-				code = herr.Code
-			}
-			perr := c.Render(code, "httperr.page.tmpl", struct {
-				Meta   template.Meta
-				Embeds template.Embeds
-				Data   int
-			}{
-				Meta: template.Meta{
-					Path:       c.Request().URL.Path,
-					DomainName: app.Config.DomainName,
-				},
-				Embeds: g.Template.Embeds,
-				Data:   code,
-			})
-			if perr != nil {
-				c.Logger().Error(err)
-			}
+	return func(err error, c echo.Context) {
+		code := http.StatusInternalServerError
+		if herr, ok := err.(*echo.HTTPError); ok {
+			code = herr.Code
+		}
+		perr := c.Render(
+			code, "httperr.page.tmpl", templates.MakeRenderData(c, g.Template, code),
+		)
+		if perr != nil {
 			c.Logger().Error(err)
-		}, nil
-	}
+		}
+		c.Logger().Error(err)
+	}, nil
 }
 
 func LaunchBackgroundWorkers(g *Globals, l log.Logger) error {

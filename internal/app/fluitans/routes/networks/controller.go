@@ -2,7 +2,6 @@ package networks
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -12,10 +11,8 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/caching"
-	"github.com/sargassum-eco/fluitans/internal/fingerprint"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/route"
-	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -68,11 +65,9 @@ func getController(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/controller.page.tmpl"
-	tte, ok := te[t]
-	if !ok {
-		return nil, errors.Wrap(
-			te.NewNotFoundError(t), "couldn't find template for networks.getController",
-		)
+	tte, err := templates.GetTemplate(te, t, "networks.getController")
+	if err != nil {
+		return nil, err
 	}
 
 	switch app := g.App.(type) {
@@ -92,34 +87,15 @@ func getController(
 				return err
 			}
 
-			// Handle Etag
+			// Produce output
 			// Zero out clocks, since they will always change the Etag
 			*controllerData.Status.Clock = 0
 			*controllerData.ControllerStatus.Clock = 0
-			etagData, err := json.Marshal(controllerData)
-			if err != nil {
+			noContent, err := templates.ProcessEtag(c, tte, controllerData)
+			if err != nil || noContent {
 				return err
 			}
-
-			if noContent, err := caching.ProcessEtag(
-				c, tte, fingerprint.Compute(etagData),
-			); noContent {
-				return err
-			}
-
-			// Render template
-			return c.Render(http.StatusOK, t, struct {
-				Meta   template.Meta
-				Embeds template.Embeds
-				Data   ControllerData
-			}{
-				Meta: template.Meta{
-					Path:       c.Request().URL.Path,
-					DomainName: app.Config.DomainName,
-				},
-				Embeds: g.Embeds,
-				Data:   *controllerData,
-			})
+			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, *controllerData))
 		}, nil
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/benbjohnson/hashfs"
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/route"
 )
@@ -54,7 +55,7 @@ func webmanifest(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 
 	return func(c echo.Context) error {
 		// Handle Etag
-		if noContent, err := caching.ProcessEtag(c, tte); noContent {
+		if noContent, err := templates.ProcessEtag(c, tte, ""); noContent {
 			return err
 		}
 

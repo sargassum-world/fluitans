@@ -2,7 +2,6 @@ package networks
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -12,10 +11,8 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/caching"
-	"github.com/sargassum-eco/fluitans/internal/fingerprint"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/route"
-	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -54,11 +51,9 @@ func getNetworks(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/networks.page.tmpl"
-	tte, ok := te[t]
-	if !ok {
-		return nil, errors.Wrap(
-			te.NewNotFoundError(t), "couldn't find template for networks.getNetworks",
-		)
+	tte, err := templates.GetTemplate(te, t, "networks.getNetworks")
+	if err != nil {
+		return nil, err
 	}
 
 	switch app := g.App.(type) {
@@ -75,29 +70,12 @@ func getNetworks(
 				return err
 			}
 
-			// Handle Etag
-			etagData, err := json.Marshal(networksData)
-			if err != nil {
+			// Produce output
+			noContent, err := templates.ProcessEtag(c, tte, networksData)
+			if noContent || (err != nil) {
 				return err
 			}
-
-			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
-				return err
-			}
-
-			// Render template
-			return c.Render(http.StatusOK, t, struct {
-				Meta   template.Meta
-				Embeds template.Embeds
-				Data   []NetworksData
-			}{
-				Meta: template.Meta{
-					Path:       c.Request().URL.Path,
-					DomainName: app.Config.DomainName,
-				},
-				Embeds: g.Embeds,
-				Data:   networksData,
-			})
+			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, networksData))
 		}, nil
 	}
 }
@@ -126,7 +104,6 @@ func postNetworks(
 			if err != nil {
 				return err
 			}
-
 			if !ok {
 				return echo.NewHTTPError(
 					http.StatusNotFound, fmt.Sprintf("Controller %s not found", name),
@@ -139,14 +116,11 @@ func postNetworks(
 			}
 
 			created := createdNetwork.Id
-
 			if created == nil {
 				return echo.NewHTTPError(
 					http.StatusInternalServerError, "Network status unknown",
 				)
 			}
-
-			// Render template
 			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
 		}, nil
 	}

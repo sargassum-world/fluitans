@@ -39,19 +39,19 @@
             <label class="label" for="name">Domain Name</label>
             <div class="field has-addons">
               <div class="control">
-                {{if hasSuffix .Meta.DomainName .Data.Network.Name}}
+                {{if hasSuffix .Data.DomainName .Data.Network.Name}}
                 <input
                   type="text"
                   class="input"
                   name="name"
-                  value="{{trimSuffix (print "." .Meta.DomainName) .Data.Network.Name}}"
+                  value="{{trimSuffix (print "." .Data.DomainName) .Data.Network.Name}}"
                 >
                 {{else}}
                 <input type="text" class="input" name="name" value="{{.Data.Network.Name}}">
                 {{end}}
               </div>
               <div class="control">
-                <span class="button is-static">.{{.Meta.DomainName}}</span>
+                <span class="button is-static">.{{.Data.DomainName}}</span>
               </div>
             </div>
             <div class="field">
