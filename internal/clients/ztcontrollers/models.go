@@ -1,4 +1,8 @@
-package models
+package ztcontrollers
+
+import (
+	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+)
 
 type Controller struct {
 	Server            string  `json:"server"`
@@ -8,7 +12,6 @@ type Controller struct {
 	NetworkCostWeight float32 `json:"local"`
 }
 
-type ZerotierDNSSettings struct {
-	NetworkTTL int64 `json:"networkTTL"`
-	DeviceTTL  int64 `json:"deviceTTL"`
+func (c Controller) NewClient() (*zerotier.ClientWithResponses, error) {
+	return zerotier.NewAuthClientWithResponses(c.Server, c.Authtoken)
 }

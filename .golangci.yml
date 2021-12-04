@@ -45,6 +45,7 @@ linters:
     - goprintffuncname
     - gosec
     - ifshort
+    - lll
     - misspell
     - noctx
     - nolintlint

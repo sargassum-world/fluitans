@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/controllers"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/dns"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/networks"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
@@ -27,14 +28,15 @@ var Pages = append(
 		},
 	},
 	append(
-		networks.Pages,
+		append(
+			controllers.Pages,
+			networks.Pages...,
+		),
 		dns.Pages...,
 	)...,
 )
 
-func getHome(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "home.page.tmpl"
 	err := te.RequireSegments("pages.getHome", t)
 	if err != nil {
@@ -46,9 +48,7 @@ func getHome(
 	}, nil
 }
 
-func getLogin(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "login.page.tmpl"
 	err := te.RequireSegments("pages.getLogin", t)
 	if err != nil {

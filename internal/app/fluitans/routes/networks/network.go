@@ -11,14 +11,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+	"github.com/sargassum-eco/fluitans/internal/clients/desec"
+	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 func addNDPAddresses(
-	id string,
-	v6AssignMode zerotier.V6AssignMode,
+	id string, v6AssignMode zerotier.V6AssignMode,
 	members map[string]zerotier.ControllerNetworkMember,
 ) error {
 	n6plane := v6AssignMode.N6plane
@@ -41,17 +42,15 @@ func addNDPAddresses(
 }
 
 func checkNamedByDNS(
-	ctx context.Context, networkName, networkID string,
-	cg *client.Globals, l echo.Logger,
+	ctx context.Context, networkName, networkID string, c *desec.Client,
 ) (bool, error) {
-	domain := cg.DNSDomain
-	domainSuffix := fmt.Sprintf(".%s", domain.DomainName)
+	domainSuffix := fmt.Sprintf(".%s", c.Config.DomainName)
 	if !strings.HasSuffix(networkName, domainSuffix) {
 		return false, nil
 	}
 
 	subname := strings.TrimSuffix(networkName, domainSuffix)
-	txtRRset, err := client.GetRRset(ctx, domain, subname, "TXT", l)
+	txtRRset, err := c.GetRRset(ctx, subname, "TXT")
 	if err != nil {
 		return false, err
 	}
@@ -65,7 +64,7 @@ func checkNamedByDNS(
 }
 
 type NetworkData struct {
-	Controller       models.Controller
+	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
 	Members          map[string]zerotier.ControllerNetworkMember
 	JSONPrintedRules string
@@ -74,37 +73,32 @@ type NetworkData struct {
 }
 
 func getNetworkData(
-	ctx context.Context, address string, id string,
-	cg *client.Globals, l echo.Logger,
+	ctx context.Context, address, id string,
+	c *ztc.Client, cc *ztcontrollers.Client, dc *desec.Client,
 ) (*NetworkData, error) {
-	controller, err := client.FindControllerByAddress(
-		ctx, address, cg.Config, cg.Cache, l,
-	)
+	controller, err := cc.FindControllerByAddress(ctx, address)
 	if err != nil {
 		return nil, err
 	}
 
-	network, memberAddresses, err := client.GetNetworkInfo(ctx, *controller, id)
+	network, memberAddresses, err := c.GetNetworkInfo(ctx, *controller, id)
 	if err != nil {
 		return nil, err
 	}
-
-	members, err := client.GetNetworkMembersInfo(ctx, *controller, id, memberAddresses)
-	if err != nil {
-		return nil, err
-	}
-
-	err = addNDPAddresses(id, *network.V6AssignMode, members)
-	if err != nil {
-		return nil, err
-	}
-
 	rules, err := json.MarshalIndent(*network.Rules, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 
-	namedByDNS, err := checkNamedByDNS(ctx, *network.Name, *network.Id, cg, l)
+	members, err := c.GetNetworkMembersInfo(ctx, *controller, id, memberAddresses)
+	if err != nil {
+		return nil, err
+	}
+	if err = addNDPAddresses(id, *network.V6AssignMode, members); err != nil {
+		return nil, err
+	}
+
+	namedByDNS, err := checkNamedByDNS(ctx, *network.Name, *network.Id, dc)
 	if err != nil {
 		return nil, err
 	}
@@ -115,14 +109,12 @@ func getNetworkData(
 		Network:          *network,
 		Members:          members,
 		JSONPrintedRules: string(rules),
-		DomainName:       cg.Config.DomainName,
+		DomainName:       dc.Config.DomainName,
 		NamedByDNS:       namedByDNS,
 	}, nil
 }
 
-func getNetwork(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "networks/network.page.tmpl"
 	err := te.RequireSegments("networks.getNetwork", t)
 	if err != nil {
@@ -131,19 +123,20 @@ func getNetwork(
 
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
 		return func(c echo.Context) error {
 			// Extract context
 			ctx := c.Request().Context()
-			l := c.Logger()
 
 			// Parse params
 			id := c.Param("id")
-			address := client.GetControllerAddress(id)
+			address := ztc.GetControllerAddress(id)
 
 			// Run queries
-			networkData, err := getNetworkData(ctx, address, id, app, l)
+			networkData, err := getNetworkData(
+				ctx, address, id, app.Clients.Zerotier, app.Clients.ZTControllers, app.Clients.Desec,
+			)
 			if err != nil {
 				return err
 			}
@@ -155,70 +148,66 @@ func getNetwork(
 }
 
 func nameNetwork(
-	ctx context.Context, controller models.Controller, id string, name string,
-	cg *client.Globals, l echo.Logger,
+	ctx context.Context, controller ztcontrollers.Controller, id string, name string,
+	c *ztc.Client, dc *desec.Client,
 ) error {
 	if len(name) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
 	}
 
 	// TODO: quit with an error if the network was already named by DNS (disallow renaming)
-	fqdn := fmt.Sprintf("%s.%s", name, cg.Config.DomainName)
-	ttl := cg.Config.ZerotierDNS.NetworkTTL
-	if _, err := client.CreateRRset(
-		ctx, cg.DNSDomain, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)}, l,
+	fqdn := fmt.Sprintf("%s.%s", name, dc.Config.DomainName)
+	ttl := c.Config.DNS.NetworkTTL
+	if _, err := dc.CreateRRset(
+		ctx, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)},
 	); err != nil {
 		// TODO: if a TXT RRset already exists but doesn't have the ID, just append a
-		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch
-		// to avoid data races)
+		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch to avoid
+		// data races)
 		return errors.Wrap(err, fmt.Sprintf(
 			"couldn't create a DNS TXT RRset at %s for network %s", fqdn, id,
 		))
 	}
-	return client.UpdateNetwork(
+	return c.UpdateNetwork(
 		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
 	)
 }
 
 func setNetworkRules(
-	ctx context.Context, controller models.Controller, id string, jsonRules string,
+	ctx context.Context, controller ztcontrollers.Controller,
+	id string, jsonRules string, c *ztc.Client,
 ) error {
 	rules := make([]map[string]interface{}, 0)
 	if err := json.Unmarshal([]byte(jsonRules), &rules); err != nil {
 		return err
 	}
-
-	err := client.UpdateNetwork(
+	err := c.UpdateNetwork(
 		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
 	)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
-func postNetwork(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
+		zc := app.Clients.Zerotier
+		cc := app.Clients.ZTControllers
 		return func(c echo.Context) error {
 			// Extract context
 			ctx := c.Request().Context()
-			l := c.Logger()
 
 			// Parse params
 			id := c.Param("id")
-			address := client.GetControllerAddress(id)
+			address := ztc.GetControllerAddress(id)
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(
-				ctx, address, app.Config, app.Cache, l,
-			)
+			controller, err := cc.FindControllerByAddress(ctx, address)
 			if err != nil {
 				return err
 			}
@@ -230,26 +219,20 @@ func postNetwork(
 				))
 			case "SETNAME":
 				if err = nameNetwork(
-					ctx, *controller, id, c.FormValue("name"), app, l,
+					ctx, *controller, id, c.FormValue("name"), app.Clients.Zerotier, app.Clients.Desec,
 				); err != nil {
 					return err
 				}
 			case "SETRULES":
-				if err = setNetworkRules(
-					ctx, *controller, id, c.FormValue("rules"),
-				); err != nil {
+				if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), zc); err != nil {
 					return err
 				}
-
-				return c.Redirect(
-					http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id),
-				)
+				return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
 			case "DELETE":
-				if err = client.DeleteNetwork(ctx, *controller, id); err != nil {
+				if err = zc.DeleteNetwork(ctx, *controller, id); err != nil {
 					// TODO: add a tombstone to the TXT RRset?
 					return err
 				}
-
 				return c.Redirect(http.StatusSeeOther, "/networks")
 			}
 

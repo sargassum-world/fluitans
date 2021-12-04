@@ -6,21 +6,20 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 )
 
-func PrescanZerotierControllers(cg *client.Globals) {
-	l := cg.Logger
+func PrescanZerotierControllers(c *ztcontrollers.Client) {
 	for {
-		controllers, err := client.GetControllers(cg.Config)
+		controllers, err := c.GetControllers()
 		if err != nil {
-			l.Error(errors.Wrap(err, "couldn't get the list of known controllers"))
+			c.Logger.Error(errors.Wrap(err, "couldn't get the list of known controllers"))
 			continue
 		}
 
-		_, err = client.ScanControllers(context.Background(), controllers, cg.Cache)
+		_, err = c.ScanControllers(context.Background(), controllers)
 		if err != nil {
-			l.Error(errors.Wrap(err, "couldn't prescan Zerotier controllers for cache"))
+			c.Logger.Error(errors.Wrap(err, "couldn't prescan Zerotier controllers for cache"))
 		}
 
 		break

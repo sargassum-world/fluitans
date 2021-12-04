@@ -52,7 +52,6 @@ func ProcessEtag(
 	if err != nil {
 		return false, err
 	}
-
 	return httpcache.ProcessEtag(
 		c, append(templateEtagSegments, fingerprint.Compute(marshaled))...,
 	)

@@ -1,23 +1,21 @@
-package client
+package zerotier
 
 import (
 	"context"
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 // All Network Members
 
-func GetNetworkMembersInfo(
-	ctx context.Context, controller models.Controller,
-	networkID string, memberAddresses []string,
+func (c *Client) GetNetworkMembersInfo(
+	ctx context.Context, controller ztcontrollers.Controller, networkID string,
+	memberAddresses []string,
 ) (map[string]zerotier.ControllerNetworkMember, error) {
-	client, cerr := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
+	client, cerr := controller.NewClient()
 	if cerr != nil {
 		return nil, cerr
 	}
@@ -30,9 +28,7 @@ func GetNetworkMembersInfo(
 	for i, memberAddress := range memberAddresses {
 		eg.Go(func(i int, memberAddress string) func() error {
 			return func() error {
-				res, err := client.GetControllerNetworkMemberWithResponse(
-					ctx, networkID, memberAddress,
-				)
+				res, err := client.GetControllerNetworkMemberWithResponse(ctx, networkID, memberAddress)
 				if err != nil {
 					return err
 				}
@@ -56,18 +52,15 @@ func GetNetworkMembersInfo(
 
 // Individual Network Member
 
-func UpdateMember(
-	ctx context.Context, controller models.Controller,
-	networkID string, memberAddress string,
-	member zerotier.SetControllerNetworkMemberJSONRequestBody,
+func (c *Client) UpdateMember(
+	ctx context.Context, controller ztcontrollers.Controller, networkID string,
+	memberAddress string, member zerotier.SetControllerNetworkMemberJSONRequestBody,
 ) error {
-	client, err := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
+	client, err := controller.NewClient()
 	if err != nil {
 		return err
 	}
 
-	_, err = client.SetControllerNetworkMemberWithResponse(
-		ctx, networkID, memberAddress, member,
-	)
+	_, err = client.SetControllerNetworkMemberWithResponse(ctx, networkID, memberAddress, member)
 	return err
 }

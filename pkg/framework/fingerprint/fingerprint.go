@@ -18,11 +18,7 @@ func Compute(data []byte) string {
 	size := 8
 	hashBytes := make([]byte, size)
 	binary.LittleEndian.PutUint64(hashBytes, hash)
-
-	return fmt.Sprintf(
-		"%x:%s",
-		len(data), base64.StdEncoding.EncodeToString(hashBytes),
-	)
+	return fmt.Sprintf("%x:%s", len(data), base64.StdEncoding.EncodeToString(hashBytes))
 }
 
 func ComputeFiles(filenames []string, f fs.FS) (map[string]string, error) {
@@ -32,7 +28,6 @@ func ComputeFiles(filenames []string, f fs.FS) (map[string]string, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		fingerprints[name] = Compute(data)
 	}
 	return fingerprints, nil

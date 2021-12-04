@@ -31,8 +31,7 @@ func NewGlobals(e embeds.Embeds, appGlobals interface{}) (*Globals, error) {
 
 func (g *Globals) RegisterRoutes(
 	e route.EchoRouter,
-	templatedAssets []route.Templated, staticAssets []route.Static,
-	templatedPages []route.Templated,
+	templatedAssets []route.Templated, staticAssets []route.Static, templatedPages []route.Templated,
 ) error {
 	if err := route.RegisterTemplated(e, templatedAssets, g.Template); err != nil {
 		return errors.Wrap(err, "couldn't register templated assets")

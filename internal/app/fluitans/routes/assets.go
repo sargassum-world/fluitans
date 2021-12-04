@@ -45,7 +45,9 @@ var StaticAssets = []route.Static{
 	},
 }
 
-func getWebmanifest(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func getWebmanifest(
+	g route.TemplateGlobals, te route.TemplateEtagSegments,
+) (echo.HandlerFunc, error) {
 	t := "app.webmanifest.tmpl"
 	err := te.RequireSegments("assets.getWebmanifest", t)
 	if err != nil {

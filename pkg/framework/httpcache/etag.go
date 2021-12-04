@@ -36,7 +36,6 @@ func CheckEtagMatch(reqh http.Header, etag string) bool {
 	if match == "" || etag == "" {
 		return false
 	}
-
 	return match == etag
 }
 
@@ -46,6 +45,5 @@ func ProcessEtag(c echo.Context, etagSegments ...string) (bool, error) {
 	if CheckEtagMatch(c.Request().Header, etag) {
 		return true, c.NoContent(http.StatusNotModified)
 	}
-
 	return false, nil
 }

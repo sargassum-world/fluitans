@@ -21,7 +21,7 @@ func PreprocessCSS(assets map[string]string) EmbeddedCSSAssets {
 func PreprocessJS(assets map[string]string) EmbeddedJSAssets {
 	e := make(EmbeddedJSAssets)
 	for key, value := range assets {
-		//nolint:gosec // This bundle is generated from code in web/app/src, so we know it's well-formed.
+		//nolint:gosec // This is generated from code in web/app/src, so we know it's well-formed.
 		e[key] = template.JS(value)
 	}
 	return e

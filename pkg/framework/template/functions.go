@@ -63,12 +63,14 @@ var httpErrors = map[int]HTTPError{
 		Description: "The server cannot recognize the request method",
 	},
 	http.StatusBadGateway: {
-		Name:        "Webservice currently unavailable",
-		Description: "While handling the request, the server encountered a problem with another server. We're working to fix it.",
+		Name: "Webservice currently unavailable",
+		Description: "While handling the request, the server encountered a problem with another server. " +
+			"We're working to fix it.",
 	},
 	http.StatusServiceUnavailable: {
-		Name:        "Webservice currently unavailable",
-		Description: "The server is temporarily unable to handle the request. We're working to restore the server.",
+		Name: "Webservice currently unavailable",
+		Description: "The server is temporarily unable to handle the request. " +
+			"We're working to restore the server.",
 	},
 }
 

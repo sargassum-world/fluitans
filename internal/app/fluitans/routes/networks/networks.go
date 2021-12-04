@@ -6,34 +6,33 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 type NetworksData struct {
-	Controller models.Controller
+	Controller ztcontrollers.Controller
 	Networks   map[string]zerotier.ControllerNetwork
 }
 
 func getNetworksData(
-	ctx context.Context, config conf.Config, cache *client.Cache,
+	ctx context.Context, c *ztc.Client, cc *ztcontrollers.Client,
 ) ([]NetworksData, error) {
-	controllers, err := client.GetControllers(config)
+	controllers, err := cc.GetControllers()
 	if err != nil {
 		return nil, err
 	}
 
-	networkIDs, err := client.GetNetworkIDs(ctx, controllers, cache)
+	networkIDs, err := c.GetNetworkIDs(ctx, controllers, cc)
 	if err != nil {
 		return nil, err
 	}
 
-	networks, err := client.GetNetworks(ctx, controllers, networkIDs)
+	networks, err := c.GetNetworks(ctx, controllers, networkIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -46,9 +45,7 @@ func getNetworksData(
 	return networksData, nil
 }
 
-func getNetworks(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "networks/networks.page.tmpl"
 	err := te.RequireSegments("networks.getNetwork", t)
 	if err != nil {
@@ -57,14 +54,14 @@ func getNetworks(
 
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
 		return func(c echo.Context) error {
 			// Extract context
 			ctx := c.Request().Context()
 
 			// Run queries
-			networksData, err := getNetworksData(ctx, app.Config, app.Cache)
+			networksData, err := getNetworksData(ctx, app.Clients.Zerotier, app.Clients.ZTControllers)
 			if err != nil {
 				return err
 			}
@@ -80,7 +77,7 @@ func postNetworks(
 ) (echo.HandlerFunc, error) {
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
 		return func(c echo.Context) error {
 			// Extract context
@@ -90,31 +87,28 @@ func postNetworks(
 			name := c.FormValue("controller")
 			if name == "" {
 				return echo.NewHTTPError(
-					http.StatusBadRequest, "Controller name not specified",
+					http.StatusBadRequest, "zerotier controller name not specified",
 				)
 			}
 
 			// Run queries
-			controller, ok, err := client.FindController(name, app.Config)
+			controller, ok, err := app.Clients.ZTControllers.FindController(name)
 			if err != nil {
 				return err
 			}
 			if !ok {
 				return echo.NewHTTPError(
-					http.StatusNotFound, fmt.Sprintf("Controller %s not found", name),
+					http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
 				)
 			}
 
-			createdNetwork, err := client.CreateNetwork(ctx, *controller)
+			createdNetwork, err := app.Clients.Zerotier.CreateNetwork(ctx, *controller)
 			if err != nil {
 				return err
 			}
-
 			created := createdNetwork.Id
 			if created == nil {
-				return echo.NewHTTPError(
-					http.StatusInternalServerError, "Network status unknown",
-				)
+				return echo.NewHTTPError(http.StatusInternalServerError, "network status unknown")
 			}
 			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
 		}, nil

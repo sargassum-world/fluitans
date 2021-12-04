@@ -11,7 +11,6 @@ func ReadFile(filename string, f fs.FS) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	defer func() {
 		if cerr := file.Close(); cerr != nil && err == nil {
 			err = cerr
@@ -22,7 +21,6 @@ func ReadFile(filename string, f fs.FS) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return data, err
 }
 
@@ -33,7 +31,6 @@ func ReadConcatenated(filenames []string, f fs.FS) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		concatenated = append(concatenated, data...)
 	}
 

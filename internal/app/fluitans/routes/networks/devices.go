@@ -6,48 +6,43 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 func setMemberAuthorization(
-	ctx context.Context, controller models.Controller, networkID string,
-	memberAddress string, authorized bool,
+	ctx context.Context, controller ztcontrollers.Controller, networkID string,
+	memberAddress string, authorized bool, c *ztc.Client,
 ) error {
 	auth := authorized
-	err := client.UpdateMember(
+	err := c.UpdateMember(
 		ctx, controller, networkID, memberAddress,
 		zerotier.SetControllerNetworkMemberJSONRequestBody{Authorized: &auth},
 	)
 	return err
 }
 
-func postDevice(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
 		return func(c echo.Context) error {
 			// Extract context
 			ctx := c.Request().Context()
-			l := c.Logger()
 
 			// Parse params
 			networkID := c.Param("id")
-			controllerAddress := client.GetControllerAddress(networkID)
+			controllerAddress := ztc.GetControllerAddress(networkID)
 			memberAddress := c.Param("address")
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(
-				ctx, controllerAddress, app.Config, app.Cache, l,
-			)
+			controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
 			if err != nil {
 				return err
 			}
@@ -58,15 +53,14 @@ func postDevice(
 					"invalid POST method %s", method,
 				))
 			case "AUTHORIZE":
-
 				if err = setMemberAuthorization(
-					ctx, *controller, networkID, memberAddress, true,
+					ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
 				); err != nil {
 					return err
 				}
 			case "DEAUTHORIZE":
 				if err = setMemberAuthorization(
-					ctx, *controller, networkID, memberAddress, false,
+					ctx, *controller, networkID, memberAddress, false, app.Clients.Zerotier,
 				); err != nil {
 					return err
 				}
@@ -79,39 +73,32 @@ func postDevice(
 	}
 }
 
-func postDevices(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
 		return func(c echo.Context) error {
 			// Extract context
 			ctx := c.Request().Context()
-			l := c.Logger()
 
 			// Parse params
 			networkID := c.Param("id")
-			controllerAddress := client.GetControllerAddress(networkID)
+			controllerAddress := ztc.GetControllerAddress(networkID)
 			memberAddress := c.FormValue("address")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(
-				ctx, controllerAddress, app.Config, app.Cache, l,
-			)
+			controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
 			if err != nil {
 				return err
 			}
-
-			err = setMemberAuthorization(ctx, *controller, networkID, memberAddress, true)
-			if err != nil {
+			if err = setMemberAuthorization(
+				ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
+			); err != nil {
 				return err
 			}
-
 			return c.Redirect(
-				http.StatusSeeOther,
-				fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
+				http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
 			)
 		}, nil
 	}

@@ -59,7 +59,6 @@ func (e Embeds) MakeStaticGlobals() route.StaticGlobals {
 
 func (e Embeds) NewTemplateRenderer(functions ...template.FuncMap) *tp.TemplateRenderer {
 	return tp.NewTemplateRenderer(
-		e.TemplatesFS,
-		append(functions, tp.FuncMap(e.AppHFS.HashName, e.StaticHFS.HashName))...,
+		e.TemplatesFS, append(functions, tp.FuncMap(e.AppHFS.HashName, e.StaticHFS.HashName))...,
 	)
 }

@@ -28,12 +28,11 @@ type TemplateFingerprints struct {
 }
 
 func ComputeTemplateFingerprints(
-	layoutFiles, pageFiles, appAssets []string,
-	templates, app fs.FS,
+	layoutFiles, pageFiles, appAssets []string, templates, app fs.FS,
 ) (*TemplateFingerprints, error) {
-	// TODO: instead of App having all partials & layouts everywhere, it should
-	// only have the ones in shared; then the page fingerprints should only
-	// depend on the partials & layouts in the same top-level subdirectory of templates
+	// TODO: instead of App having all partials & layouts everywhere, it should only have the ones in
+	// shared; then the page fingerprints should only depend on the partials & layouts in the same
+	// top-level subdirectory of templates
 	pageFingerprints, err := fingerprint.ComputeFiles(pageFiles, templates)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't compute templated page fingerprints")

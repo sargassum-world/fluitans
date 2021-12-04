@@ -1,4 +1,4 @@
-package client
+package desec
 
 import (
 	"fmt"
@@ -7,7 +7,15 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
 )
+
+type Cache struct {
+	Cache       clientcache.Cache
+	CostWeight  float32
+	TTL         time.Duration
+	RecordTypes []string
+}
 
 // /dns/domains/:name
 
@@ -15,24 +23,20 @@ func keyDomainByName(name string) string {
 	return fmt.Sprintf("/dns/domains/[%s]", name)
 }
 
-func (c *Cache) SetDomainByName(
-	name string, domain desec.Domain, costWeight float32, ttl time.Duration,
-) error {
+func (c *Cache) SetDomainByName(name string, domain desec.Domain) error {
 	key := keyDomainByName(name)
-	return c.setEntry(key, domain, costWeight, ttl)
+	return c.Cache.SetEntry(key, domain, c.CostWeight, c.TTL)
 }
 
-func (c *Cache) SetNonexistentDomainByName(
-	name string, costWeight float32, ttl time.Duration,
-) {
+func (c *Cache) SetNonexistentDomainByName(name string) {
 	key := keyDomainByName(name)
-	c.setNonexistentEntry(key, costWeight, ttl)
+	c.Cache.SetNonexistentEntry(key, c.CostWeight, c.TTL)
 }
 
 func (c *Cache) GetDomainByName(name string) (*desec.Domain, bool, error) {
 	key := keyDomainByName(name)
 	var value desec.Domain
-	keyExists, valueExists, err := c.getEntry(key, &value)
+	keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
 	if !keyExists || !valueExists || err != nil {
 		return nil, keyExists, err
 	}
@@ -46,22 +50,20 @@ func keySubnames(domainName string) string {
 	return fmt.Sprintf("/dns/domains/[%s]/subnames", domainName)
 }
 
-func (c *Cache) SetSubnames(
-	domainName string, subnames []string, costWeight float32, ttl time.Duration,
-) error {
+func (c *Cache) SetSubnames(domainName string, subnames []string) error {
 	key := keySubnames(domainName)
-	return c.setEntry(key, subnames, costWeight, ttl)
+	return c.Cache.SetEntry(key, subnames, c.CostWeight, c.TTL)
 }
 
 func (c *Cache) UnsetSubnames(domainName string) {
 	key := keySubnames(domainName)
-	c.unsetEntry(key)
+	c.Cache.UnsetEntry(key)
 }
 
 func (c *Cache) GetSubnames(domainName string) ([]string, error) {
 	key := keySubnames(domainName)
 	var value []string
-	keyExists, valueExists, err := c.getEntry(key, &value)
+	keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
 	if !keyExists || !valueExists || err != nil {
 		return nil, err
 	}
@@ -85,23 +87,19 @@ func (c *Cache) HasSubname(domainName string, subname string) bool {
 
 // /dns/domains/:domain/rrsets/:subname
 
-func (c *Cache) SetRRsetsByName(
-	domainName, subname string,
-	rrsets []desec.RRset, costWeight float32, ttl time.Duration,
-) error {
-	cacheableRRsets := filterRRsets(rrsets)
-	for _, recordType := range RecordTypes {
+func (c *Cache) SetRRsetsByName(domainName, subname string, rrsets []desec.RRset) error {
+	cacheableRRsets := filterRRsets(rrsets, c.RecordTypes)
+	for _, recordType := range c.RecordTypes {
 		rrset, hasRRset := cacheableRRsets[recordType]
 		if !hasRRset {
-			c.SetNonexistentRRsetByNameAndType(domainName, subname, recordType, costWeight, ttl)
+			c.SetNonexistentRRsetByNameAndType(domainName, subname, recordType)
 			continue
 		}
 
-		err := c.SetRRsetByNameAndType(domainName, subname, recordType, rrset, costWeight, ttl)
+		err := c.SetRRsetByNameAndType(domainName, subname, recordType, rrset)
 		if err != nil {
 			return errors.Wrap(err, fmt.Sprintf(
-				"couldn't set cache entry for the %s RRset for %s.%s",
-				recordType, subname, domainName,
+				"couldn't set cache entry for the %s RRset for %s.%s", recordType, subname, domainName,
 			))
 		}
 	}
@@ -109,15 +107,14 @@ func (c *Cache) SetRRsetsByName(
 }
 
 func (c *Cache) GetRRsetsByName(domainName, subname string) ([]desec.RRset, error) {
-	rrsets := make([]desec.RRset, 0, len(RecordTypes))
-	for _, recordType := range RecordTypes {
+	rrsets := make([]desec.RRset, 0, len(c.RecordTypes))
+	for _, recordType := range c.RecordTypes {
 		key := keyRRsetByNameAndType(domainName, subname, recordType)
 		var value desec.RRset
-		keyExists, valueExists, err := c.getEntry(key, &value)
+		keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf(
-				"couldn't get cache entry for the %s RRset for %s.%s",
-				recordType, subname, domainName,
+				"couldn't get cache entry for the %s RRset for %s.%s", recordType, subname, domainName,
 			))
 		}
 
@@ -141,17 +138,14 @@ func keyRRsetByNameAndType(domainName, subname, rrsetType string) string {
 
 func (c *Cache) SetRRsetByNameAndType(
 	domainName, subname, rrsetType string, rrset desec.RRset,
-	costWeight float32, ttl time.Duration,
 ) error {
 	key := keyRRsetByNameAndType(domainName, subname, rrsetType)
-	return c.setEntry(key, rrset, costWeight, ttl)
+	return c.Cache.SetEntry(key, rrset, c.CostWeight, c.TTL)
 }
 
-func (c *Cache) SetNonexistentRRsetByNameAndType(
-	domainName, subname, rrsetType string, costWeight float32, ttl time.Duration,
-) {
+func (c *Cache) SetNonexistentRRsetByNameAndType(domainName, subname, rrsetType string) {
 	key := keyRRsetByNameAndType(domainName, subname, rrsetType)
-	c.setNonexistentEntry(key, costWeight, ttl)
+	c.Cache.SetNonexistentEntry(key, c.CostWeight, c.TTL)
 }
 
 func (c *Cache) GetRRsetByNameAndType(
@@ -159,7 +153,7 @@ func (c *Cache) GetRRsetByNameAndType(
 ) (*desec.RRset, bool, error) {
 	key := keyRRsetByNameAndType(domainName, subname, rrsetType)
 	var value desec.RRset
-	keyExists, valueExists, err := c.getEntry(key, &value)
+	keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
 	if !keyExists || !valueExists || err != nil {
 		return nil, keyExists, err
 	}

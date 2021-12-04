@@ -23,7 +23,6 @@ func parseFiles(
 		if err != nil {
 			return nil, errors.Wrap(err, fmt.Sprintf("couldn't read file %s", filename))
 		}
-
 		s := string(b)
 		var tmpl *template.Template
 		if t == nil {

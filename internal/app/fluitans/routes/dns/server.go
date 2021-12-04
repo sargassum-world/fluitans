@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
+	"github.com/sargassum-eco/fluitans/internal/models"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
@@ -26,7 +26,7 @@ type APILimiterStats struct {
 type ServerData struct {
 	Server           models.DNSServer
 	Domain           desec.Domain
-	DesecAPISettings models.DesecAPISettings
+	DesecAPISettings desecc.DesecAPISettings
 	APILimiterStats  APILimiterStats
 	ApexRRsets       []desec.RRset
 	SubnameRRsets    [][]desec.RRset
@@ -40,7 +40,7 @@ func getReverseDomainNameFragments(domainName string) []string {
 	return fragments
 }
 
-func sortSubnameRRsets(rrsets map[string][]desec.RRset) [][]desec.RRset {
+func sortSubnameRRsets(rrsets map[string][]desec.RRset, recordTypes []string) [][]desec.RRset {
 	keys := make([]string, 0, len(rrsets))
 	for key := range rrsets {
 		keys = append(keys, key)
@@ -62,40 +62,37 @@ func sortSubnameRRsets(rrsets map[string][]desec.RRset) [][]desec.RRset {
 	})
 	sorted := make([][]desec.RRset, 0, len(keys))
 	for _, key := range keys {
-		sorted = append(sorted, client.FilterAndSortRRsets(rrsets[key]))
+		sorted = append(sorted, desecc.FilterAndSortRRsets(rrsets[key], recordTypes))
 	}
 	return sorted
 }
 
-func getServerData(
-	ctx context.Context, cg *client.Globals, l echo.Logger,
-) (*ServerData, error) {
-	readLimiter := cg.RateLimiters[client.DesecReadLimiterName]
-	writeLimiter := cg.RateLimiters[client.DesecWriteLimiterName]
-	domain := cg.DNSDomain
-	desecDomain, err := client.GetDomain(ctx, domain, l)
+func getServerData(ctx context.Context, c *desecc.Client) (*ServerData, error) {
+	readLimiter := c.ReadLimiter
+	writeLimiter := c.WriteLimiter
+	desecDomain, err := c.GetDomain(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	subnameRRsets, err := client.GetRRsets(ctx, domain, l)
+	subnameRRsets, err := c.GetRRsets(ctx)
 	if err != nil {
 		return nil, err
 	}
-	apexRRsets := client.FilterAndSortRRsets(subnameRRsets[""])
+	apexRRsets := desecc.FilterAndSortRRsets(subnameRRsets[""], c.Cache.RecordTypes)
 	delete(subnameRRsets, "")
-	sortedSubnameRRsets := sortSubnameRRsets(subnameRRsets)
+	sortedSubnameRRsets := sortSubnameRRsets(subnameRRsets, c.Cache.RecordTypes)
 
 	return &ServerData{
-		Server:           domain.Server,
+		Server:           c.Config.DNSServer,
 		Domain:           *desecDomain,
-		DesecAPISettings: domain.APISettings,
+		DesecAPISettings: c.Config.APISettings,
 		APILimiterStats: APILimiterStats{
 			ReadLimiterFillRatios:  readLimiter.EstimateFillRatios(time.Now()),
 			ReadWaitSec:            readLimiter.EstimateWaitDuration(time.Now(), 1).Seconds(),
 			WriteLimiterFillRatios: writeLimiter.EstimateFillRatios(time.Now()),
-			WriteBatchWaitSec: client.CalculateBatchWaitDuration(
-				writeLimiter, domain.APISettings.WriteSoftQuota,
+			WriteBatchWaitSec: desecc.CalculateBatchWaitDuration(
+				writeLimiter, c.Config.APISettings.WriteSoftQuota,
 			).Seconds(),
 		},
 		ApexRRsets:    apexRRsets,
@@ -114,15 +111,14 @@ func getServer(
 
 	switch app := g.App.(type) {
 	default:
-		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+		return nil, client.NewUnexpectedGlobalsTypeError(app)
 	case *client.Globals:
 		return func(c echo.Context) error {
 			// Extract context
 			ctx := c.Request().Context()
-			l := c.Logger()
 
 			// Run queries
-			serverData, err := getServerData(ctx, app, l)
+			serverData, err := getServerData(ctx, app.Clients.Desec)
 			if err != nil {
 				return err
 			}

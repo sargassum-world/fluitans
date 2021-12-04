@@ -1,4 +1,4 @@
-package client
+package zerotier
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -17,8 +17,8 @@ func GetControllerAddress(networkID string) string {
 	return networkID[:addressLength]
 }
 
-func GetNetworkIDs(
-	ctx context.Context, controllers []models.Controller, cache *Cache,
+func (c *Client) GetNetworkIDs(
+	ctx context.Context, controllers []ztcontrollers.Controller, cc *ztcontrollers.Client,
 ) ([][]string, error) {
 	eg, ctx := errgroup.WithContext(ctx)
 	networkIDs := make([][]string, len(controllers))
@@ -26,11 +26,9 @@ func GetNetworkIDs(
 		networkIDs[i] = []string{}
 	}
 	for i, controller := range controllers {
-		eg.Go(func(i int, controller models.Controller) func() error {
+		eg.Go(func(i int, controller ztcontrollers.Controller) func() error {
 			return func() error {
-				client, cerr := zerotier.NewAuthClientWithResponses(
-					controller.Server, controller.Authtoken,
-				)
+				client, cerr := controller.NewClient()
 				if cerr != nil {
 					return nil
 				}
@@ -51,10 +49,9 @@ func GetNetworkIDs(
 
 	for i, controller := range controllers {
 		if len(networkIDs[i]) > 0 {
-			// It's safe to assume that all networks under a controller have the same
-			// controller address, so we only need to cache the controller named by the
-			// first network
-			err := cache.SetControllerByAddress(GetControllerAddress(networkIDs[i][0]), controller)
+			// It's safe to assume that all networks under a controller have the same controller address,
+			// so we only need to cache the controller named by the first network
+			err := cc.Cache.SetControllerByAddress(GetControllerAddress(networkIDs[i][0]), controller)
 			if err != nil {
 				return nil, err
 			}
@@ -63,8 +60,8 @@ func GetNetworkIDs(
 	return networkIDs, nil
 }
 
-func GetNetworks(
-	ctx context.Context, controllers []models.Controller, ids [][]string,
+func (c *Client) GetNetworks(
+	ctx context.Context, controllers []ztcontrollers.Controller, ids [][]string,
 ) ([]map[string]zerotier.ControllerNetwork, error) {
 	eg, ctx := errgroup.WithContext(ctx)
 	networks := make([][]zerotier.ControllerNetwork, len(controllers))
@@ -75,7 +72,7 @@ func GetNetworks(
 		}
 	}
 	for i, controller := range controllers {
-		client, cerr := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
+		client, cerr := controller.NewClient()
 		for j, id := range ids[i] {
 			eg.Go(func(i int, client *zerotier.ClientWithResponses, j int, id string) func() error {
 				return func() error {
@@ -111,12 +108,10 @@ func GetNetworks(
 
 // Individual Network
 
-func GetNetworkInfo(
-	ctx context.Context, controller models.Controller, id string,
+func (c *Client) GetNetworkInfo(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
 ) (*zerotier.ControllerNetwork, []string, error) {
-	client, cerr := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
+	client, cerr := controller.NewClient()
 	if cerr != nil {
 		return nil, nil, cerr
 	}
@@ -200,12 +195,10 @@ func makeDefaultNetworkRequest() zerotier.GenerateControllerNetworkJSONRequestBo
 	return body
 }
 
-func CreateNetwork(
-	ctx context.Context, controller models.Controller,
+func (c *Client) CreateNetwork(
+	ctx context.Context, controller ztcontrollers.Controller,
 ) (*zerotier.ControllerNetwork, error) {
-	client, cerr := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
+	client, cerr := controller.NewClient()
 	if cerr != nil {
 		return nil, cerr
 	}
@@ -223,19 +216,14 @@ func CreateNetwork(
 	if err != nil {
 		return nil, err
 	}
-
 	return nRes.JSON200, nil
 }
 
-func UpdateNetwork(
-	ctx context.Context,
-	controller models.Controller,
-	id string,
+func (c *Client) UpdateNetwork(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
 	network zerotier.SetControllerNetworkJSONRequestBody,
 ) error {
-	client, err := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
+	client, err := controller.NewClient()
 	if err != nil {
 		return err
 	}
@@ -244,10 +232,10 @@ func UpdateNetwork(
 	return err
 }
 
-func DeleteNetwork(ctx context.Context, controller models.Controller, id string) error {
-	client, err := zerotier.NewAuthClientWithResponses(
-		controller.Server, controller.Authtoken,
-	)
+func (c *Client) DeleteNetwork(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
+) error {
+	client, err := controller.NewClient()
 	if err != nil {
 		return err
 	}

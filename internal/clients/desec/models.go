@@ -1,4 +1,4 @@
-package models
+package desec
 
 import (
 	"time"

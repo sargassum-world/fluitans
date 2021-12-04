@@ -40,7 +40,6 @@ func Render(
 	if err != nil {
 		return err
 	}
-
 	noContent, err := ProcessEtag(c, templateEtagSegment, templateData)
 	if err != nil || noContent {
 		return err

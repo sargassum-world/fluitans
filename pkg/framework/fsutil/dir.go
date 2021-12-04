@@ -10,7 +10,6 @@ func ListFiles(f fs.FS, filter func(path string) bool) ([]string, error) {
 		if err != nil {
 			return err
 		}
-
 		if filter == nil || filter(path) {
 			files = append(files, path)
 		}
@@ -19,6 +18,5 @@ func ListFiles(f fs.FS, filter func(path string) bool) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return files, nil
 }

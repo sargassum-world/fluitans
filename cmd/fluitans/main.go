@@ -20,7 +20,8 @@ func main() {
 
 	// Middleware
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => (${bytes_out}b after ${latency_human}) ${status} ${error}\n",
+		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => " +
+			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
 	e.Logger.SetLevel(log.WARN)
 	e.Use(middleware.Recover())

@@ -10,7 +10,6 @@ func identifyNetwork(network zerotier.ControllerNetwork) string {
 	if strings.TrimSpace(*network.Name) != "" {
 		return *network.Name
 	}
-
 	return *network.Id
 }
 

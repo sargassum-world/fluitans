@@ -22,9 +22,7 @@ func NewHTTPErrorHandler(g *framework.Globals) (func(err error, c echo.Context),
 		if herr, ok := err.(*echo.HTTPError); ok {
 			code = herr.Code
 		}
-		perr := c.Render(
-			code, "httperr.page.tmpl", route.MakeRenderData(c, g.Template, code),
-		)
+		perr := c.Render(code, "httperr.page.tmpl", route.MakeRenderData(c, g.Template, code))
 		if perr != nil {
 			c.Logger().Error(err)
 		}
@@ -37,9 +35,9 @@ func RegisterRoutes(g *framework.Globals, e route.EchoRouter) error {
 }
 
 func LaunchBackgroundWorkers(ag *client.Globals) {
-	go workers.PrescanZerotierControllers(ag)
-	go workers.PrefetchDNSRecords(ag)
-	go workers.TestWriteLimiter(ag)
+	go workers.PrescanZerotierControllers(ag.Clients.ZTControllers)
+	go workers.PrefetchDNSRecords(ag.Clients.Desec)
+	go workers.TestWriteLimiter(ag.Clients.Desec)
 }
 
 func PrepareServer(e *echo.Echo) error {
@@ -47,7 +45,7 @@ func PrepareServer(e *echo.Echo) error {
 	e.Renderer = embeds.NewTemplateRenderer(tmplfunc.FuncMap)
 
 	// Globals
-	ag, err := MakeAppGlobals(e.Logger)
+	ag, err := client.NewGlobals(e.Logger)
 	if err != nil {
 		return errors.Wrap(err, "couldn't make app globals")
 	}
