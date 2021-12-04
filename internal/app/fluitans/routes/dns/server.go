@@ -2,7 +2,6 @@ package dns
 
 import (
 	"context"
-	"net/http"
 	"sort"
 	"strings"
 	"time"
@@ -12,9 +11,8 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
-	"github.com/sargassum-eco/fluitans/internal/route"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 )
 
@@ -109,7 +107,7 @@ func getServer(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "dns/server.page.tmpl"
-	tte, err := templates.GetTemplate(te, t, "dns.getServer")
+	err := te.RequireSegments("dns.getServer", t)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +128,7 @@ func getServer(
 			}
 
 			// Produce output
-			noContent, err := templates.ProcessEtag(c, tte, serverData)
-			if err != nil || noContent {
-				return err
-			}
-			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, *serverData))
+			return route.Render(c, t, *serverData, te, g)
 		}, nil
 	}
 }

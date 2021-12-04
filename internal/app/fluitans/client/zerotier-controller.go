@@ -11,7 +11,7 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/log"
+	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 

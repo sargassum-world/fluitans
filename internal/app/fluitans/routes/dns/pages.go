@@ -4,7 +4,7 @@ package dns
 import (
 	"net/http"
 
-	"github.com/sargassum-eco/fluitans/internal/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
 var Pages = []route.Templated{

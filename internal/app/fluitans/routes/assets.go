@@ -6,9 +6,8 @@ import (
 	"github.com/benbjohnson/hashfs"
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
-	"github.com/sargassum-eco/fluitans/internal/caching"
-	"github.com/sargassum-eco/fluitans/internal/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework/httpcache"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
 const (
@@ -22,7 +21,7 @@ var TemplatedAssets = []route.Templated{
 	{
 		Path:         "/app/app.webmanifest",
 		Method:       http.MethodGet,
-		HandlerMaker: webmanifest,
+		HandlerMaker: getWebmanifest,
 		Templates:    []string{"app.webmanifest.tmpl"},
 	},
 }
@@ -46,33 +45,28 @@ var StaticAssets = []route.Static{
 	},
 }
 
-func webmanifest(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func getWebmanifest(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "app.webmanifest.tmpl"
-	tte, ok := te[t]
-	if !ok {
-		return nil, te.NewNotFoundError(t)
+	err := te.RequireSegments("assets.getWebmanifest", t)
+	if err != nil {
+		return nil, err
 	}
 
 	return func(c echo.Context) error {
-		// Handle Etag
-		if noContent, err := templates.ProcessEtag(c, tte, ""); noContent {
-			return err
-		}
-
 		// Render template
 		c.Response().Header().Set(echo.HeaderContentType, "application/manifest+json")
-		return c.Render(http.StatusOK, t, struct{}{})
+		return route.Render(c, t, struct{}{}, te, g)
 	}, nil
 }
 
 func favicon(g route.StaticGlobals) (echo.HandlerFunc, error) {
-	return caching.WrapStaticHeader(echo.WrapHandler(
+	return httpcache.WrapStaticHeader(echo.WrapHandler(
 		http.StripPrefix("/", http.FileServer(http.FS(g.FS["Web"]))),
 	), week), nil
 }
 
 func fonts(g route.StaticGlobals) (echo.HandlerFunc, error) {
-	return caching.WrapStaticHeader(echo.WrapHandler(
+	return httpcache.WrapStaticHeader(echo.WrapHandler(
 		http.StripPrefix("/fonts/", http.FileServer(http.FS(g.FS["Fonts"]))),
 	), year), nil
 }

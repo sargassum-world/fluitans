@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 )
 

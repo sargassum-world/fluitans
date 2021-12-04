@@ -12,8 +12,7 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
-	"github.com/sargassum-eco/fluitans/internal/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -125,7 +124,7 @@ func getNetwork(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/network.page.tmpl"
-	tte, err := templates.GetTemplate(te, t, "networks.getNetwork")
+	err := te.RequireSegments("networks.getNetwork", t)
 	if err != nil {
 		return nil, err
 	}
@@ -150,11 +149,7 @@ func getNetwork(
 			}
 
 			// Produce output
-			noContent, err := templates.ProcessEtag(c, tte, networkData)
-			if err != nil || noContent {
-				return err
-			}
-			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, *networkData))
+			return route.Render(c, t, *networkData, te, g)
 		}, nil
 	}
 }

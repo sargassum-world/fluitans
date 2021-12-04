@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
 func filterRRsets(rrsets []desec.RRset) map[string]desec.RRset {

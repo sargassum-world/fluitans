@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/env"
+	"github.com/sargassum-eco/fluitans/pkg/framework/env"
 )
 
 func getDesecReadCacheTTL() (time.Duration, error) {

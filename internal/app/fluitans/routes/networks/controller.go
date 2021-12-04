@@ -11,8 +11,7 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
-	"github.com/sargassum-eco/fluitans/internal/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -65,7 +64,7 @@ func getController(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "networks/controller.page.tmpl"
-	tte, err := templates.GetTemplate(te, t, "networks.getController")
+	err := te.RequireSegments("networks.getController", t)
 	if err != nil {
 		return nil, err
 	}
@@ -91,11 +90,7 @@ func getController(
 			// Zero out clocks, since they will always change the Etag
 			*controllerData.Status.Clock = 0
 			*controllerData.ControllerStatus.Clock = 0
-			noContent, err := templates.ProcessEtag(c, tte, controllerData)
-			if err != nil || noContent {
-				return err
-			}
-			return c.Render(http.StatusOK, t, templates.MakeRenderData(c, g, *controllerData))
+			return route.Render(c, t, *controllerData, te, g)
 		}, nil
 	}
 }

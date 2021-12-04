@@ -1,4 +1,4 @@
-package caching
+package httpcache
 
 import (
 	"fmt"
@@ -40,7 +40,7 @@ func CheckEtagMatch(reqh http.Header, etag string) bool {
 	return match == etag
 }
 
-func ProcessEtag(c echo.Context, etagSegments []string) (bool, error) {
+func ProcessEtag(c echo.Context, etagSegments ...string) (bool, error) {
 	etag := MakeEtag(JoinEtagSegments(etagSegments...))
 	SetEtag(c.Response().Header(), etag)
 	if CheckEtagMatch(c.Request().Header, etag) {

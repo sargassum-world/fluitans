@@ -8,8 +8,8 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
 // Domain

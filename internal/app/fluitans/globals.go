@@ -2,17 +2,15 @@ package fluitans
 
 import (
 	"io/fs"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
-	"github.com/sargassum-eco/fluitans/internal/fsutil"
-	"github.com/sargassum-eco/fluitans/internal/route"
-	"github.com/sargassum-eco/fluitans/internal/template"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework/fsutil"
+	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework/template"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 	"github.com/sargassum-eco/fluitans/web"
 )
@@ -23,19 +21,17 @@ type Globals struct {
 }
 
 func computeTemplateFingerprints() (*route.TemplateFingerprints, error) {
-	layoutFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterApp)
+	layoutFiles, err := fsutil.ListFiles(web.TemplatesFS, template.FilterApp)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't load template layouts & partials")
 	}
 
-	pageFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterPage)
+	pageFiles, err := fsutil.ListFiles(web.TemplatesFS, template.FilterPage)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't load template pages")
 	}
 
-	appFiles, err := fsutil.ListFiles(web.AppFS, func(path string) bool {
-		return strings.HasSuffix(path, ".min.css") || strings.HasSuffix(path, ".js")
-	})
+	appFiles, err := fsutil.ListFiles(web.AppFS, template.FilterAsset)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't load app assets")
 	}
@@ -60,8 +56,8 @@ func setupRateLimiters(
 	}
 }
 
-func makeTemplateEmbeds() template.Embeds {
-	return template.Embeds{
+func makeTemplatedRouteEmbeds() route.Embeds {
+	return route.Embeds{
 		CSS: template.PreprocessCSS(template.EmbeddableAssets{
 			"BundleEager": web.BundleEagerCSS,
 		}),

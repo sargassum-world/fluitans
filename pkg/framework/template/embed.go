@@ -1,3 +1,4 @@
+// Package template structures the use of HTML templates to render pages
 package template
 
 import (
@@ -9,11 +10,6 @@ type (
 	EmbeddedCSSAssets map[string]template.CSS
 	EmbeddedJSAssets  map[string]template.JS
 )
-
-type Embeds struct {
-	CSS EmbeddedCSSAssets
-	JS  EmbeddedJSAssets
-}
 
 func PreprocessCSS(assets EmbeddableAssets) EmbeddedCSSAssets {
 	e := make(EmbeddedCSSAssets)

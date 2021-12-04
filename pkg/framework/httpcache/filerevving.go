@@ -1,6 +1,5 @@
-// Package caching provides utilities for working with HTTP caching
-// in Echo
-package caching
+// Package httpcache provides utilities for working with HTTP caching in Echo
+package httpcache
 
 import (
 	"fmt"

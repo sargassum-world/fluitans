@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/log"
+	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
 func PrefetchDNSRecords(cg *client.Globals, l log.Logger) {

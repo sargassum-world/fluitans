@@ -4,7 +4,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/env"
+	"github.com/sargassum-eco/fluitans/pkg/framework/env"
 )
 
 func getCacheConfig() (*ristretto.Config, error) {
