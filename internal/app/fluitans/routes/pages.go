@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/dns"
@@ -42,24 +43,29 @@ func getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Handl
 		return nil, te.NewNotFoundError(t)
 	}
 
-	return func(c echo.Context) error {
-		// Handle Etag
-		if noContent, err := caching.ProcessEtag(c, tte); noContent {
-			return err
-		}
+	switch app := g.App.(type) {
+	default:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
+		return func(c echo.Context) error {
+			// Handle Etag
+			if noContent, err := caching.ProcessEtag(c, tte); noContent {
+				return err
+			}
 
-		// Render template
-		return c.Render(http.StatusOK, t, struct {
-			Meta   template.Meta
-			Embeds template.Embeds
-		}{
-			Meta: template.Meta{
-				Path:       c.Request().URL.Path,
-				DomainName: client.GetEnvVarDomainName(),
-			},
-			Embeds: g.Embeds,
-		})
-	}, nil
+			// Render template
+			return c.Render(http.StatusOK, t, struct {
+				Meta   template.Meta
+				Embeds template.Embeds
+			}{
+				Meta: template.Meta{
+					Path:       c.Request().URL.Path,
+					DomainName: app.Config.DomainName,
+				},
+				Embeds: g.Embeds,
+			})
+		}, nil
+	}
 }
 
 func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
@@ -69,21 +75,27 @@ func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Hand
 		return nil, te.NewNotFoundError(t)
 	}
 
-	return func(c echo.Context) error {
-		// Handle Etag
-		if noContent, err := caching.ProcessEtag(c, tte); noContent {
-			return err
-		}
+	switch app := g.App.(type) {
+	default:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
+		return func(c echo.Context) error {
+			// Handle Etag
+			if noContent, err := caching.ProcessEtag(c, tte); noContent {
+				return err
+			}
 
-		// Render template
-		return c.Render(http.StatusOK, t, struct {
-			Meta   template.Meta
-			Embeds template.Embeds
-		}{
-			Meta: template.Meta{
-				Path: c.Request().URL.Path,
-			},
-			Embeds: g.Embeds,
-		})
-	}, nil
+			// Render template
+			return c.Render(http.StatusOK, t, struct {
+				Meta   template.Meta
+				Embeds template.Embeds
+			}{
+				Meta: template.Meta{
+					Path:       c.Request().URL.Path,
+					DomainName: app.Config.DomainName,
+				},
+				Embeds: g.Embeds,
+			})
+		}, nil
+	}
 }

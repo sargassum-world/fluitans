@@ -1,16 +1,19 @@
-package client
+package conf
 
 import (
 	"os"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/env"
 )
 
-func GetEnvVarController() (*Controller, error) {
+func getController() (*models.Controller, error) {
 	url, err := env.GetURLOrigin("FLUITANS_ZT_CONTROLLER_SERVER", "", "http")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't make server url config")
 	}
 
 	var defaultNetworkCost float32 = 1.0
@@ -18,7 +21,7 @@ func GetEnvVarController() (*Controller, error) {
 		"FLUITANS_ZT_CONTROLLER_NETWORKCOST", defaultNetworkCost,
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't make network cost config")
 	}
 
 	authtoken := os.Getenv("FLUITANS_ZT_CONTROLLER_AUTHTOKEN")
@@ -31,7 +34,7 @@ func GetEnvVarController() (*Controller, error) {
 		return nil, nil
 	}
 
-	return &Controller{
+	return &models.Controller{
 		Server:            url.String(),
 		Name:              name,
 		Description:       desc,
@@ -40,24 +43,31 @@ func GetEnvVarController() (*Controller, error) {
 	}, nil
 }
 
-func GetEnvVarZerotierNetworkTTL() (int64, error) {
+func getZerotierNetworkTTL() (int64, error) {
 	var defaultTTLHours int64 = 24 // hours
 	defaultTTL := int64((time.Duration(defaultTTLHours) * time.Hour).Seconds())
-	ttl, err := env.GetInt64("FLUITANS_ZEROTIER_DNS_NETWORKTTL", defaultTTL)
-	if err != nil {
-		return defaultTTL, err
-	}
-
-	return ttl, nil
+	return env.GetInt64("FLUITANS_ZEROTIER_DNS_NETWORKTTL", defaultTTL)
 }
 
-func GetEnvVarZerotierDeviceTTL() (int64, error) {
+func getZerotierDeviceTTL() (int64, error) {
 	var defaultTTLHours int64 = 1 // hour
 	defaultTTL := int64((time.Duration(defaultTTLHours) * time.Hour).Seconds())
-	ttl, err := env.GetInt64("FLUITANS_ZEROTIER_DNS_DEVICETTL", defaultTTL)
+	return env.GetInt64("FLUITANS_ZEROTIER_DNS_DEVICETTL", defaultTTL)
+}
+
+func getZerotierDNSSettings() (*models.ZerotierDNSSettings, error) {
+	networkTTL, err := getZerotierNetworkTTL()
 	if err != nil {
-		return defaultTTL, err
+		return nil, errors.Wrap(err, "couldn't make network record TTL config")
 	}
 
-	return ttl, nil
+	deviceTTL, err := getZerotierDeviceTTL()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't make device record TTL config")
+	}
+
+	return &models.ZerotierDNSSettings{
+		NetworkTTL: networkTTL,
+		DeviceTTL:  deviceTTL,
+	}, nil
 }

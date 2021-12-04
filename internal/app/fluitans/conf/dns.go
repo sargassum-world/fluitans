@@ -1,20 +1,23 @@
-package client
+package conf
 
 import (
 	"os"
 	"strings"
 
+	"github.com/pkg/errors"
+
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/env"
 )
 
-func GetEnvVarDomainName() string {
+func getDomainName() string {
 	return os.Getenv("FLUITANS_DOMAIN_NAME")
 }
 
-func GetEnvVarDNSServer() (*DNSServer, error) {
+func getDNSServer() (*models.DNSServer, error) {
 	url, err := env.GetURLOrigin("FLUITANS_DNS_SERVER", "", "https")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't make server url config")
 	}
 
 	var defaultNetworkCost float32 = 2.0
@@ -22,7 +25,7 @@ func GetEnvVarDNSServer() (*DNSServer, error) {
 		"FLUITANS_DNS_NETWORKCOST", defaultNetworkCost,
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "couldn't make network cost config")
 	}
 
 	api := strings.ToLower(env.GetString("FLUITANS_DNS_API", "desec"))
@@ -36,7 +39,7 @@ func GetEnvVarDNSServer() (*DNSServer, error) {
 		return nil, nil
 	}
 
-	return &DNSServer{
+	return &models.DNSServer{
 		Server:            url.String(),
 		API:               api,
 		Name:              name,

@@ -32,20 +32,15 @@ func postRRset(
 			method := c.FormValue("method")
 
 			// Run queries
-			domain, err := client.NewDNSDomain(
-				app.RateLimiters[client.DesecReadLimiterName], app.Cache,
-			)
-			if err != nil {
-				return err
-			}
-
 			switch method {
 			default:
 				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 					"invalid POST method %s", method,
 				))
 			case "DELETE":
-				if err = client.DeleteRRset(ctx, *domain, subname, recordType, l); err != nil {
+				if err := client.DeleteRRset(
+					ctx, app.DNSDomain, subname, recordType, l,
+				); err != nil {
 					return err
 				}
 

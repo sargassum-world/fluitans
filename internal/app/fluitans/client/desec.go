@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
@@ -63,41 +64,12 @@ func getRetryWait(header http.Header, l log.Logger) float64 {
 
 // DNSDomain
 
-type DesecAPISettings struct {
-	ReadCacheTTL   time.Duration
-	WriteSoftQuota float32
-}
-
 type DNSDomain struct {
-	Server      DNSServer
-	APISettings DesecAPISettings
+	Server      models.DNSServer
+	APISettings models.DesecAPISettings
 	DomainName  string
 	Cache       *Cache
 	ReadLimiter *slidingwindows.MultiLimiter
-}
-
-func NewDNSDomain(
-	readLimiter *slidingwindows.MultiLimiter, cache *Cache,
-) (*DNSDomain, error) {
-	server, err := GetEnvVarDNSServer()
-	if err != nil {
-		return nil, err
-	}
-
-	apiSettings, err := GetEnvVarDesecAPISettings()
-	if err != nil {
-		return nil, err
-	}
-
-	domainName := GetEnvVarDomainName()
-	domain := DNSDomain{
-		Server:      *server,
-		APISettings: *apiSettings,
-		DomainName:  domainName,
-		Cache:       cache,
-		ReadLimiter: readLimiter,
-	}
-	return &domain, nil
 }
 
 func (domain *DNSDomain) makeClientWithResponses() (*desec.ClientWithResponses, error) {

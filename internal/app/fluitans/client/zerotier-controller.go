@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/log"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
@@ -17,7 +19,7 @@ import (
 
 func checkCachedController(
 	ctx context.Context, address string, cache *Cache, l log.Logger,
-) (*Controller, error) {
+) (*models.Controller, error) {
 	controller, cacheHit, err := cache.GetControllerByAddress(address)
 	if err != nil {
 		return nil, err
@@ -59,7 +61,7 @@ func checkCachedController(
 }
 
 func ScanControllers(
-	ctx context.Context, controllers []Controller, cache *Cache,
+	ctx context.Context, controllers []models.Controller, cache *Cache,
 ) ([]string, error) {
 	eg, ctx := errgroup.WithContext(ctx)
 	addresses := make([]string, len(controllers))
@@ -98,8 +100,9 @@ func ScanControllers(
 }
 
 func FindControllerByAddress(
-	ctx context.Context, address string, cache *Cache, l log.Logger,
-) (*Controller, error) {
+	ctx context.Context, address string,
+	config conf.Config, cache *Cache, l log.Logger,
+) (*models.Controller, error) {
 	controller, err := checkCachedController(ctx, address, cache, l)
 	if err != nil {
 		// Log the error and proceed to manually query all controllers
@@ -111,7 +114,7 @@ func FindControllerByAddress(
 	}
 
 	// Query the list of all known controllers
-	controllers, err := GetControllers()
+	controllers, err := GetControllers(config)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +141,7 @@ func FindControllerByAddress(
 }
 
 func GetController(
-	ctx context.Context, controller Controller, cache *Cache,
+	ctx context.Context, controller models.Controller, cache *Cache,
 ) (*zerotier.Status, *zerotier.ControllerStatus, []string, error) {
 	client, cerr := zerotier.NewAuthClientWithResponses(controller.Server, controller.Authtoken)
 	if cerr != nil {

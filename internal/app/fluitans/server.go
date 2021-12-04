@@ -59,28 +59,33 @@ func RegisterRoutes(e route.EchoRouter, g *Globals) error {
 	return nil
 }
 
-func NewHTTPErrorHandler(g *Globals) func(err error, c echo.Context) {
-	return func(err error, c echo.Context) {
-		code := http.StatusInternalServerError
-		if herr, ok := err.(*echo.HTTPError); ok {
-			code = herr.Code
-		}
-		perr := c.Render(code, "httperr.page.tmpl", struct {
-			Meta   template.Meta
-			Embeds template.Embeds
-			Data   int
-		}{
-			Meta: template.Meta{
-				Path:       c.Request().URL.Path,
-				DomainName: client.GetEnvVarDomainName(),
-			},
-			Embeds: g.Template.Embeds,
-			Data:   code,
-		})
-		if perr != nil {
+func NewHTTPErrorHandler(g *Globals) (func(err error, c echo.Context), error) {
+	switch app := g.Template.App.(type) {
+	default:
+		return nil, fmt.Errorf("app globals are of unexpected type %T", g.Template.App)
+	case *client.Globals:
+		return func(err error, c echo.Context) {
+			code := http.StatusInternalServerError
+			if herr, ok := err.(*echo.HTTPError); ok {
+				code = herr.Code
+			}
+			perr := c.Render(code, "httperr.page.tmpl", struct {
+				Meta   template.Meta
+				Embeds template.Embeds
+				Data   int
+			}{
+				Meta: template.Meta{
+					Path:       c.Request().URL.Path,
+					DomainName: app.Config.DomainName,
+				},
+				Embeds: g.Template.Embeds,
+				Data:   code,
+			})
+			if perr != nil {
+				c.Logger().Error(err)
+			}
 			c.Logger().Error(err)
-		}
-		c.Logger().Error(err)
+		}, nil
 	}
 }
 
@@ -104,7 +109,12 @@ func PrepareServer(e *echo.Echo) error {
 		return err
 	}
 
-	e.HTTPErrorHandler = NewHTTPErrorHandler(g)
+	errorHandler, err := NewHTTPErrorHandler(g)
+	if err != nil {
+		return err
+	}
+	e.HTTPErrorHandler = errorHandler
+
 	if err = RegisterRoutes(e, g); err != nil {
 		return err
 	}

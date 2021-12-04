@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
 	"github.com/sargassum-eco/fluitans/internal/fsutil"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -44,27 +45,10 @@ func computeTemplateFingerprints() (*route.TemplateFingerprints, error) {
 	)
 }
 
-func setupCache() (*client.Cache, error) {
-	cacheConfig, err := client.GetEnvVarCacheConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't get client cache config from env vars")
-	}
-
-	cache, err := client.NewCache(cacheConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make client cache")
-	}
-
-	return cache, nil
-}
-
-func setupRateLimiters() (map[string]*slidingwindows.MultiLimiter, error) {
-	dnsServer, err := client.GetEnvVarDNSServer()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't get DNS server config from env vars")
-	}
-
-	switch api := dnsServer.API; api {
+func setupRateLimiters(
+	config conf.Config,
+) (map[string]*slidingwindows.MultiLimiter, error) {
+	switch api := config.DNSServer.API; api {
 	default:
 		return nil, errors.Errorf("Unknown DNS Server API type: %s (allowed choices: desec)", api)
 	case "desec":
@@ -101,18 +85,31 @@ func makeStaticGlobals() route.StaticGlobals {
 }
 
 func makeAppGlobals() (*client.Globals, error) {
-	cache, err := setupCache()
+	config, err := conf.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up the global cache")
+		return nil, errors.Wrap(err, "couldn't set up application config")
 	}
 
-	rateLimiters, err := setupRateLimiters()
+	cache, err := client.NewCache(config.Cache)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up the global rate limiters")
+		return nil, errors.Wrap(err, "couldn't set up client cache")
+	}
+
+	rateLimiters, err := setupRateLimiters(*config)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up rate limiters")
 	}
 
 	return &client.Globals{
+		Config:       *config,
 		Cache:        cache,
 		RateLimiters: rateLimiters,
+		DNSDomain: &client.DNSDomain{
+			Server:      config.DNSServer,
+			APISettings: config.DesecAPI,
+			DomainName:  config.DomainName,
+			Cache:       cache,
+			ReadLimiter: rateLimiters[client.DesecReadLimiterName],
+		},
 	}, nil
 }

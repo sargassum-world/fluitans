@@ -20,8 +20,8 @@ type Cache struct {
 	cache *ristretto.Cache
 }
 
-func NewCache(cacheConfig *ristretto.Config) (*Cache, error) {
-	cache, err := ristretto.NewCache(cacheConfig)
+func NewCache(cacheConfig ristretto.Config) (*Cache, error) {
+	cache, err := ristretto.NewCache(&cacheConfig)
 	if err != nil {
 		return nil, err
 	}

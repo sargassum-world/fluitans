@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -18,16 +20,17 @@ import (
 )
 
 type ControllerData struct {
-	Controller       client.Controller
+	Controller       models.Controller
 	Status           zerotier.Status
 	ControllerStatus zerotier.ControllerStatus
 	Networks         map[string]zerotier.ControllerNetwork
 }
 
 func getControllerData(
-	ctx context.Context, name string, templateName string, cache *client.Cache,
+	ctx context.Context, name string, templateName string,
+	config conf.Config, cache *client.Cache,
 ) (*ControllerData, error) {
-	controller, ok, err := client.FindController(name)
+	controller, ok, err := client.FindController(name, config)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +50,7 @@ func getControllerData(
 	}
 
 	networks, err := client.GetNetworks(
-		ctx, []client.Controller{*controller}, [][]string{networkIDs},
+		ctx, []models.Controller{*controller}, [][]string{networkIDs},
 	)
 	if err != nil {
 		return nil, err
@@ -84,7 +87,7 @@ func getController(
 			name := c.Param("name")
 
 			// Run queries
-			controllerData, err := getControllerData(ctx, name, t, app.Cache)
+			controllerData, err := getControllerData(ctx, name, t, app.Config, app.Cache)
 			if err != nil {
 				return err
 			}
@@ -98,7 +101,9 @@ func getController(
 				return err
 			}
 
-			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
+			if noContent, err := caching.ProcessEtag(
+				c, tte, fingerprint.Compute(etagData),
+			); noContent {
 				return err
 			}
 
@@ -110,7 +115,7 @@ func getController(
 			}{
 				Meta: template.Meta{
 					Path:       c.Request().URL.Path,
-					DomainName: client.GetEnvVarDomainName(),
+					DomainName: app.Config.DomainName,
 				},
 				Embeds: g.Embeds,
 				Data:   *controllerData,

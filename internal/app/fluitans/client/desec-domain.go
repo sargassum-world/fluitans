@@ -43,7 +43,7 @@ func getDomainFromCache(
 }
 
 func getDomainFromDesec(
-	ctx context.Context, domain DNSDomain, l log.Logger,
+	ctx context.Context, domain *DNSDomain, l log.Logger,
 ) (*desec.Domain, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -71,7 +71,7 @@ func getDomainFromDesec(
 }
 
 func GetDomain(
-	ctx context.Context, domain DNSDomain, l log.Logger,
+	ctx context.Context, domain *DNSDomain, l log.Logger,
 ) (*desec.Domain, error) {
 	desecDomain, err := getDomainFromCache(domain.DomainName, domain.Cache, l)
 	if err != nil {

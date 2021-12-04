@@ -13,17 +13,9 @@ import (
 
 func PrefetchDNSRecords(cg *client.Globals, l log.Logger) {
 	for {
-		domain, err := client.NewDNSDomain(
-			cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
-		)
-		if err != nil {
-			l.Error(errors.Wrap(err, "couldn't make DNS Domain client object"))
-			continue
-		}
-
-		_, err = client.GetRRsets(context.Background(), *domain, l)
-		if err != nil {
+		if _, err := client.GetRRsets(context.Background(), cg.DNSDomain, l); err != nil {
 			l.Error(errors.Wrap(err, "couldn't prefetch DNS records for cache"))
+			continue
 		}
 
 		break

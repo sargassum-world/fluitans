@@ -17,6 +17,12 @@ type TemplateRenderer struct {
 	templatesFS fs.FS
 }
 
+func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
+	tmpl := template.Must(t.templates.Clone())
+	tmpl = template.Must(tp.ParseFS(tmpl, t.templatesFS, name))
+	return tmpl.ExecuteTemplate(w, name, data)
+}
+
 func New(appNamer, staticNamer HashNamer, fsys fs.FS) *TemplateRenderer {
 	tmpl :=
 		template.
@@ -43,10 +49,4 @@ func New(appNamer, staticNamer HashNamer, fsys fs.FS) *TemplateRenderer {
 		),
 		templatesFS: fsys,
 	}
-}
-
-func (t *TemplateRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	tmpl := template.Must(t.templates.Clone())
-	tmpl = template.Must(tp.ParseFS(tmpl, t.templatesFS, name))
-	return tmpl.ExecuteTemplate(w, name, data)
 }

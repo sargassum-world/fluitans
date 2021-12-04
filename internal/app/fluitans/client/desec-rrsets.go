@@ -71,7 +71,7 @@ func getRRsetsFromCache(
 }
 
 func getRRsetsFromDesec(
-	ctx context.Context, domain DNSDomain, l log.Logger,
+	ctx context.Context, domain *DNSDomain, l log.Logger,
 ) (map[string][]desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -118,7 +118,7 @@ func getRRsetsFromDesec(
 }
 
 func GetRRsets(
-	ctx context.Context, domain DNSDomain, l log.Logger,
+	ctx context.Context, domain *DNSDomain, l log.Logger,
 ) (map[string][]desec.RRset, error) {
 	if rrsets := getRRsetsFromCache(domain.DomainName, domain.Cache, l); rrsets != nil {
 		return rrsets, nil
@@ -152,7 +152,7 @@ func getSubnameRRsetsFromCache(
 }
 
 func getSubnameRRsetsFromDesec(
-	ctx context.Context, domain DNSDomain, subname string, l log.Logger,
+	ctx context.Context, domain *DNSDomain, subname string, l log.Logger,
 ) ([]desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -182,7 +182,7 @@ func getSubnameRRsetsFromDesec(
 }
 
 func GetSubnameRRsets(
-	ctx context.Context, domain DNSDomain, subname string, l log.Logger,
+	ctx context.Context, domain *DNSDomain, subname string, l log.Logger,
 ) ([]desec.RRset, error) {
 	if rrsets := getSubnameRRsetsFromCache(
 		domain.DomainName, subname, domain.Cache, l,
@@ -218,7 +218,7 @@ func getRRsetFromCache(
 }
 
 func getRRsetFromDesec(
-	ctx context.Context, domain DNSDomain, subname, recordType string, l log.Logger,
+	ctx context.Context, domain *DNSDomain, subname, recordType string, l log.Logger,
 ) (*desec.RRset, error) {
 	client, cerr := domain.makeClientWithResponses()
 	if cerr != nil {
@@ -258,7 +258,7 @@ func getRRsetFromDesec(
 }
 
 func GetRRset(
-	ctx context.Context, domain DNSDomain, subname, recordType string, l log.Logger,
+	ctx context.Context, domain *DNSDomain, subname, recordType string, l log.Logger,
 ) (*desec.RRset, error) {
 	rrset, cacheHit := getRRsetFromCache(
 		domain.DomainName, subname, recordType, domain.Cache, l,
@@ -277,7 +277,7 @@ func GetRRset(
 }
 
 func CreateRRset(
-	ctx context.Context, domain DNSDomain,
+	ctx context.Context, domain *DNSDomain,
 	subname string, recordType string, ttl int64, records []string,
 	l log.Logger,
 ) (*desec.RRset, error) {
@@ -322,7 +322,7 @@ func CreateRRset(
 }
 
 func DeleteRRset(
-	ctx context.Context, domain DNSDomain, subname string, recordType string,
+	ctx context.Context, domain *DNSDomain, subname string, recordType string,
 	l log.Logger,
 ) error {
 	client, cerr := domain.makeClientWithResponses()

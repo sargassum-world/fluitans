@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -28,9 +29,9 @@ type APILimiterStats struct {
 }
 
 type ServerData struct {
-	Server           client.DNSServer
+	Server           models.DNSServer
 	Domain           desec.Domain
-	DesecAPISettings client.DesecAPISettings
+	DesecAPISettings models.DesecAPISettings
 	APILimiterStats  APILimiterStats
 	ApexRRsets       []desec.RRset
 	SubnameRRsets    [][]desec.RRset
@@ -76,19 +77,13 @@ func getServerData(
 ) (*ServerData, error) {
 	readLimiter := cg.RateLimiters[client.DesecReadLimiterName]
 	writeLimiter := cg.RateLimiters[client.DesecWriteLimiterName]
-	domain, err := client.NewDNSDomain(
-		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
-	)
+	domain := cg.DNSDomain
+	desecDomain, err := client.GetDomain(ctx, domain, l)
 	if err != nil {
 		return nil, err
 	}
 
-	desecDomain, err := client.GetDomain(ctx, *domain, l)
-	if err != nil {
-		return nil, err
-	}
-
-	subnameRRsets, err := client.GetRRsets(ctx, *domain, l)
+	subnameRRsets, err := client.GetRRsets(ctx, domain, l)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +140,9 @@ func getServer(
 				return err
 			}
 
-			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
+			if noContent, err := caching.ProcessEtag(
+				c, tte, fingerprint.Compute(etagData),
+			); noContent {
 				return err
 			}
 
@@ -157,7 +154,7 @@ func getServer(
 			}{
 				Meta: template.Meta{
 					Path:       c.Request().URL.Path,
-					DomainName: client.GetEnvVarDomainName(),
+					DomainName: app.Config.DomainName,
 				},
 				Embeds: g.Embeds,
 				Data:   *serverData,

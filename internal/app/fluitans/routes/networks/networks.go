@@ -10,6 +10,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -18,12 +20,14 @@ import (
 )
 
 type NetworksData struct {
-	Controller client.Controller
+	Controller models.Controller
 	Networks   map[string]zerotier.ControllerNetwork
 }
 
-func getNetworksData(ctx context.Context, cache *client.Cache) ([]NetworksData, error) {
-	controllers, err := client.GetControllers()
+func getNetworksData(
+	ctx context.Context, config conf.Config, cache *client.Cache,
+) ([]NetworksData, error) {
+	controllers, err := client.GetControllers(config)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +70,7 @@ func getNetworks(
 			ctx := c.Request().Context()
 
 			// Run queries
-			networksData, err := getNetworksData(ctx, app.Cache)
+			networksData, err := getNetworksData(ctx, app.Config, app.Cache)
 			if err != nil {
 				return err
 			}
@@ -89,7 +93,7 @@ func getNetworks(
 			}{
 				Meta: template.Meta{
 					Path:       c.Request().URL.Path,
-					DomainName: client.GetEnvVarDomainName(),
+					DomainName: app.Config.DomainName,
 				},
 				Embeds: g.Embeds,
 				Data:   networksData,
@@ -101,44 +105,49 @@ func getNetworks(
 func postNetworks(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	return func(c echo.Context) error {
-		// Extract context
-		ctx := c.Request().Context()
+	switch app := g.App.(type) {
+	default:
+		return nil, errors.Errorf("app globals are of unexpected type %T", g.App)
+	case *client.Globals:
+		return func(c echo.Context) error {
+			// Extract context
+			ctx := c.Request().Context()
 
-		// Parse params
-		name := c.FormValue("controller")
-		if name == "" {
-			return echo.NewHTTPError(
-				http.StatusBadRequest, "Controller name not specified",
-			)
-		}
+			// Parse params
+			name := c.FormValue("controller")
+			if name == "" {
+				return echo.NewHTTPError(
+					http.StatusBadRequest, "Controller name not specified",
+				)
+			}
 
-		// Run queries
-		controller, ok, err := client.FindController(name)
-		if err != nil {
-			return err
-		}
+			// Run queries
+			controller, ok, err := client.FindController(name, app.Config)
+			if err != nil {
+				return err
+			}
 
-		if !ok {
-			return echo.NewHTTPError(
-				http.StatusNotFound, fmt.Sprintf("Controller %s not found", name),
-			)
-		}
+			if !ok {
+				return echo.NewHTTPError(
+					http.StatusNotFound, fmt.Sprintf("Controller %s not found", name),
+				)
+			}
 
-		createdNetwork, err := client.CreateNetwork(ctx, *controller)
-		if err != nil {
-			return err
-		}
+			createdNetwork, err := client.CreateNetwork(ctx, *controller)
+			if err != nil {
+				return err
+			}
 
-		created := createdNetwork.Id
+			created := createdNetwork.Id
 
-		if created == nil {
-			return echo.NewHTTPError(
-				http.StatusInternalServerError, "Network status unknown",
-			)
-		}
+			if created == nil {
+				return echo.NewHTTPError(
+					http.StatusInternalServerError, "Network status unknown",
+				)
+			}
 
-		// Render template
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
-	}, nil
+			// Render template
+			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
+		}, nil
+	}
 }

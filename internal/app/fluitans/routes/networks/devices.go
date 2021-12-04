@@ -9,12 +9,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 func setMemberAuthorization(
-	ctx context.Context, controller client.Controller, networkID string,
+	ctx context.Context, controller models.Controller, networkID string,
 	memberAddress string, authorized bool,
 ) error {
 	auth := authorized
@@ -45,7 +46,7 @@ func postDevice(
 
 			// Run queries
 			controller, err := client.FindControllerByAddress(
-				ctx, controllerAddress, app.Cache, l,
+				ctx, controllerAddress, app.Config, app.Cache, l,
 			)
 			if err != nil {
 				return err
@@ -97,7 +98,7 @@ func postDevices(
 
 			// Run queries
 			controller, err := client.FindControllerByAddress(
-				ctx, controllerAddress, app.Cache, l,
+				ctx, controllerAddress, app.Config, app.Cache, l,
 			)
 			if err != nil {
 				return err

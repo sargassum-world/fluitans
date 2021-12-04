@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/internal/caching"
 	"github.com/sargassum-eco/fluitans/internal/fingerprint"
 	"github.com/sargassum-eco/fluitans/internal/route"
@@ -46,20 +47,14 @@ func checkNamedByDNS(
 	ctx context.Context, networkName, networkID string,
 	cg *client.Globals, l echo.Logger,
 ) (bool, error) {
-	domain, err := client.NewDNSDomain(
-		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
-	)
-	if err != nil {
-		return false, err
-	}
-
+	domain := cg.DNSDomain
 	domainSuffix := fmt.Sprintf(".%s", domain.DomainName)
 	if !strings.HasSuffix(networkName, domainSuffix) {
 		return false, nil
 	}
 
 	subname := strings.TrimSuffix(networkName, domainSuffix)
-	txtRRset, err := client.GetRRset(ctx, *domain, subname, "TXT", l)
+	txtRRset, err := client.GetRRset(ctx, domain, subname, "TXT", l)
 	if err != nil {
 		return false, err
 	}
@@ -73,7 +68,7 @@ func checkNamedByDNS(
 }
 
 type NetworkData struct {
-	Controller       client.Controller
+	Controller       models.Controller
 	Network          zerotier.ControllerNetwork
 	Members          map[string]zerotier.ControllerNetworkMember
 	JSONPrintedRules string
@@ -84,7 +79,9 @@ func getNetworkData(
 	ctx context.Context, address string, id string,
 	cg *client.Globals, l echo.Logger,
 ) (*NetworkData, error) {
-	controller, err := client.FindControllerByAddress(ctx, address, cg.Cache, l)
+	controller, err := client.FindControllerByAddress(
+		ctx, address, cg.Config, cg.Cache, l,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +157,9 @@ func getNetwork(
 				return err
 			}
 
-			if noContent, err := caching.ProcessEtag(c, tte, fingerprint.Compute(etagData)); noContent {
+			if noContent, err := caching.ProcessEtag(
+				c, tte, fingerprint.Compute(etagData),
+			); noContent {
 				return err
 			}
 
@@ -172,7 +171,7 @@ func getNetwork(
 			}{
 				Meta: template.Meta{
 					Path:       c.Request().URL.Path,
-					DomainName: client.GetEnvVarDomainName(),
+					DomainName: app.Config.DomainName,
 				},
 				Embeds: g.Embeds,
 				Data:   *networkData,
@@ -182,7 +181,7 @@ func getNetwork(
 }
 
 func nameNetwork(
-	ctx context.Context, controller client.Controller, id string, name string,
+	ctx context.Context, controller models.Controller, id string, name string,
 	cg *client.Globals, l echo.Logger,
 ) error {
 	if len(name) == 0 {
@@ -190,21 +189,10 @@ func nameNetwork(
 	}
 
 	// TODO: quit with an error if the network was already named by DNS (disallow renaming)
-	fqdn := fmt.Sprintf("%s.%s", name, client.GetEnvVarDomainName())
-	ttl, err := client.GetEnvVarZerotierNetworkTTL()
-	if err != nil {
-		return err
-	}
-
-	domain, err := client.NewDNSDomain(
-		cg.RateLimiters[client.DesecReadLimiterName], cg.Cache,
-	)
-	if err != nil {
-		return err
-	}
-
+	fqdn := fmt.Sprintf("%s.%s", name, cg.Config.DomainName)
+	ttl := cg.Config.ZerotierDNS.NetworkTTL
 	if _, err := client.CreateRRset(
-		ctx, *domain, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)}, l,
+		ctx, cg.DNSDomain, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)}, l,
 	); err != nil {
 		// TODO: if a TXT RRset already exists but doesn't have the ID, just append a
 		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch
@@ -219,7 +207,7 @@ func nameNetwork(
 }
 
 func setNetworkRules(
-	ctx context.Context, controller client.Controller, id string, jsonRules string,
+	ctx context.Context, controller models.Controller, id string, jsonRules string,
 ) error {
 	rules := make([]map[string]interface{}, 0)
 	if err := json.Unmarshal([]byte(jsonRules), &rules); err != nil {
@@ -254,7 +242,9 @@ func postNetwork(
 			method := c.FormValue("method")
 
 			// Run queries
-			controller, err := client.FindControllerByAddress(ctx, address, app.Cache, l)
+			controller, err := client.FindControllerByAddress(
+				ctx, address, app.Config, app.Cache, l,
+			)
 			if err != nil {
 				return err
 			}

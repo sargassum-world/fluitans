@@ -1,21 +1,14 @@
 package client
 
-type Controller struct {
-	// TODO: move this to a models package or something!
-	Server            string  `json:"server"`
-	Name              string  `json:"name"` // Must be unique for display purposes!
-	Description       string  `json:"description"`
-	Authtoken         string  `json:"authtoken"`
-	NetworkCostWeight float32 `json:"local"`
-}
+import (
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
+)
 
-func GetControllers() ([]Controller, error) {
+func GetControllers(config conf.Config) ([]models.Controller, error) {
 	// TODO: look up the controllers from a database, if one is specified!
-	controllers := make([]Controller, 0)
-	envController, err := GetEnvVarController()
-	if err != nil {
-		return nil, err
-	}
+	controllers := make([]models.Controller, 0)
+	envController := config.Controller
 
 	if envController != nil {
 		controllers = append(controllers, *envController)
@@ -23,9 +16,11 @@ func GetControllers() ([]Controller, error) {
 	return controllers, nil
 }
 
-func FindController(name string) (*Controller, bool, error) {
+func FindController(
+	name string, config conf.Config,
+) (*models.Controller, bool, error) {
 	found := false
-	controllers, err := GetControllers()
+	controllers, err := GetControllers(config)
 	if err != nil {
 		return nil, false, err
 	}

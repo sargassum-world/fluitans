@@ -5,13 +5,14 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/models"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
 // All Network Members
 
 func GetNetworkMembersInfo(
-	ctx context.Context, controller Controller,
+	ctx context.Context, controller models.Controller,
 	networkID string, memberAddresses []string,
 ) (map[string]zerotier.ControllerNetworkMember, error) {
 	client, cerr := zerotier.NewAuthClientWithResponses(
@@ -56,7 +57,7 @@ func GetNetworkMembersInfo(
 // Individual Network Member
 
 func UpdateMember(
-	ctx context.Context, controller Controller,
+	ctx context.Context, controller models.Controller,
 	networkID string, memberAddress string,
 	member zerotier.SetControllerNetworkMemberJSONRequestBody,
 ) error {

@@ -12,7 +12,7 @@ import (
 
 func PrescanZerotierControllers(cg *client.Globals, l log.Logger) {
 	for {
-		controllers, err := client.GetControllers()
+		controllers, err := client.GetControllers(cg.Config)
 		if err != nil {
 			l.Error(errors.Wrap(err, "couldn't get the list of known controllers"))
 			continue
