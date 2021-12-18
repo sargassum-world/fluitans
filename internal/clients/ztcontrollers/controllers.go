@@ -13,7 +13,6 @@ import (
 // All Controllers
 
 func (c *Client) GetControllers() ([]Controller, error) {
-	// TODO: make these methods of a controllers client object
 	// TODO: look up the controllers from a database, if one is specified!
 	controllers := make([]Controller, 0)
 	envController := c.Config.Controller
@@ -49,8 +48,7 @@ func (c *Client) ScanControllers(ctx context.Context, controllers []Controller) 
 	}
 
 	for i, v := range controllers {
-		err := c.Cache.SetControllerByAddress(addresses[i], v)
-		if err != nil {
+		if err := c.Cache.SetControllerByAddress(addresses[i], v); err != nil {
 			return nil, err
 		}
 	}
@@ -60,19 +58,18 @@ func (c *Client) ScanControllers(ctx context.Context, controllers []Controller) 
 
 // Individual Controller
 
-func (c *Client) FindController(name string) (*Controller, bool, error) {
-	found := false
+func (c *Client) FindController(name string) (*Controller, error) {
 	controllers, err := c.GetControllers()
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	for _, v := range controllers {
 		if v.Name == name {
-			return &v, true, nil
+			return &v, nil
 		}
 	}
-	return nil, found, nil
+	return nil, nil
 }
 
 func (c *Client) checkCachedController(ctx context.Context, address string) (*Controller, error) {

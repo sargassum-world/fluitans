@@ -10,10 +10,39 @@ type Cache struct {
 	Cache clientcache.Cache
 }
 
-// /network/controllers/:address
+// /ztcontrollers/controllers/:server/networkIDs
+
+func keyNetworkIDsByServer(server string) string {
+	return fmt.Sprintf("/ztcontrollers/controllers/s:[%s]/networkIDs", server)
+}
+
+func (c *Cache) SetNetworkIDsByServer(
+	server string, networkIDs []string, costWeight float32,
+) error {
+	key := keyNetworkIDsByServer(server)
+	return c.Cache.SetEntry(key, networkIDs, costWeight, -1)
+}
+
+func (c *Cache) UnsetNetworkIDsByServer(server string) {
+	key := keyNetworkIDsByServer(server)
+	c.Cache.UnsetEntry(key)
+}
+
+func (c *Cache) GetNetworkIDsByServer(server string) ([]string, error) {
+	key := keyNetworkIDsByServer(server)
+	var value []string
+	keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
+	if !keyExists || !valueExists || err != nil {
+		return nil, err
+	}
+
+	return value, nil
+}
+
+// /ztcontrollers/controllers/:address
 
 func keyControllerByAddress(address string) string {
-	return fmt.Sprintf("/controllers/[%s]", address)
+	return fmt.Sprintf("/ztcontrollers/controllers/a:[%s]", address)
 }
 
 func (c *Cache) SetControllerByAddress(address string, ztController Controller) error {

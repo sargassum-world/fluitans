@@ -27,12 +27,12 @@ func getNetworksData(
 		return nil, err
 	}
 
-	networkIDs, err := c.GetNetworkIDs(ctx, controllers, cc)
+	networkIDs, err := c.GetAllNetworkIDs(ctx, controllers, cc)
 	if err != nil {
 		return nil, err
 	}
 
-	networks, err := c.GetNetworks(ctx, controllers, networkIDs)
+	networks, err := c.GetAllNetworks(ctx, controllers, networkIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -92,11 +92,11 @@ func postNetworks(
 			}
 
 			// Run queries
-			controller, ok, err := app.Clients.ZTControllers.FindController(name)
+			controller, err := app.Clients.ZTControllers.FindController(name)
 			if err != nil {
 				return err
 			}
-			if !ok {
+			if controller == nil {
 				return echo.NewHTTPError(
 					http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
 				)

@@ -20,7 +20,7 @@ type Cache struct {
 // /dns/domains/:name
 
 func keyDomainByName(name string) string {
-	return fmt.Sprintf("/dns/domains/[%s]", name)
+	return fmt.Sprintf("/dns/domains/n:[%s]", name)
 }
 
 func (c *Cache) SetDomainByName(name string, domain desec.Domain) error {
@@ -47,7 +47,7 @@ func (c *Cache) GetDomainByName(name string) (*desec.Domain, bool, error) {
 // /dns/domains/:name/subnames
 
 func keySubnames(domainName string) string {
-	return fmt.Sprintf("/dns/domains/[%s]/subnames", domainName)
+	return fmt.Sprintf("/dns/domains/n:[%s]/subnames", domainName)
 }
 
 func (c *Cache) SetSubnames(domainName string, subnames []string) error {
@@ -133,7 +133,7 @@ func (c *Cache) GetRRsetsByName(domainName, subname string) ([]desec.RRset, erro
 // /dns/domains/:domain/rrsets/:subname/:type
 
 func keyRRsetByNameAndType(domainName, subname, rrsetType string) string {
-	return fmt.Sprintf("/dns/domains/[%s]/rrsets/[%s]/[%s]", domainName, subname, rrsetType)
+	return fmt.Sprintf("/dns/domains/n:[%s]/rrsets/sn:[%s]/t:[%s]", domainName, subname, rrsetType)
 }
 
 func (c *Cache) SetRRsetByNameAndType(

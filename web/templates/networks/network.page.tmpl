@@ -169,8 +169,12 @@
           </p>
           <h4 class="is-size-6">Managed Routes</h4>
           <p>
+            {{if .Data.Network.Routes}}
             {{range $route := .Data.Network.Routes}}
             {{$route.Target}} via {{$route.Via}}
+            {{else}}
+            <span class="tag is-info">None</span>
+            {{end}}
             {{else}}
             <span class="tag is-info">None</span>
             {{end}}

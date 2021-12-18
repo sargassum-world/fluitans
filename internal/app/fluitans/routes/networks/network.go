@@ -155,7 +155,8 @@ func nameNetwork(
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
 	}
 
-	// TODO: quit with an error if the network was already named by DNS (disallow renaming)
+	// TODO: quit with an error if the network was already named by DNS (disallow renaming
+	// of networks as well as reassignment of previously-assigned names)
 	fqdn := fmt.Sprintf("%s.%s", name, dc.Config.DomainName)
 	ttl := c.Config.DNS.NetworkTTL
 	if _, err := dc.CreateRRset(

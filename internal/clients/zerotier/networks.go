@@ -3,42 +3,91 @@ package zerotier
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
+	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-// All Networks
-
 func GetControllerAddress(networkID string) string {
 	addressLength := 10
 	return networkID[:addressLength]
 }
 
+// All Networks
+
+func (c *Client) getNetworkIDsFromCache(
+	controller ztcontrollers.Controller, cc *ztcontrollers.Client,
+) []string {
+	networkIDs, err := cc.Cache.GetNetworkIDsByServer(controller.Server)
+	if err != nil {
+		// Log the error but return as a cache miss so we can manually query the network IDs
+		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
+			"couldn't get the cache entry for the network IDs controlled by %s", controller.Name,
+		)))
+		return nil // treat an unparseable cache entry like a cache miss
+	}
+
+	return networkIDs // networkIDs may be nil, which indicates a cache miss
+}
+
+func (c *Client) getNetworkIDsFromZerotier(
+	ctx context.Context, controller ztcontrollers.Controller, cc *ztcontrollers.Client,
+) ([]string, error) {
+	client, cerr := controller.NewClient()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	res, err := client.GetControllerNetworksWithResponse(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache the results
+	networkIDs := *res.JSON200
+	if err := cc.Cache.SetNetworkIDsByServer(
+		controller.Server, networkIDs, controller.NetworkCostWeight,
+	); err != nil {
+		return nil, err
+	}
+	if len(networkIDs) > 0 {
+		// It's safe to assume that all networks under a controller have the same controller address,
+		// so we only need to cache the controller whose address is part of the first network's ID
+		err := cc.Cache.SetControllerByAddress(GetControllerAddress(networkIDs[0]), controller)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return networkIDs, nil
+}
+
 func (c *Client) GetNetworkIDs(
+	ctx context.Context, controller ztcontrollers.Controller, cc *ztcontrollers.Client,
+) ([]string, error) {
+	if networkIDs := c.getNetworkIDsFromCache(controller, cc); networkIDs != nil {
+		return networkIDs, nil
+	}
+	return c.getNetworkIDsFromZerotier(ctx, controller, cc)
+}
+
+func (c *Client) GetAllNetworkIDs(
 	ctx context.Context, controllers []ztcontrollers.Controller, cc *ztcontrollers.Client,
 ) ([][]string, error) {
 	eg, ctx := errgroup.WithContext(ctx)
-	networkIDs := make([][]string, len(controllers))
-	for i := range controllers {
-		networkIDs[i] = []string{}
-	}
+	allNetworkIDs := make([][]string, len(controllers))
 	for i, controller := range controllers {
 		eg.Go(func(i int, controller ztcontrollers.Controller) func() error {
 			return func() error {
-				client, cerr := controller.NewClient()
-				if cerr != nil {
-					return nil
-				}
-
-				res, err := client.GetControllerNetworksWithResponse(ctx)
+				networkIDs, err := c.GetNetworkIDs(ctx, controller, cc)
 				if err != nil {
 					return err
 				}
-
-				networkIDs[i] = *res.JSON200
+				allNetworkIDs[i] = networkIDs
 				return nil
 			}
 		}(i, controller))
@@ -46,107 +95,186 @@ func (c *Client) GetNetworkIDs(
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
-
-	for i, controller := range controllers {
-		if len(networkIDs[i]) > 0 {
-			// It's safe to assume that all networks under a controller have the same controller address,
-			// so we only need to cache the controller named by the first network
-			err := cc.Cache.SetControllerByAddress(GetControllerAddress(networkIDs[i][0]), controller)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-	return networkIDs, nil
+	return allNetworkIDs, nil
 }
 
 func (c *Client) GetNetworks(
-	ctx context.Context, controllers []ztcontrollers.Controller, ids [][]string,
-) ([]map[string]zerotier.ControllerNetwork, error) {
+	ctx context.Context, controller ztcontrollers.Controller, ids []string,
+) (map[string]zerotier.ControllerNetwork, error) {
 	eg, ctx := errgroup.WithContext(ctx)
-	networks := make([][]zerotier.ControllerNetwork, len(controllers))
-	for i := range controllers {
-		networks[i] = make([]zerotier.ControllerNetwork, len(ids[i]))
-		for j := range ids[i] {
-			networks[i][j] = zerotier.ControllerNetwork{}
-		}
-	}
-	for i, controller := range controllers {
-		client, cerr := controller.NewClient()
-		for j, id := range ids[i] {
-			eg.Go(func(i int, client *zerotier.ClientWithResponses, j int, id string) func() error {
-				return func() error {
-					if cerr != nil {
-						return nil
-					}
-
-					res, err := client.GetControllerNetworkWithResponse(ctx, id)
-					if err != nil {
-						return err
-					}
-
-					networks[i][j] = *res.JSON200
-					return nil
+	networks := make([]*zerotier.ControllerNetwork, len(ids))
+	for i, id := range ids {
+		eg.Go(func(i int, id string) func() error {
+			return func() error {
+				network, err := c.GetNetwork(ctx, controller, id)
+				if err != nil {
+					return err
 				}
-			}(i, client, j, id))
-		}
+				networks[i] = network
+				return nil
+			}
+		}(i, id))
 	}
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
 
-	keyedNetworks := make([]map[string]zerotier.ControllerNetwork, len(controllers))
-	for i := range controllers {
-		keyedNetworks[i] = make(map[string]zerotier.ControllerNetwork, len(ids[i]))
-		for j, id := range ids[i] {
-			keyedNetworks[i][id] = networks[i][j]
+	// Transform the responses into a more usable shape
+	keyedNetworks := make(map[string]zerotier.ControllerNetwork, len(ids))
+	for i, id := range ids {
+		if networks[i] != nil {
+			keyedNetworks[id] = *networks[i]
 		}
 	}
-
 	return keyedNetworks, nil
+}
+
+func (c *Client) GetAllNetworks(
+	ctx context.Context, controllers []ztcontrollers.Controller, ids [][]string,
+) ([]map[string]zerotier.ControllerNetwork, error) {
+	eg, ctx := errgroup.WithContext(ctx)
+	allNetworks := make([]map[string]zerotier.ControllerNetwork, len(controllers))
+	for i, controller := range controllers {
+		eg.Go(func(i int, controller ztcontrollers.Controller, someIDs []string) func() error {
+			return func() error {
+				networks, err := c.GetNetworks(ctx, controller, someIDs)
+				if err != nil {
+					return err
+				}
+				allNetworks[i] = networks
+				return nil
+			}
+		}(i, controller, ids[i]))
+	}
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	return allNetworks, nil
 }
 
 // Individual Network
 
+func (c *Client) getNetworkFromCache(id string) (*zerotier.ControllerNetwork, bool) {
+	network, cacheHit, err := c.Cache.GetNetworkByID(id)
+	if err != nil {
+		// Log the error but return as a cache miss so we can manually query the network
+		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
+			"couldn't get the cache entry for the network with id %s", id,
+		)))
+		return nil, false // treat an unparseable cache entry like a cache miss
+	}
+	return network, cacheHit // cache hit with nil rrset indicates nonexistent RRset
+}
+
+func (c *Client) getNetworkFromZerotier(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
+) (*zerotier.ControllerNetwork, error) {
+	client, cerr := controller.NewClient()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	res, err := client.GetControllerNetworkWithResponse(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.Cache.SetNetworkByID(id, *res.JSON200); err != nil {
+		return nil, err
+	}
+
+	return res.JSON200, nil
+}
+
+func (c *Client) GetNetwork(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
+) (*zerotier.ControllerNetwork, error) {
+	if network, cacheHit := c.getNetworkFromCache(id); cacheHit {
+		return network, nil // nil network indicates nonexistent network
+	}
+	return c.getNetworkFromZerotier(ctx, controller, id)
+}
+
+func (c *Client) getNetworkMemberAddressesFromCache(networkID string) []string {
+	addresses, err := c.Cache.GetNetworkMembersByID(networkID)
+	if err != nil {
+		// Log the error but return as a cache miss so we can manually query the member addresses
+		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
+			"couldn't get the cache entry for the member addresses of network %s", networkID,
+		)))
+		return nil // treat an unparseable cache entry like a cache miss
+	}
+
+	return addresses // addresses may be nil, which indicates a cache miss
+}
+
+func (c *Client) getNetworkMemberAddressesFromZerotier(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
+) ([]string, error) {
+	client, cerr := controller.NewClient()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	res, err := client.GetControllerNetworkMembersWithResponse(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Transform the response into a usable shape
+	var memberRevisions map[string]int
+	if err = json.Unmarshal(res.Body, &memberRevisions); err != nil {
+		return nil, err
+	}
+	memberAddresses := make([]string, 0, len(memberRevisions))
+	for address := range memberRevisions {
+		memberAddresses = append(memberAddresses, address)
+	}
+
+	if err := c.Cache.SetNetworkMembersByID(id, memberAddresses); err != nil {
+		return nil, err
+	}
+
+	return memberAddresses, nil
+}
+
+func (c *Client) GetNetworkMemberAddresses(
+	ctx context.Context, controller ztcontrollers.Controller, id string,
+) ([]string, error) {
+	if addresses := c.getNetworkMemberAddressesFromCache(id); addresses != nil {
+		return addresses, nil
+	}
+	return c.getNetworkMemberAddressesFromZerotier(ctx, controller, id)
+}
+
 func (c *Client) GetNetworkInfo(
 	ctx context.Context, controller ztcontrollers.Controller, id string,
 ) (*zerotier.ControllerNetwork, []string, error) {
-	client, cerr := controller.NewClient()
-	if cerr != nil {
-		return nil, nil, cerr
-	}
-
-	var network *zerotier.ControllerNetwork
-	var memberRevisions map[string]int
 	eg, ctx := errgroup.WithContext(ctx)
+	var network *zerotier.ControllerNetwork
+	var addresses []string
 	eg.Go(func() error {
-		res, err := client.GetControllerNetworkWithResponse(ctx, id)
+		n, err := c.GetNetwork(ctx, controller, id)
 		if err != nil {
 			return err
 		}
-
-		network = res.JSON200
+		network = n
 		return nil
 	})
 	eg.Go(func() error {
-		res, err := client.GetControllerNetworkMembersWithResponse(ctx, id)
+		a, err := c.GetNetworkMemberAddresses(ctx, controller, id)
 		if err != nil {
 			return err
 		}
-
-		err = json.Unmarshal(res.Body, &memberRevisions)
+		addresses = a
 		return err
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, nil, err
 	}
 
-	memberAddresses := make([]string, 0, len(memberRevisions))
-	for address := range memberRevisions {
-		memberAddresses = append(memberAddresses, address)
-	}
-
-	return network, memberAddresses, nil
+	return network, addresses, nil
 }
 
 func makeDefaultRules() []map[string]interface{} {
@@ -203,6 +331,7 @@ func (c *Client) CreateNetwork(
 		return nil, cerr
 	}
 
+	// TODO: cache the address of the controller and use it when available
 	sRes, err := client.GetStatusWithResponse(ctx)
 	if err != nil {
 		return nil, err
@@ -216,6 +345,12 @@ func (c *Client) CreateNetwork(
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: this should only happen on a success HTTP status code
+	if err = c.Cache.SetNetworkByID(*nRes.JSON200.Id, *nRes.JSON200); err != nil {
+		return nil, err
+	}
+	// TODO: unset the cache entry for the controller's list of network IDs
 	return nRes.JSON200, nil
 }
 
@@ -228,8 +363,13 @@ func (c *Client) UpdateNetwork(
 		return err
 	}
 
-	_, err = client.SetControllerNetworkWithResponse(ctx, id, network)
-	return err
+	res, err := client.SetControllerNetworkWithResponse(ctx, id, network)
+	if err != nil {
+		return err
+	}
+
+	// TODO: this should only happen on a success HTTP status code
+	return c.Cache.SetNetworkByID(id, *res.JSON200)
 }
 
 func (c *Client) DeleteNetwork(
@@ -241,5 +381,12 @@ func (c *Client) DeleteNetwork(
 	}
 
 	_, err = client.DeleteControllerNetworkWithResponse(ctx, id)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// TODO: this should only happen on a success HTTP status code
+	c.Cache.SetNonexistentNetworkByID(id)
+	// TODO: unset the cache entry for the controller's list of network IDs
+	return nil
 }

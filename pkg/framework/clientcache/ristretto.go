@@ -1,8 +1,6 @@
 package clientcache
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"time"
 
@@ -11,7 +9,8 @@ import (
 )
 
 type RistrettoCache struct {
-	cache *ristretto.Cache
+	cache      *ristretto.Cache
+	marshaller Marshaller
 }
 
 func NewRistrettoCache(cacheConfig ristretto.Config) (Cache, error) {
@@ -20,7 +19,12 @@ func NewRistrettoCache(cacheConfig ristretto.Config) (Cache, error) {
 		return nil, err
 	}
 
-	return &RistrettoCache{cache: cache}, nil
+	marshaller := NewMsgPackMarshaller()
+
+	return &RistrettoCache{
+		cache:      cache,
+		marshaller: &marshaller,
+	}, nil
 }
 
 func computeCacheCost(costWeight float32, bytes []byte) int64 {
@@ -30,18 +34,15 @@ func computeCacheCost(costWeight float32, bytes []byte) int64 {
 func (c *RistrettoCache) SetEntry(
 	key string, value interface{}, costWeight float32, ttl time.Duration,
 ) error {
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(value); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("couldn't gob-encode value %+v for key %s", value, key))
+	marshaled, err := c.marshaller.Marshal(value)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("couldn't marshal value for key %s", key))
 	}
 
 	if ttl < 0 {
-		gobbed := buf.Bytes()
-		c.cache.Set(key, gobbed, computeCacheCost(costWeight, gobbed))
+		c.cache.Set(key, marshaled, computeCacheCost(costWeight, marshaled))
 	} else {
-		gobbed := buf.Bytes()
-		c.cache.SetWithTTL(key, gobbed, computeCacheCost(costWeight, gobbed), ttl)
+		c.cache.SetWithTTL(key, marshaled, computeCacheCost(costWeight, marshaled), ttl)
 	}
 	return nil
 }
@@ -67,18 +68,14 @@ func (c *RistrettoCache) GetEntry(key string, value interface{}) (bool, bool, er
 		return false, false, nil
 	}
 
-	switch entryGob := entryRaw.(type) {
+	switch marshaledBytes := entryRaw.(type) {
 	default:
 		return true, false, fmt.Errorf("invalid cache entry %s has unexpected type %T", key, entryRaw)
 	case nonexistentValue:
 		return true, false, nil
 	case []byte:
-		buf := bytes.NewBuffer(entryGob)
-		dec := gob.NewDecoder(buf)
-		if err := dec.Decode(value); err != nil {
-			return true, true, errors.Wrap(err, fmt.Sprintf(
-				"couldn't gob-decode value %+v for key %s", buf, key,
-			))
+		if err := c.marshaller.Unmarshal(marshaledBytes, value); err != nil {
+			return true, true, errors.Wrap(err, fmt.Sprintf("couldn't unmarshal value for key %s", key))
 		}
 
 		return true, true, nil

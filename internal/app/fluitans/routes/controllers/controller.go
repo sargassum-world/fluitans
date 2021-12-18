@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
@@ -25,58 +24,28 @@ type ControllerData struct {
 func getControllerData(
 	ctx context.Context, name string, cc *ztcontrollers.Client, c *ztc.Client,
 ) (*ControllerData, error) {
-	controller, ok, err := cc.FindController(name)
+	controller, err := cc.FindController(name)
 	if err != nil {
 		return nil, err
 	}
-	if !ok {
+	if controller == nil {
 		return nil, echo.NewHTTPError(
 			http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
 		)
 	}
-	client, err := controller.NewClient()
+
+	status, controllerStatus, networkIDs, err := c.GetControllerInfo(ctx, *controller, cc)
 	if err != nil {
 		return nil, err
 	}
 
-	var status *zerotier.Status
-	var controllerStatus *zerotier.ControllerStatus
-	var networkIDs []string
-	eg, ctx := errgroup.WithContext(ctx)
-	eg.Go(func() error {
-		res, cerr := client.GetStatusWithResponse(ctx)
-		if cerr != nil {
-			return err
-		}
-		status = res.JSON200
-		return cc.Cache.SetControllerByAddress(*status.Address, *controller)
-	})
-	eg.Go(func() error {
-		res, cerr := client.GetControllerStatusWithResponse(ctx)
-		if cerr != nil {
-			return err
-		}
-		controllerStatus = res.JSON200
-		return err
-	})
-	eg.Go(func() error {
-		res, cerr := client.GetControllerNetworksWithResponse(ctx)
-		if cerr != nil {
-			return err
-		}
-		networkIDs = *res.JSON200
-		return nil
-	})
-	if err = eg.Wait(); err != nil {
-		return nil, err
-	}
-
-	networks, err := c.GetNetworks(
+	networks, err := c.GetAllNetworks(
 		ctx, []ztcontrollers.Controller{*controller}, [][]string{networkIDs},
 	)
 	if err != nil {
 		return nil, err
 	}
+
 	return &ControllerData{
 		Controller:       *controller,
 		Status:           *status,

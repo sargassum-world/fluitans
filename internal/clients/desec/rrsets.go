@@ -80,7 +80,6 @@ func (c *Client) getRRsetsFromDesec(ctx context.Context) (map[string][]desec.RRs
 	if err != nil {
 		return nil, err
 	}
-
 	// TODO: handle pagination
 	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
 		return nil, err
@@ -92,6 +91,8 @@ func (c *Client) getRRsetsFromDesec(ctx context.Context) (map[string][]desec.RRs
 		subname := *rrset.Subname
 		rrsets[subname] = append(rrsets[subname], rrset)
 	}
+
+	// Cache the results
 	subnames := make([]string, 0, len(rrsets))
 	for subname := range rrsets {
 		subnames = append(subnames, subname)
@@ -99,7 +100,6 @@ func (c *Client) getRRsetsFromDesec(ctx context.Context) (map[string][]desec.RRs
 	if err = c.Cache.SetSubnames(domainName, subnames); err != nil {
 		return nil, err
 	}
-
 	for subname, subnameRRsets := range rrsets {
 		if err = c.Cache.SetRRsetsByName(domainName, subname, subnameRRsets); err != nil {
 			return nil, err
@@ -228,8 +228,7 @@ func (c *Client) getRRsetFromDesec(
 }
 
 func (c *Client) GetRRset(ctx context.Context, subname, recordType string) (*desec.RRset, error) {
-	rrset, cacheHit := c.getRRsetFromCache(subname, recordType)
-	if cacheHit {
+	if rrset, cacheHit := c.getRRsetFromCache(subname, recordType); cacheHit {
 		return rrset, nil // nil rrset indicates nonexistent RRset
 	}
 
