@@ -1,12 +1,13 @@
 package route
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/sargassum-eco/fluitans/pkg/framework/fingerprint"
 	"github.com/sargassum-eco/fluitans/pkg/framework/httpcache"
@@ -48,11 +49,14 @@ func (te TemplateEtagSegments) NewNotFoundError(t string) error {
 func ProcessEtag(
 	c echo.Context, templateEtagSegments []string, data interface{},
 ) (bool, error) {
-	marshaled, err := json.Marshal(data)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := msgpack.NewEncoder(&buf)
+	enc.SetCustomStructTag("json")
+	enc.SetSortMapKeys(true)
+	if err := enc.Encode(data); err != nil {
 		return false, err
 	}
 	return httpcache.ProcessEtag(
-		c, append(templateEtagSegments, fingerprint.Compute(marshaled))...,
+		c, append(templateEtagSegments, fingerprint.Compute(buf.Bytes()))...,
 	)
 }

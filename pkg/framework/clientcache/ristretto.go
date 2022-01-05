@@ -65,6 +65,7 @@ func (c *RistrettoCache) SetNonexistentEntry(key string, cost float32, ttl time.
 func (c *RistrettoCache) GetEntry(key string, value interface{}) (bool, bool, error) {
 	entryRaw, hasKey := c.cache.Get(key)
 	if !hasKey {
+		// fmt.Printf("Cache miss: %s\n", key)
 		return false, false, nil
 	}
 

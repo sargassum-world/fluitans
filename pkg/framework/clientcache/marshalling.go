@@ -54,15 +54,20 @@ func NewMsgPackMarshaller() MsgPackMarshaller {
 }
 
 func (m *MsgPackMarshaller) Marshal(value interface{}) ([]byte, error) {
-	marshaled, err := msgpack.Marshal(value)
-	if err != nil {
+	var buf bytes.Buffer
+	enc := msgpack.NewEncoder(&buf)
+	enc.SetCustomStructTag("json")
+	if err := enc.Encode(value); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("couldn't msgpack-encode value %#v", value))
 	}
-	return marshaled, nil
+	return buf.Bytes(), nil
 }
 
 func (m *MsgPackMarshaller) Unmarshal(marshaled []byte, result interface{}) error {
-	if err := msgpack.Unmarshal(marshaled, result); err != nil {
+	buf := bytes.NewBuffer(marshaled)
+	dec := msgpack.NewDecoder(buf)
+	dec.SetCustomStructTag("json")
+	if err := dec.Decode(result); err != nil {
 		return errors.Wrap(err, fmt.Sprintf(
 			"couldn't msgpack-decode type %T from bytes %+v", result, marshaled,
 		))
