@@ -230,7 +230,7 @@ func postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 				}
 				return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
 			case "DELETE":
-				if err = zc.DeleteNetwork(ctx, *controller, id); err != nil {
+				if err = zc.DeleteNetwork(ctx, *controller, id, app.Clients.ZTControllers); err != nil {
 					// TODO: add a tombstone to the TXT RRset?
 					return err
 				}

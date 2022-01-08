@@ -102,7 +102,9 @@ func postNetworks(
 				)
 			}
 
-			createdNetwork, err := app.Clients.Zerotier.CreateNetwork(ctx, *controller)
+			createdNetwork, err := app.Clients.Zerotier.CreateNetwork(
+				ctx, *controller, app.Clients.ZTControllers,
+			)
 			if err != nil {
 				return err
 			}

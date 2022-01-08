@@ -330,7 +330,7 @@ func makeDefaultNetworkRequest() zerotier.GenerateControllerNetworkJSONRequestBo
 }
 
 func (c *Client) CreateNetwork(
-	ctx context.Context, controller ztcontrollers.Controller,
+	ctx context.Context, controller ztcontrollers.Controller, cc *ztcontrollers.Client,
 ) (*zerotier.ControllerNetwork, error) {
 	client, cerr := controller.NewClient()
 	if cerr != nil {
@@ -353,10 +353,10 @@ func (c *Client) CreateNetwork(
 	}
 
 	// TODO: this should only happen on a success HTTP status code
+	cc.Cache.UnsetNetworkIDsByServer(controller.Server)
 	if err = c.Cache.SetNetworkByID(*nRes.JSON200.Id, *nRes.JSON200); err != nil {
 		return nil, err
 	}
-	// TODO: unset the cache entry for the controller's list of network IDs
 	return nRes.JSON200, nil
 }
 
@@ -379,7 +379,7 @@ func (c *Client) UpdateNetwork(
 }
 
 func (c *Client) DeleteNetwork(
-	ctx context.Context, controller ztcontrollers.Controller, id string,
+	ctx context.Context, controller ztcontrollers.Controller, id string, cc *ztcontrollers.Client,
 ) error {
 	client, err := controller.NewClient()
 	if err != nil {
@@ -392,7 +392,7 @@ func (c *Client) DeleteNetwork(
 	}
 
 	// TODO: this should only happen on a success HTTP status code
+	cc.Cache.UnsetNetworkIDsByServer(controller.Server)
 	c.Cache.SetNonexistentNetworkByID(id)
-	// TODO: unset the cache entry for the controller's list of network IDs
 	return nil
 }
