@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
-	github.com/benbjohnson/hashfs v0.1.0
+	github.com/benbjohnson/hashfs v0.2.1
 	github.com/deepmap/oapi-codegen v1.8.3
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/google/uuid v1.3.0 // indirect
