@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
@@ -141,6 +142,7 @@ func (c *Client) GetAllNetworks(
 				if err != nil {
 					return err
 				}
+				// TODO: eg.Go shouldn't write into a map
 				allNetworks[i] = networks
 				return nil
 			}
@@ -178,6 +180,10 @@ func (c *Client) getNetworkFromZerotier(
 	res, err := client.GetControllerNetworkWithResponse(ctx, id)
 	if err != nil {
 		return nil, err
+	}
+	if res.HTTPResponse.StatusCode == http.StatusNotFound {
+		c.Cache.SetNonexistentNetworkByID(id)
+		return nil, nil
 	}
 
 	if err := c.Cache.SetNetworkByID(id, *res.JSON200); err != nil {

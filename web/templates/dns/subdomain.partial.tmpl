@@ -1,10 +1,40 @@
-{{$name := trimSuffix "." (index . 0).Name}}
+{{$name := trimSuffix "." (index .RRsets 0).Name}}
 <turbo-frame id="dns-domain-{{$name}}">
   <article class="panel entity-panel">
     <header class="panel-heading">
       <h3 class="entity-name"><span class="tag domain-name">{{$name}}</span></h3>
+      <div class="tags">
+        {{if .IsNetworkName}}
+        {{if .Network}}
+        {{if eq (derefString .Network.Name "") $name}}
+        <span class="tag is-info">Network Name</span>
+        {{else}}
+        <span class="tag is-info">Network Alias</span>
+        {{end}}
+        {{else}}
+        <span class="tag is-danger">Unknown Network</span>
+        {{end}}
+        {{end}}
+      </div>
     </header>
-    {{range $rrset := .}}
+    {{if .Network}}
+    <details data-accordion-item class="panel-block accordion-item">
+      <summary class="accordion-header level">
+        <h4>Network</h4>
+        {{template "shared/accordion-icon.partial.tmpl"}}
+      </summary>
+      <turbo-frame id="dns-domain-{{$name}}-network">
+        <div class="accordion-content">
+          <p>ID: <a href="/networks/{{.Network.Id}}" data-turbo-frame="_top">{{template "shared/network-id.partial.tmpl" .Network.Id}}</a></p>
+          <p>Controller: <a href="/controllers/{{.Controller.Name}}" data-turbo-frame="_top">{{.Controller.Name}}</a></p>
+          {{if ne $name (derefString .Network.Name "")}}
+          <p>Self-Declared Name: {{.Network.Name}}</p>
+          {{end}}
+        </div>
+      </turbo-frame>
+    </details>
+    {{end}}
+    {{range $rrset := .RRsets}}
     <details data-accordion-item class="panel-block accordion-item">
       <summary class="accordion-header level">
         <h4>{{describeDNSRecordType $rrset.Type}} ({{$rrset.Type}})</h4>
