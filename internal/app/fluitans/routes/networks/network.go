@@ -155,9 +155,20 @@ func nameNetwork(
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
 	}
 
-	// TODO: quit with an error if the network was already named by DNS (disallow renaming
-	// of networks as well as reassignment of previously-assigned names)
+	// Check to see if the network was already named by DNS
 	fqdn := fmt.Sprintf("%s.%s", name, dc.Config.DomainName)
+	txtRRset, err := dc.GetRRset(ctx, name, "TXT")
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf(
+			"couldn't check cache for DNS TXT RRset at %s for network %s", fqdn, id,
+		))
+	}
+	if txtRRset != nil {
+		if _, hasID := client.GetNetworkID(txtRRset.Records); hasID {
+			return echo.NewHTTPError(http.StatusBadRequest, "name is already used by another network")
+		}
+	}
+
 	ttl := c.Config.DNS.NetworkTTL
 	if _, err := dc.CreateRRset(
 		ctx, name, "TXT", ttl, []string{client.MakeNetworkIDRecord(id)},
