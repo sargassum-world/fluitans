@@ -19,11 +19,17 @@ func setMemberAuthorization(
 	memberAddress string, authorized bool, c *ztc.Client,
 ) error {
 	auth := authorized
-	err := c.UpdateMember(
+	if err := c.UpdateMember(
 		ctx, controller, networkID, memberAddress,
 		zerotier.SetControllerNetworkMemberJSONRequestBody{Authorized: &auth},
-	)
-	return err
+	); err != nil {
+		return err
+	}
+	if authorized {
+		// We might've added a new network ID, so we should invalidate the cache
+		c.Cache.UnsetNetworkMembersByID(networkID)
+	}
+	return nil
 }
 
 func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
