@@ -51,6 +51,9 @@ func (c *Client) ScanControllers(ctx context.Context, controllers []Controller) 
 		if err := c.Cache.SetControllerByAddress(addresses[i], v); err != nil {
 			return nil, err
 		}
+		if err := c.Cache.SetAddressByServer(v.Server, addresses[i], v.NetworkCostWeight); err != nil {
+			return nil, err
+		}
 	}
 
 	return addresses, nil
@@ -105,6 +108,7 @@ func (c *Client) checkCachedController(ctx context.Context, address string) (*Co
 		}
 
 		c.Cache.UnsetControllerByAddress(address)
+		c.Cache.UnsetAddressByServer(controller.Server)
 		return nil, nil
 	}
 
@@ -145,4 +149,46 @@ func (c *Client) FindControllerByAddress(ctx context.Context, address string) (*
 	return nil, echo.NewHTTPError(
 		http.StatusNotFound, fmt.Sprintf("zerotier controller not found with address %s", address),
 	)
+}
+
+func (c *Client) getAddressFromCache(controller Controller) (string, bool) {
+	address, cacheHit, err := c.Cache.GetAddressByServer(controller.Server)
+	if err != nil {
+		// Log the error but return as a cache miss so we can manually query the RRsets
+		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
+			"couldn't get the cache entry for the Zerotier address for %s", controller.Server,
+		)))
+		return "", false // treat an unparseable cache entry like a cache miss
+	}
+
+	return address, cacheHit
+}
+
+func (c *Client) getAddressFromZerotier(
+	ctx context.Context, controller Controller,
+) (string, error) {
+	client, cerr := controller.NewClient()
+	if cerr != nil {
+		return "", cerr
+	}
+
+	sRes, err := client.GetStatusWithResponse(ctx)
+	if err != nil {
+		return "", err
+	}
+	status := *sRes.JSON200
+	if err := c.Cache.SetAddressByServer(
+		controller.Server, *status.Address, controller.NetworkCostWeight,
+	); err != nil {
+		return "", err
+	}
+
+	return *status.Address, nil
+}
+
+func (c *Client) GetAddress(ctx context.Context, controller Controller) (string, error) {
+	if address, cacheHit := c.getAddressFromCache(controller); cacheHit {
+		return address, nil // empty address indicates nonexistent address
+	}
+	return c.getAddressFromZerotier(ctx, controller)
 }

@@ -142,7 +142,6 @@ func (c *Client) GetAllNetworks(
 				if err != nil {
 					return err
 				}
-				// TODO: eg.Go shouldn't write into a map
 				allNetworks[i] = networks
 				return nil
 			}
@@ -337,16 +336,14 @@ func (c *Client) CreateNetwork(
 		return nil, cerr
 	}
 
-	// TODO: cache the address of the controller and use it when available
-	sRes, err := client.GetStatusWithResponse(ctx)
-	if err != nil {
+	address, err := cc.GetAddress(ctx, controller)
+	if err != nil || address == "" {
 		return nil, err
 	}
-	status := *sRes.JSON200
 
 	body := makeDefaultNetworkRequest()
 	nRes, err := client.GenerateControllerNetworkWithResponse(
-		ctx, *status.Address, body,
+		ctx, address, body,
 	)
 	if err != nil {
 		return nil, err

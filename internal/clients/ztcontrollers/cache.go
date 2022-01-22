@@ -65,3 +65,30 @@ func (c *Cache) GetControllerByAddress(address string) (*Controller, bool, error
 
 	return &value, true, nil
 }
+
+// /ztcontrollers/addresses/:server
+
+func keyAddressByServer(server string) string {
+	return fmt.Sprintf("/ztcontrollers/addresses/s:[%s]", server)
+}
+
+func (c *Cache) SetAddressByServer(server string, address string, networkCostWeight float32) error {
+	key := keyAddressByServer(server)
+	return c.Cache.SetEntry(key, address, networkCostWeight, -1)
+}
+
+func (c *Cache) UnsetAddressByServer(server string) {
+	key := keyAddressByServer(server)
+	c.Cache.UnsetEntry(key)
+}
+
+func (c *Cache) GetAddressByServer(server string) (string, bool, error) {
+	key := keyAddressByServer(server)
+	var value string
+	keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
+	if !keyExists || !valueExists || err != nil {
+		return "", keyExists, err
+	}
+
+	return value, true, nil
+}
