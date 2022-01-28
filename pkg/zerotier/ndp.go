@@ -2,6 +2,8 @@ package zerotier
 
 import (
 	"encoding/hex"
+	"fmt"
+	"net"
 	"strings"
 )
 
@@ -41,5 +43,6 @@ func Get6Plane(networkID, address string) (string, error) {
 		groups[i/2] = hex.EncodeToString(ipv6[i : i+2])
 	}
 	result := strings.Join(groups[:], ":")
-	return result, nil
+	ip := net.ParseIP(result)
+	return fmt.Sprintf("%s", ip), nil
 }

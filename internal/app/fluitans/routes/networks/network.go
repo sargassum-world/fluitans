@@ -9,6 +9,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
@@ -63,10 +64,101 @@ func checkNamedByDNS(
 	return false, nil
 }
 
+func getAAAArecords(
+	ctx context.Context, dc *desec.Client,
+) (map[string][]string, error) {
+	aaaaRecords := make(map[string][]string)
+	// Look up potential domain names of network members
+	subnameRRsets, err := dc.GetRRsets(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for subname, rrsets := range subnameRRsets {
+		filtered := desec.FilterAndSortRRsets(rrsets, []string{"AAAA"})
+		if len(filtered) > 1 {
+			return nil, fmt.Errorf("Unexpected number of RRsets for record")
+		}
+		if len(filtered) == 1 {
+			aaaaRecords[subname] = filtered[0].Records
+		}
+	}
+	return aaaaRecords, nil
+}
+
+func identifyMemberDomainNames(
+	zoneDomainName string, zerotierMembers map[string]zerotier.ControllerNetworkMember,
+	aaaaRecords map[string][]string,
+) map[string][]string {
+	addressDomainNames := make(map[string][]string)
+	for subname, records := range aaaaRecords {
+		for _, ipAddress := range records {
+			addressDomainNames[ipAddress] = append(addressDomainNames[ipAddress], subname)
+		}
+	}
+	memberDomainNames := make(map[string][]string)
+	for memberAddress, member := range zerotierMembers {
+		for _, ipAddress := range *member.IpAssignments {
+			for _, subname := range addressDomainNames[ipAddress] {
+				domainName := fmt.Sprintf("%s.%s", subname, zoneDomainName)
+				memberDomainNames[memberAddress] = append(memberDomainNames[memberAddress], domainName)
+			}
+		}
+	}
+	return memberDomainNames
+}
+
+type Member struct {
+	ZerotierMember zerotier.ControllerNetworkMember
+	DomainNames    []string
+}
+
+func getMemberRecords(
+	ctx context.Context, zoneDomainName string, controller ztcontrollers.Controller,
+	network zerotier.ControllerNetwork, memberAddresses []string,
+	c *ztc.Client, dc *desec.Client,
+) (map[string]Member, error) {
+	eg, ctx := errgroup.WithContext(ctx)
+	var zerotierMembers map[string]zerotier.ControllerNetworkMember
+	eg.Go(func() error {
+		// Look up ZeroTier info about network members
+		members, err := c.GetNetworkMembersInfo(ctx, controller, *network.Id, memberAddresses)
+		if err != nil {
+			return err
+		}
+		if err := addNDPAddresses(*network.Id, *network.V6AssignMode, members); err != nil {
+			return err
+		}
+		zerotierMembers = members
+		return nil
+	})
+	aaaaRecords := make(map[string][]string)
+	eg.Go(func() error {
+		records, err := getAAAArecords(ctx, dc)
+		if err != nil {
+			return err
+		}
+		aaaaRecords = records
+		return nil
+	})
+	if err := eg.Wait(); err != nil {
+		return nil, err
+	}
+
+	memberDomainNames := identifyMemberDomainNames(zoneDomainName, zerotierMembers, aaaaRecords)
+	members := make(map[string]Member)
+	for memberAddress, zerotierMember := range zerotierMembers {
+		members[memberAddress] = Member{
+			ZerotierMember: zerotierMember,
+			DomainNames:    memberDomainNames[memberAddress],
+		}
+	}
+	return members, nil
+}
+
 type NetworkData struct {
 	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
-	Members          map[string]zerotier.ControllerNetworkMember
+	Members          map[string]Member
 	JSONPrintedRules string
 	DomainName       string
 	NamedByDNS       bool
@@ -90,20 +182,37 @@ func getNetworkData(
 		return nil, err
 	}
 
-	members, err := c.GetNetworkMembersInfo(ctx, *controller, id, memberAddresses)
-	if err != nil {
-		return nil, err
-	}
-	if err = addNDPAddresses(id, *network.V6AssignMode, members); err != nil {
+	eg, egctx := errgroup.WithContext(ctx)
+	var members map[string]Member
+	eg.Go(func() error {
+		// Look up info about network members
+		networkMembers, err := getMemberRecords(
+			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, c, dc,
+		)
+		if err != nil {
+			return err
+		}
+		members = networkMembers
+		return nil
+	})
+	var namedByDNS bool
+	eg.Go(func() error {
+		// Check network data with DNS records
+		named, err := checkNamedByDNS(egctx, *network.Name, *network.Id, dc)
+		if err != nil {
+			return err
+		}
+		namedByDNS = named
+		return nil
+	})
+	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
 
-	namedByDNS, err := checkNamedByDNS(ctx, *network.Name, *network.Id, dc)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: also retrieve and get other records to render on the page
+	// TODO: also search all TXT records to look for network aliases
+	// TODO: also retrieve and get DNS RRsets of the network's subname to render on the page.
+	// TODO: show associated DNS records not assigned to members (whose RRsets will be
+	// summarized in their own cards, with a link to the full DNS subname card)
 	return &NetworkData{
 		Controller:       *controller,
 		Network:          *network,

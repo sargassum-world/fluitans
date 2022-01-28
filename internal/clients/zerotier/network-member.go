@@ -11,6 +11,7 @@ import (
 
 // All Network Members
 
+// TODO: rename to GetNetworkMembers?
 func (c *Client) GetNetworkMembersInfo(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
 	memberAddresses []string,
@@ -51,6 +52,21 @@ func (c *Client) GetNetworkMembersInfo(
 }
 
 // Individual Network Member
+
+func (c *Client) GetNetworkMember(
+	ctx context.Context, controller ztcontrollers.Controller, networkID string, memberAddress string,
+) (*zerotier.ControllerNetworkMember, error) {
+	client, cerr := controller.NewClient()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	res, err := client.GetControllerNetworkMemberWithResponse(ctx, networkID, memberAddress)
+	if err != nil {
+		return nil, err
+	}
+	return res.JSON200, nil
+}
 
 func (c *Client) UpdateMember(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,

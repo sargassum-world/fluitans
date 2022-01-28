@@ -55,7 +55,7 @@
               </div>
             </div>
             <div class="field">
-              <div class="control">
+              <div class="control" data-form-submission-target="submitter">
                 <input
                   type="submit"
                   class="button"
@@ -72,7 +72,10 @@
     <h2>Devices</h2>
     <turbo-frame id="network-{{.Data.Network.Id}}-devices">
       {{range $member := .Data.Members}}
-      {{template "networks/network-device.partial.tmpl" dict "Member" $member "Network" $.Data.Network}}
+      {{
+        template "networks/network-device.partial.tmpl"
+        dict "Member" $member "Network" $.Data.Network "NetworkNamedByDNS" $.Data.NamedByDNS
+      }}
       {{else}}
       <p>This network does not yet have any devices!</p>
       {{end}}

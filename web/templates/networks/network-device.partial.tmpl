@@ -1,16 +1,24 @@
-{{$member := (get . "Member")}}
+{{$zerotierMember := (get . "Member").ZerotierMember}}
+{{$domainNames := (get . "Member").DomainNames}}
 {{$network := (get . "Network")}}
-<turbo-frame id="network-{{$network.Id}}-device-{{$member.Address}}">
-  <article class="panel entity-panel" id="device-{{$member.Address}}">
+{{$networkNamedByDNS := (get . "NetworkNamedByDNS")}}
+<turbo-frame id="network-{{$network.Id}}-device-{{$zerotierMember.Address}}">
+  <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
-      <h3 class="entity-name"><span class="tag zerotier-address">{{$member.Address}}</span></h3>
+      <h3 class="entity-name">
+        {{if $domainNames}}
+        <span class="tag domain-name">{{index $domainNames 0}}</span>
+        {{else}}
+        <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+        {{end}}
+      </h3>
       <div class="tags">
-        {{if (derefBool $member.Authorized)}}
+        {{if (derefBool $zerotierMember.Authorized)}}
         <span class="tag is-success">Authorized</span>
         {{else}}
         <span class="tag is-warning">Not authorized</span>
         {{end}}
-        {{if (derefBool $member.ActiveBridge)}}
+        {{if (derefBool $zerotierMember.ActiveBridge)}}
         <span class="tag is-info">Bridge</span>
         {{end}}
       </div>
@@ -21,23 +29,60 @@
         {{template "shared/accordion-icon.partial.tmpl"}}
       </summary>
       <div class="accordion-content">
+        <h5 class="is-size-6">Zerotier Address</h5>
+        <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
         <h5 class="is-size-6">Network Membership</h5>
         <form
-          action="/networks/{{$network.Id}}/devices/{{$member.Address}}"
+          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
           method="POST"
           data-controller="form-submission"
           data-action="submit->form-submission#submit"
         >
-          <input type="hidden" id="create-method" name="method" value="{{if derefBool $member.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}">
+          <input type="hidden" id="authorization-method" name="method" value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}">
           <div class="control" data-form-submission-target="submitter">
             <input
               class="button"
               type="submit"
-              value="{{if derefBool $member.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
+              value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
               data-form-submission-target="submit"
             >
           </div>
         </form>
+
+        {{if $networkNamedByDNS}}
+        <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
+        {{range $domainName := $domainNames}}
+        <span class="tag domain-name">{{$domainName}}</span>
+        {{else}}
+        <form
+          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+          method="POST"
+          data-controller="form-submission"
+          data-action="submit->form-submission#submit"
+          data-form-submission-target="submitter"
+        >
+          <input type="hidden" name="method" value="SETNAME">
+          <div class="field has-addons">
+            <div class="control">
+              <input type="text" class="input" name="name">
+            </div>
+            <div class="control">
+              <span class="button is-static">.d.{{$network.Name}}</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="control" data-form-submission-target="submitter">
+              <input
+                type="submit"
+                class="button"
+                value="Set domain name"
+                data-form-submission-target="submit"
+              >
+            </div>
+          </div>
+        </form>
+        {{end}}
+        {{end}}
       </div>
     </details>
     <details data-accordion-item class="panel-block accordion-item">
@@ -48,20 +93,20 @@
       <div class="accordion-content">
         <h5 class="is-size-6">IP Assignments</h5>
         <p>
-          {{range $ipAddr := $member.IpAssignments}}
+          {{range $ipAddr := $zerotierMember.IpAssignments}}
           {{$ipAddr}}
           {{else}}
           <span class="tag is-warning">None</span>
           {{end}}
         </p>
         <h5 class="is-size-6">Troubleshooting Information</h5>
-        <p>Configuration revision: {{$member.Revision}}</p>
+        <p>Configuration revision: {{$zerotierMember.Revision}}</p>
         <p>
           Version:
-          {{if eq -1 (derefInt $member.VMajor -1)}}
+          {{if eq -1 (derefInt $zerotierMember.VMajor -1)}}
           <span class="tag is-warning">Unknown</span>
           {{else}}
-          v{{$member.VMajor}}.{{$member.VMinor}}.{{$member.VRev}}
+          v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
           {{end}}
         </p>
       </div>

@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
@@ -28,6 +30,49 @@ func setMemberAuthorization(
 	if authorized {
 		// We might've added a new network ID, so we should invalidate the cache
 		c.Cache.UnsetNetworkMembersByID(networkID)
+	}
+	return nil
+}
+
+func setMemberName(
+	ctx context.Context, controller ztcontrollers.Controller, networkID string,
+	memberAddress, memberName string, c *ztc.Client, dc *desec.Client,
+) error {
+	network, memberAddresses, err := c.GetNetworkInfo(ctx, controller, networkID)
+	if err != nil {
+		return err
+	}
+
+	// Ensure we're allowed to set a name
+	networkName := *network.Name
+	named, err := checkNamedByDNS(ctx, networkName, networkID, dc)
+	if err != nil {
+		return err
+	}
+	if !named {
+		return fmt.Errorf("Network does not have a valid domain name for naming members.")
+	}
+	hasMember := false
+	for _, address := range memberAddresses {
+		if address == memberAddress {
+			hasMember = true
+			break
+		}
+	}
+	if !hasMember {
+		return fmt.Errorf("Cannot set domain name for device which is not a network member.")
+	}
+
+	n6PlaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
+	if err != nil {
+		return err
+	}
+	fqdn := fmt.Sprintf("%s.d.%s", memberName, networkName)
+	subname := strings.TrimSuffix(fqdn, fmt.Sprintf(".%s", dc.Config.DomainName))
+	if _, err := dc.CreateRRset(
+		ctx, subname, "AAAA", c.Config.DNS.DeviceTTL, []string{n6PlaneAddress},
+	); err != nil {
+		return err
 	}
 	return nil
 }
@@ -67,6 +112,14 @@ func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 			case "DEAUTHORIZE":
 				if err = setMemberAuthorization(
 					ctx, *controller, networkID, memberAddress, false, app.Clients.Zerotier,
+				); err != nil {
+					return err
+				}
+			case "SETNAME":
+				memberName := c.FormValue("name")
+				if err = setMemberName(
+					ctx, *controller, networkID, memberAddress, memberName,
+					app.Clients.Zerotier, app.Clients.Desec,
 				); err != nil {
 					return err
 				}
