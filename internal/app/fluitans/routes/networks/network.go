@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/labstack/echo/v4"
@@ -12,77 +13,31 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/clients/desec"
+	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-eco/fluitans/pkg/desec"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-func addNDPAddresses(
-	id string, v6AssignMode zerotier.V6AssignMode,
-	members map[string]zerotier.ControllerNetworkMember,
-) error {
-	n6plane := v6AssignMode.N6plane
-	if n6plane != nil && *n6plane {
-		for _, member := range members {
-			n6PlaneAddress, err := zerotier.Get6Plane(id, *member.Address)
-			if err != nil {
-				return err
-			}
+// Network Members & Member DNS
 
-			if member.IpAssignments == nil {
-				ipAssignments := []string{n6PlaneAddress}
-				member.IpAssignments = &ipAssignments
-			} else {
-				*member.IpAssignments = append(*member.IpAssignments, n6PlaneAddress)
-			}
-		}
-	}
-	return nil
-}
-
-func checkNamedByDNS(
-	ctx context.Context, networkName, networkID string, c *desec.Client,
-) (bool, error) {
-	domainSuffix := fmt.Sprintf(".%s", c.Config.DomainName)
-	if !strings.HasSuffix(networkName, domainSuffix) {
-		return false, nil
-	}
-
-	subname := strings.TrimSuffix(networkName, domainSuffix)
-	txtRRset, err := c.GetRRset(ctx, subname, "TXT")
-	if err != nil {
-		return false, err
-	}
-
-	if txtRRset != nil {
-		parsedID, txtHasNetworkID := client.GetNetworkID(txtRRset.Records)
-		return txtHasNetworkID && (parsedID == networkID), nil
-	}
-
-	return false, nil
-}
-
-func getAAAArecords(
-	ctx context.Context, dc *desec.Client,
+func getRecordsOfType(
+	subnameRRsets map[string][]desec.RRset, rrsetType string,
 ) (map[string][]string, error) {
-	aaaaRecords := make(map[string][]string)
+	records := make(map[string][]string)
 	// Look up potential domain names of network members
-	subnameRRsets, err := dc.GetRRsets(ctx)
-	if err != nil {
-		return nil, err
-	}
 	for subname, rrsets := range subnameRRsets {
-		filtered := desec.FilterAndSortRRsets(rrsets, []string{"AAAA"})
+		filtered := desecc.FilterAndSortRRsets(rrsets, []string{rrsetType})
 		if len(filtered) > 1 {
-			return nil, fmt.Errorf("Unexpected number of RRsets for record")
+			return nil, fmt.Errorf("unexpected number of RRsets for record")
 		}
 		if len(filtered) == 1 {
-			aaaaRecords[subname] = filtered[0].Records
+			records[subname] = filtered[0].Records
 		}
 	}
-	return aaaaRecords, nil
+	return records, nil
 }
 
 func identifyMemberDomainNames(
@@ -107,6 +62,29 @@ func identifyMemberDomainNames(
 	return memberDomainNames
 }
 
+func addNDPAddresses(
+	id string, v6AssignMode zerotier.V6AssignMode,
+	members map[string]zerotier.ControllerNetworkMember,
+) error {
+	n6plane := v6AssignMode.N6plane
+	if n6plane != nil && *n6plane {
+		for _, member := range members {
+			n6PlaneAddress, err := zerotier.Get6Plane(id, *member.Address)
+			if err != nil {
+				return err
+			}
+
+			if member.IpAssignments == nil {
+				ipAssignments := []string{n6PlaneAddress}
+				member.IpAssignments = &ipAssignments
+			} else {
+				*member.IpAssignments = append(*member.IpAssignments, n6PlaneAddress)
+			}
+		}
+	}
+	return nil
+}
+
 type Member struct {
 	ZerotierMember zerotier.ControllerNetworkMember
 	DomainNames    []string
@@ -115,35 +93,21 @@ type Member struct {
 func getMemberRecords(
 	ctx context.Context, zoneDomainName string, controller ztcontrollers.Controller,
 	network zerotier.ControllerNetwork, memberAddresses []string,
-	c *ztc.Client, dc *desec.Client,
+	subnameRRsets map[string][]desec.RRset,
+	c *ztc.Client,
 ) (map[string]Member, error) {
-	eg, ctx := errgroup.WithContext(ctx)
-	var zerotierMembers map[string]zerotier.ControllerNetworkMember
-	eg.Go(func() error {
-		// Look up ZeroTier info about network members
-		members, err := c.GetNetworkMembersInfo(ctx, controller, *network.Id, memberAddresses)
-		if err != nil {
-			return err
-		}
-		if err := addNDPAddresses(*network.Id, *network.V6AssignMode, members); err != nil {
-			return err
-		}
-		zerotierMembers = members
-		return nil
-	})
-	aaaaRecords := make(map[string][]string)
-	eg.Go(func() error {
-		records, err := getAAAArecords(ctx, dc)
-		if err != nil {
-			return err
-		}
-		aaaaRecords = records
-		return nil
-	})
-	if err := eg.Wait(); err != nil {
+	zerotierMembers, err := c.GetNetworkMembers(ctx, controller, *network.Id, memberAddresses)
+	if err != nil {
+		return nil, err
+	}
+	if err = addNDPAddresses(*network.Id, *network.V6AssignMode, zerotierMembers); err != nil {
 		return nil, err
 	}
 
+	aaaaRecords, err := getRecordsOfType(subnameRRsets, "AAAA")
+	if err != nil {
+		return nil, err
+	}
 	memberDomainNames := identifyMemberDomainNames(zoneDomainName, zerotierMembers, aaaaRecords)
 	members := make(map[string]Member)
 	for memberAddress, zerotierMember := range zerotierMembers {
@@ -155,26 +119,140 @@ func getMemberRecords(
 	return members, nil
 }
 
+// Network DNS
+
+func checkNamedByDNS(
+	ctx context.Context, networkName, networkID string, c *desecc.Client,
+) (bool, error) {
+	domainSuffix := fmt.Sprintf(".%s", c.Config.DomainName)
+	if !strings.HasSuffix(networkName, domainSuffix) {
+		return false, nil
+	}
+
+	subname := strings.TrimSuffix(networkName, domainSuffix)
+	txtRRset, err := c.GetRRset(ctx, subname, "TXT")
+	if err != nil {
+		return false, err
+	}
+
+	if txtRRset != nil {
+		parsedID, txtHasNetworkID := client.GetNetworkID(txtRRset.Records)
+		return txtHasNetworkID && (parsedID == networkID), nil
+	}
+
+	return false, nil
+}
+
+func identifyNetworkAliases(
+	networkID, confirmedSubname string, txtRecords map[string][]string,
+) []string {
+	subnames := make([]string, 0, len(txtRecords))
+	for subname := range txtRecords {
+		subnames = append(subnames, subname)
+	}
+	sort.Strings(subnames)
+
+	aliases := make([]string, 0, len(txtRecords))
+	for _, subname := range subnames {
+		if subname == confirmedSubname {
+			continue
+		}
+
+		if id, has := client.GetNetworkID(txtRecords[subname]); has && id == networkID {
+			aliases = append(aliases, subname)
+		}
+	}
+	return aliases
+}
+
+type NetworkDNS struct {
+	Named            bool
+	Aliases          []string
+	DeviceSubdomains map[string]client.Subdomain
+	OtherSubdomains  []client.Subdomain
+}
+
+func getNetworkDNSRecords(
+	ctx context.Context, networkID, networkName string, subnameRRsets map[string][]desec.RRset,
+	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
+) (networkDNS NetworkDNS, err error) {
+	namedByDNS, err := checkNamedByDNS(ctx, networkName, networkID, dc)
+	if err != nil || !namedByDNS {
+		return
+	}
+	networkDNS.Named = true
+
+	txtRecords, err := getRecordsOfType(subnameRRsets, "TXT")
+	if err != nil {
+		return
+	}
+	confirmedSubname := strings.TrimSuffix(networkName, fmt.Sprintf(".%s", dc.Config.DomainName))
+	networkDNS.Aliases = identifyNetworkAliases(networkID, confirmedSubname, txtRecords)
+	aliases := make(map[string]bool, len(networkDNS.Aliases))
+	for _, alias := range networkDNS.Aliases {
+		aliases[alias] = true
+	}
+
+	subdomains, err := client.GetSubdomains(ctx, subnameRRsets, dc, c, cc)
+	if err != nil {
+		return
+	}
+	networkSubname := strings.TrimSuffix(networkName, fmt.Sprintf(".%s", dc.Config.DomainName))
+	networkDNS.DeviceSubdomains = make(map[string]client.Subdomain)
+	for _, subdomain := range subdomains {
+		if subdomain.Subname != networkSubname && !strings.HasSuffix(
+			subdomain.Subname, fmt.Sprintf(".%s", networkSubname),
+		) && !aliases[subdomain.Subname] {
+			// Subdomain is unrelated to this network
+			continue
+		}
+
+		if strings.HasSuffix(subdomain.Subname, fmt.Sprintf(".d.%s", networkSubname)) {
+			// Subdomain is for a device
+			networkDNS.DeviceSubdomains[subdomain.Subname] = subdomain
+			continue
+		}
+
+		networkDNS.OtherSubdomains = append(networkDNS.OtherSubdomains, subdomain)
+	}
+
+	return
+}
+
 type NetworkData struct {
 	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
 	Members          map[string]Member
 	JSONPrintedRules string
 	DomainName       string
-	NamedByDNS       bool
+	NetworkDNS       NetworkDNS
 }
 
 func getNetworkData(
 	ctx context.Context, address, id string,
-	c *ztc.Client, cc *ztcontrollers.Client, dc *desec.Client,
+	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
 ) (*NetworkData, error) {
 	controller, err := cc.FindControllerByAddress(ctx, address)
 	if err != nil {
 		return nil, err
 	}
 
-	network, memberAddresses, err := c.GetNetworkInfo(ctx, *controller, id)
-	if err != nil {
+	eg, egctx := errgroup.WithContext(ctx)
+	var network *zerotier.ControllerNetwork
+	var memberAddresses []string
+	var subnameRRsets map[string][]desec.RRset
+	eg.Go(func() error {
+		controllerNetwork, addresses, gerr := c.GetNetworkInfo(ctx, *controller, id)
+		network = controllerNetwork
+		memberAddresses = addresses
+		return gerr
+	})
+	eg.Go(func() error {
+		rrsets, gerr := dc.GetRRsets(ctx)
+		subnameRRsets = rrsets
+		return gerr
+	})
+	if err = eg.Wait(); err != nil {
 		return nil, err
 	}
 	rules, err := json.MarshalIndent(*network.Rules, "", "  ")
@@ -182,44 +260,34 @@ func getNetworkData(
 		return nil, err
 	}
 
-	eg, egctx := errgroup.WithContext(ctx)
+	eg, egctx = errgroup.WithContext(ctx)
 	var members map[string]Member
 	eg.Go(func() error {
-		// Look up info about network members
 		networkMembers, err := getMemberRecords(
-			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, c, dc,
+			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
 		)
-		if err != nil {
-			return err
-		}
 		members = networkMembers
-		return nil
+		return err
 	})
-	var namedByDNS bool
+	var networkDNS NetworkDNS
 	eg.Go(func() error {
-		// Check network data with DNS records
-		named, err := checkNamedByDNS(egctx, *network.Name, *network.Id, dc)
-		if err != nil {
-			return err
-		}
-		namedByDNS = named
-		return nil
+		records, err := getNetworkDNSRecords(
+			egctx, *network.Id, *network.Name, subnameRRsets, c, cc, dc,
+		)
+		networkDNS = records
+		return err
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, err
 	}
 
-	// TODO: also search all TXT records to look for network aliases
-	// TODO: also retrieve and get DNS RRsets of the network's subname to render on the page.
-	// TODO: show associated DNS records not assigned to members (whose RRsets will be
-	// summarized in their own cards, with a link to the full DNS subname card)
 	return &NetworkData{
 		Controller:       *controller,
 		Network:          *network,
 		Members:          members,
 		JSONPrintedRules: string(rules),
 		DomainName:       dc.Config.DomainName,
-		NamedByDNS:       namedByDNS,
+		NetworkDNS:       networkDNS,
 	}, nil
 }
 
@@ -258,7 +326,7 @@ func getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 
 func nameNetwork(
 	ctx context.Context, controller ztcontrollers.Controller, id string, name string,
-	c *ztc.Client, dc *desec.Client,
+	c *ztc.Client, dc *desecc.Client,
 ) error {
 	if len(name) == 0 {
 		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")

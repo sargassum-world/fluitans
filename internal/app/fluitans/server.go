@@ -38,7 +38,7 @@ func LaunchBackgroundWorkers(ag *client.Globals) {
 	go workers.PrescanZerotierControllers(ag.Clients.ZTControllers)
 	go workers.PrefetchZerotierNetworks(ag.Clients.Zerotier, ag.Clients.ZTControllers)
 	go workers.PrefetchDNSRecords(ag.Clients.Desec)
-	go workers.TestWriteLimiter(ag.Clients.Desec)
+	// go workers.TestWriteLimiter(ag.Clients.Desec)
 }
 
 func PrepareServer(e *echo.Echo) error {

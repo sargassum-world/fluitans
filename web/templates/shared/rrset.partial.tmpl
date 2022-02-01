@@ -1,9 +1,11 @@
-<p>Created: {{dateInZone  "2006-01-02 15:04:05 UTC" .Created "UTC"}}</p>
-<p>Touched: {{dateInZone  "2006-01-02 15:04:05 UTC" .Touched "UTC"}}</p>
+{{$rrset := get . "RRset"}}
+{{$turboFrameTarget := get . "TurboFrameTarget"}}
+<p>Created: {{dateInZone  "2006-01-02 15:04:05 UTC" $rrset.Created "UTC"}}</p>
+<p>Touched: {{dateInZone  "2006-01-02 15:04:05 UTC" $rrset.Touched "UTC"}}</p>
 <label class="label" for="ttl">TTL</label>
 <div class="field has-addons">
   <div class="control">
-    <input type="text" class="input" name="ttl" value="{{.Ttl}}" placeholder="3600" readonly />
+    <input type="text" class="input" name="ttl" value="{{$rrset.Ttl}}" placeholder="3600" readonly />
   </div>
   <div class="control">
     <span class="button is-static">sec</span>
@@ -11,21 +13,21 @@
 </div>
 <div class="field">
   <label class="label">Records</label>
-  {{range $record := .Records}}
+  {{range $record := $rrset.Records}}
   <div class="control">
-    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $.Type}}" value="{{$record}}" readonly />
+    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" value="{{$record}}" readonly />
   </div>
   {{else}}
   <div class="control">
-    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $.Type}}" readonly />
+    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" readonly />
   </div>
   {{end}}
 </div>
 <!-- TODO: make a controller with a confirmation dialog -->
 <form
-  action="/dns/{{derefString .Subname "@"}}/{{.Type}}"
+  action="/dns/{{derefString $rrset.Subname "@"}}/{{$rrset.Type}}"
   method="POST"
-  data-turbo-frame="_top"
+  data-turbo-frame="{{$turboFrameTarget}}"
   data-controller="form-submission"
   data-action="submit->form-submission#submit"
 >

@@ -36,7 +36,7 @@
     {{template "dns/domain.partial.tmpl" dict "Domain" .Data.Domain "ApexRRsets" .Data.ApexRRsets}}
     <h2>Subdomain Records</h2>
     {{range $subdomain := .Data.Subdomains}}
-    {{template "dns/subdomain.partial.tmpl" $subdomain}}
+    {{template "shared/subdomain.partial.tmpl" $subdomain}}
     {{end}}
   </section>
 </main>

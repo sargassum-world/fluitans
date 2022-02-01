@@ -1,0 +1,33 @@
+{{$network := (get . "Network")}}
+<turbo-frame id="network-{{$network.Id}}-ipaddr">
+  <h3>IP Address Assignments</h3>
+  <h4 class="is-size-6">IPv6 Auto-Assignment Mode</h4>
+  <p>
+    ZeroTier RFC4193 (/128 per device):
+    {{if derefBool $network.V6AssignMode.Rfc4193}}
+    <span class="tag is-info">Enabled</span>
+    {{else}}
+    <span class="tag is-info">Disabled</span>
+    {{end}}
+  </p>
+  <p>
+    ZeroTier 6PLANE (/80 routable per device):
+    {{if derefBool $network.V6AssignMode.N6plane}}
+    <span class="tag is-success">Enabled</span>
+    {{else}}
+    <span class="tag is-warning">Disabled</span>
+    {{end}}
+  </p>
+  <h4 class="is-size-6">Managed Routes</h4>
+  <p>
+    {{if $network.Routes}}
+    {{range $route := $network.Routes}}
+    {{$route.Target}} via {{$route.Via}}
+    {{else}}
+    <span class="tag is-info">None</span>
+    {{end}}
+    {{else}}
+    <span class="tag is-info">None</span>
+    {{end}}
+  </p>
+</turbo-frame>

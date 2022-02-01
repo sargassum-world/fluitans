@@ -1,0 +1,37 @@
+{{$network := (get . "Network")}}
+{{$jsonPrintedRules := (get . "JSONPrintedRules")}}
+<turbo-frame id="network-{{$network.Id}}-rules">
+  <h3>Traffic Rules</h3>
+  <ol>
+    <li>Inspect the packet,</li>
+    {{range $rule := $network.Rules}}
+    {{template "networks/network-rule.partial.tmpl" $rule}}
+    {{end}}
+    <li>discard the packet</li>
+  </ol>
+  <form
+    action="/networks/{{$network.Id}}"
+    method="POST"
+    data-controller="form-submission"
+    data-action="submit->form-submission#submit"
+    data-form-submission-target="submitter"
+  >
+    <input type="hidden" name="method" value="SETRULES">
+    <label class="label" for="rules">Rule Editor</label>
+    <div class="field">
+      <div class="control">
+        <textarea class="textarea is-fullwidth" name="rules" rows="10">{{$jsonPrintedRules}}</textarea>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control">
+        <input
+          class="button"
+          type="submit"
+          value="Set rules"
+          data-form-submission-target="submit"
+        >
+      </div>
+    </div>
+  </form>
+</turbo-frame>

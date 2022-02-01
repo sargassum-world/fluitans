@@ -42,7 +42,10 @@
       </summary>
       <turbo-frame id="dns-domain-{{$name}}-rrset-{{$rrset.Type}}">
         <div class="accordion-content">
-          {{template "dns/rrset.partial.tmpl" $rrset}}
+          {{
+            template "shared/rrset.partial.tmpl"
+            dict "RRset" $rrset "TurboFrameTarget" (print "dns-domain-" $name)
+          }}
         </div>
       </turbo-frame>
     </details>

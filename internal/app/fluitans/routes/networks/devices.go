@@ -50,7 +50,7 @@ func setMemberName(
 		return err
 	}
 	if !named {
-		return fmt.Errorf("Network does not have a valid domain name for naming members.")
+		return fmt.Errorf("network does not have a valid domain name for naming members")
 	}
 	hasMember := false
 	for _, address := range memberAddresses {
@@ -60,7 +60,7 @@ func setMemberName(
 		}
 	}
 	if !hasMember {
-		return fmt.Errorf("Cannot set domain name for device which is not a network member.")
+		return fmt.Errorf("cannot set domain name for device which is not a network member")
 	}
 
 	n6PlaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
@@ -69,6 +69,7 @@ func setMemberName(
 	}
 	fqdn := fmt.Sprintf("%s.d.%s", memberName, networkName)
 	subname := strings.TrimSuffix(fqdn, fmt.Sprintf(".%s", dc.Config.DomainName))
+	// TODO: prohibit assigning a name which was already assigned
 	if _, err := dc.CreateRRset(
 		ctx, subname, "AAAA", c.Config.DNS.DeviceTTL, []string{n6PlaneAddress},
 	); err != nil {

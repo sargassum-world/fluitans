@@ -1,7 +1,7 @@
 {{$zerotierMember := (get . "Member").ZerotierMember}}
 {{$domainNames := (get . "Member").DomainNames}}
 {{$network := (get . "Network")}}
-{{$networkNamedByDNS := (get . "NetworkNamedByDNS")}}
+{{$networkDNS := (get . "NetworkDNS")}}
 <turbo-frame id="network-{{$network.Id}}-device-{{$zerotierMember.Address}}">
   <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
@@ -38,7 +38,12 @@
           data-controller="form-submission"
           data-action="submit->form-submission#submit"
         >
-          <input type="hidden" id="authorization-method" name="method" value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}">
+          <input
+            type="hidden"
+            id="authorization-method"
+            name="method"
+            value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}"
+          >
           <div class="control" data-form-submission-target="submitter">
             <input
               class="button"
@@ -49,7 +54,7 @@
           </div>
         </form>
 
-        {{if $networkNamedByDNS}}
+        {{if $networkDNS.Named}}
         <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
         {{range $domainName := $domainNames}}
         <span class="tag domain-name">{{$domainName}}</span>
@@ -94,7 +99,7 @@
         <h5 class="is-size-6">IP Assignments</h5>
         <p>
           {{range $ipAddr := $zerotierMember.IpAssignments}}
-          {{$ipAddr}}
+          <span class="tag ip-address">{{$ipAddr}}</span>
           {{else}}
           <span class="tag is-warning">None</span>
           {{end}}

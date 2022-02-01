@@ -11,8 +11,7 @@ import (
 
 // All Network Members
 
-// TODO: rename to GetNetworkMembers?
-func (c *Client) GetNetworkMembersInfo(
+func (c *Client) GetNetworkMembers(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
 	memberAddresses []string,
 ) (map[string]zerotier.ControllerNetworkMember, error) {
