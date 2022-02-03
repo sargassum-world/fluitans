@@ -4,7 +4,7 @@
 <turbo-frame id="network-{{$network.Id}}-devices">
   {{range $member := $members}}
   {{
-    template "networks/network-device.partial.tmpl"
+    template "networks/device.partial.tmpl"
     dict "Member" $member "Network" $network "NetworkDNS" $networkDNS
   }}
   {{else}}

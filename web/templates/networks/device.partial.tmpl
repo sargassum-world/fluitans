@@ -40,7 +40,6 @@
         >
           <input
             type="hidden"
-            id="authorization-method"
             name="method"
             value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}"
           >
@@ -57,7 +56,28 @@
         {{if $networkDNS.Named}}
         <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
         {{range $domainName := $domainNames}}
-        <span class="tag domain-name">{{$domainName}}</span>
+        <form
+          id="unset-name-{{$domainName}}"
+          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+          method="POST"
+          data-controller="form-submission"
+          data-action="submit->form-submission#submit"
+        >
+          <input type="hidden" name="method" value="UNSETNAME">
+          <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+          <div class="control" data-form-submission-target="submitter">
+            <span class="tag domain-name">
+              {{$domainName}}
+              <span class="control">
+                <button
+                  class="delete"
+                  form="unset-name-{{$domainName}}"
+                  data-form-submission-target="submit"
+                ></button>
+              </span>
+            </span>
+          </div>
+        </form>
         {{else}}
         <form
           action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"

@@ -16,6 +16,8 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
+// Authorization
+
 func setMemberAuthorization(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
 	memberAddress string, authorized bool, c *ztc.Client,
@@ -34,23 +36,24 @@ func setMemberAuthorization(
 	return nil
 }
 
-func setMemberName(
+// Naming
+
+func confirmMemberNameManageable(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
 	memberAddress, memberName string, c *ztc.Client, dc *desec.Client,
-) error {
+) (memberSubname string, err error) {
 	network, memberAddresses, err := c.GetNetworkInfo(ctx, controller, networkID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	// Ensure we're allowed to set a name
 	networkName := *network.Name
 	named, err := checkNamedByDNS(ctx, networkName, networkID, dc)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if !named {
-		return fmt.Errorf("network does not have a valid domain name for naming members")
+		return "", fmt.Errorf("network does not have a valid domain name for naming members")
 	}
 	hasMember := false
 	for _, address := range memberAddresses {
@@ -60,19 +63,54 @@ func setMemberName(
 		}
 	}
 	if !hasMember {
-		return fmt.Errorf("cannot set domain name for device which is not a network member")
+		return "", fmt.Errorf(
+			"cannot set domain name for device which is not a network member",
+		)
+	}
+
+	fqdn := fmt.Sprintf("%s.d.%s", memberName, networkName)
+	return strings.TrimSuffix(fqdn, fmt.Sprintf(".%s", dc.Config.DomainName)), nil
+}
+
+func setMemberName(
+	ctx context.Context, controller ztcontrollers.Controller, networkID string,
+	memberAddress, memberName string, c *ztc.Client, dc *desec.Client,
+) error {
+	memberSubname, err := confirmMemberNameManageable(
+		ctx, controller, networkID, memberAddress, memberName, c, dc,
+	)
+	if err != nil {
+		return err
 	}
 
 	n6PlaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
 	if err != nil {
 		return err
 	}
-	fqdn := fmt.Sprintf("%s.d.%s", memberName, networkName)
-	subname := strings.TrimSuffix(fqdn, fmt.Sprintf(".%s", dc.Config.DomainName))
 	// TODO: prohibit assigning a name which was already assigned
 	if _, err := dc.CreateRRset(
-		ctx, subname, "AAAA", c.Config.DNS.DeviceTTL, []string{n6PlaneAddress},
+		ctx, memberSubname, "AAAA", c.Config.DNS.DeviceTTL, []string{n6PlaneAddress},
 	); err != nil {
+		return err
+	}
+	return nil
+}
+
+func unsetMemberName(
+	ctx context.Context, controller ztcontrollers.Controller, networkID string,
+	memberAddress, memberName string, c *ztc.Client, dc *desec.Client,
+) error {
+	memberSubname, err := confirmMemberNameManageable(
+		ctx, controller, networkID, memberAddress, memberName, c, dc,
+	)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Deleting AAAA for %s\n", memberSubname)
+
+	// TODO: first confirm that the RRset contains an IP address associated with the member
+	if err := dc.DeleteRRset(ctx, memberSubname, "AAAA"); err != nil {
 		return err
 	}
 	return nil
@@ -119,6 +157,14 @@ func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 			case "SETNAME":
 				memberName := c.FormValue("name")
 				if err = setMemberName(
+					ctx, *controller, networkID, memberAddress, memberName,
+					app.Clients.Zerotier, app.Clients.Desec,
+				); err != nil {
+					return err
+				}
+			case "UNSETNAME":
+				memberName := c.FormValue("name")
+				if err = unsetMemberName(
 					ctx, *controller, networkID, memberAddress, memberName,
 					app.Clients.Zerotier, app.Clients.Desec,
 				); err != nil {
