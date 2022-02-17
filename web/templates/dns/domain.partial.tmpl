@@ -1,5 +1,6 @@
 {{$domain := get . "Domain"}}
 {{$apexRRsets := get . "ApexRRsets"}}
+{{$auth := get . "Auth"}}
 <turbo-frame id="dns-domain-{{$domain.Name}}">
   <article class="panel entity-panel">
     <header class="panel-heading">
@@ -25,8 +26,8 @@
       <turbo-frame id="dns-domain-{{$domain.Name}}-rrset-{{$rrset.Type}}">
         <div class="accordion-content">
           {{
-            template "shared/rrset.partial.tmpl"
-            dict "RRset" $rrset "TurboFrameTarget" (print "dns-domain-" $domain.Name)
+            template "shared/dns/rrset.partial.tmpl"
+            dict "RRset" $rrset "TurboFrameTarget" (print "dns-domain-" $domain.Name) "Auth" $auth
           }}
         </div>
       </turbo-frame>

@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
@@ -298,30 +299,35 @@ func getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 		return nil, err
 	}
 
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
-
-			// Parse params
-			id := c.Param("id")
-			address := ztc.GetControllerAddress(id)
-
-			// Run queries
-			networkData, err := getNetworkData(
-				ctx, address, id, app.Clients.Zerotier, app.Clients.ZTControllers, app.Clients.Desec,
-			)
-			if err != nil {
-				return err
-			}
-
-			// Produce output
-			return route.Render(c, t, *networkData, te, g)
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		if err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+
+		// Run queries
+		networkData, err := getNetworkData(
+			ctx, address, id, app.Clients.Zerotier, app.Clients.ZTControllers, app.Clients.Desec,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Produce output
+		return route.Render(c, t, *networkData, a, te, g)
+	}, nil
 }
 
 func nameNetwork(
@@ -380,52 +386,50 @@ func setNetworkRules(
 }
 
 func postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		zc := app.Clients.Zerotier
-		cc := app.Clients.ZTControllers
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
+	}
+	zc := app.Clients.Zerotier
+	cc := app.Clients.ZTControllers
+	dc := app.Clients.Desec
+	return func(c echo.Context) error {
+		// Extract context
+		ctx := c.Request().Context()
 
-			// Parse params
-			id := c.Param("id")
-			address := ztc.GetControllerAddress(id)
-			method := c.FormValue("method")
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+		method := c.FormValue("method")
 
-			// Run queries
-			controller, err := cc.FindControllerByAddress(ctx, address)
-			if err != nil {
+		// Run queries
+		controller, err := cc.FindControllerByAddress(ctx, address)
+		if err != nil {
+			return err
+		}
+
+		switch method {
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+				"invalid POST method %s", method,
+			))
+		case "SETNAME":
+			if err = nameNetwork(ctx, *controller, id, c.FormValue("name"), zc, dc); err != nil {
 				return err
 			}
-
-			switch method {
-			default:
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-					"invalid POST method %s", method,
-				))
-			case "SETNAME":
-				if err = nameNetwork(
-					ctx, *controller, id, c.FormValue("name"), app.Clients.Zerotier, app.Clients.Desec,
-				); err != nil {
-					return err
-				}
-			case "SETRULES":
-				if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), zc); err != nil {
-					return err
-				}
-				return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
-			case "DELETE":
-				if err = zc.DeleteNetwork(ctx, *controller, id, app.Clients.ZTControllers); err != nil {
-					// TODO: add a tombstone to the TXT RRset?
-					return err
-				}
-				return c.Redirect(http.StatusSeeOther, "/networks")
+		case "SETRULES":
+			if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), zc); err != nil {
+				return err
 			}
+			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
+		case "DELETE":
+			if err = zc.DeleteNetwork(ctx, *controller, id, cc); err != nil {
+				// TODO: add a tombstone to the TXT RRset?
+				return err
+			}
+			return c.Redirect(http.StatusSeeOther, "/networks")
+		}
 
-			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
-		}, nil
-	}
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
+	}, nil
 }

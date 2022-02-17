@@ -3,6 +3,7 @@ package controllers
 import (
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
@@ -16,19 +17,24 @@ func getControllers(
 		return nil, err
 	}
 
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Run queries
-			controllers, err := app.Clients.ZTControllers.GetControllers()
-			if err != nil {
-				return err
-			}
-
-			// Produce output
-			return route.Render(c, t, controllers, te, g)
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		if err != nil {
+			return err
+		}
+
+		// Run queries
+		controllers, err := app.Clients.ZTControllers.GetControllers()
+		if err != nil {
+			return err
+		}
+
+		// Produce output
+		return route.Render(c, t, controllers, a, te, g)
+	}, nil
 }

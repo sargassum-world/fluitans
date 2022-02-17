@@ -10,7 +10,7 @@
       <li><a href="/">Fluitans</a></li>
       <li><a href="/networks">Networks</a></li>
       <li class="is-active"><a href="/networks/{{.Data.Network.Id}}" aria-current="page">
-        {{template "shared/network-name.partial.tmpl" .Data.Network}}
+        {{template "shared/networks/network-name.partial.tmpl" .Data.Network}}
       </a></li>
     </ul>
   </nav>
@@ -18,17 +18,18 @@
   <section class="section content">
     {{
       template "networks/network-basics.partial.tmpl"
-      dict "Network" .Data.Network "NetworkDNS" .Data.NetworkDNS "DomainName" .Data.DomainName
+      dict "Network" .Data.Network "NetworkDNS" .Data.NetworkDNS "DomainName" .Data.DomainName "Auth" .Auth
     }}
     <h2>Devices</h2>
     {{
       template "networks/devices-list.partial.tmpl"
       dict "Members" .Data.Members "Network" .Data.Network "NetworkDNS" .Data.NetworkDNS
     }}
+    {{if .Auth.Identity.Authenticated}}
     {{if .Data.NetworkDNS.Named}}
     <h2>DNS Records</h2>
     {{range $subdomain := .Data.NetworkDNS.OtherSubdomains}}
-    {{template "shared/subdomain.partial.tmpl" $subdomain}}
+    {{template "shared/dns/subdomain.partial.tmpl" dict "Subdomain" $subdomain "Auth" $.Auth}}
     {{end}}
     {{end}}
     <h2>Advanced</h2>
@@ -68,6 +69,7 @@
         >
       </div>
     </form>
+    {{end}}
   </section>
 </main>
 {{end}}

@@ -22,7 +22,7 @@ var TemplatedAssets = []route.Templated{
 		Path:         "/app/app.webmanifest",
 		Method:       http.MethodGet,
 		HandlerMaker: getWebmanifest,
-		Templates:    []string{"app.webmanifest.tmpl"},
+		Templates:    []string{"app/app.webmanifest.tmpl"},
 	},
 }
 
@@ -48,7 +48,7 @@ var StaticAssets = []route.Static{
 func getWebmanifest(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	t := "app.webmanifest.tmpl"
+	t := "app/app.webmanifest.tmpl"
 	err := te.RequireSegments("assets.getWebmanifest", t)
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func getWebmanifest(
 	return func(c echo.Context) error {
 		// Render template
 		c.Response().Header().Set(echo.HeaderContentType, "application/manifest+json")
-		return route.Render(c, t, struct{}{}, te, g)
+		return route.Render(c, t, struct{}{}, struct{}{}, te, g)
 	}, nil
 }
 

@@ -1,3 +1,4 @@
+{{if get . "Display"}}
 <a
   href={{get . "Navlink.Href"}}
   {{if hasPrefix (get . "Navlink.Href") (get . "Meta.Path")}}
@@ -5,8 +6,9 @@
   {{else}}
   class="navbar-item nav-link"
   {{end}}
-  data-action="click->navigation-menu#close"
-  data-controller="navigation-link"
+  data-controller="navigation-link{{if get . "ClearCache"}} turbo-cache{{end}}"
+  data-action="click->navigation-menu#close{{if get . "ClearCache"}} click->turbo-cache#clear{{end}}"
 >
   {{get . "Navlink.Name"}}
 </a>
+{{end}}

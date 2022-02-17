@@ -1,5 +1,6 @@
 {{$rrset := get . "RRset"}}
 {{$turboFrameTarget := get . "TurboFrameTarget"}}
+{{$auth := get . "Auth"}}
 <p>Created: {{dateInZone  "2006-01-02 15:04:05 UTC" $rrset.Created "UTC"}}</p>
 <p>Touched: {{dateInZone  "2006-01-02 15:04:05 UTC" $rrset.Touched "UTC"}}</p>
 <label class="label" for="ttl">TTL</label>
@@ -24,6 +25,7 @@
   {{end}}
 </div>
 <!-- TODO: make a controller with a confirmation dialog -->
+{{if $auth.Identity.Authenticated}}
 <form
   action="/dns/{{derefString $rrset.Subname "@"}}/{{$rrset.Type}}"
   method="POST"
@@ -41,3 +43,4 @@
     >
   </div>
 </form>
+{{end}}

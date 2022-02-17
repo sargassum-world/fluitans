@@ -10,3 +10,28 @@
 .message.is-danger {
   background-color: $danger-light;
 }
+
+input[type="submit"].is-href {
+  height: unset;
+  justify-content: unset;
+  vertical-align: unset;
+  background-color: unset;
+  border: unset;
+  border-radius: unset;
+  text-decoration: none;
+  text-rendering: optimizelegibility;
+
+  @include from($navside-breakpoint) {
+    padding-top: 0.25 * $gap;
+    width: calc(100% - 2 * 0.75em);
+  }
+
+  &:hover, &:focus {
+    text-decoration: none;
+    color: $navbar-button-active-color;
+    background-color: $navbar-button-active-background;
+  }
+  &:focus {
+    outline: 4px solid $focus-color;
+  }
+}

@@ -1,7 +1,9 @@
 package route
 
 import (
+	"fmt"
 	"io/fs"
+	"path"
 
 	"github.com/pkg/errors"
 
@@ -27,29 +29,65 @@ type TemplateFingerprints struct {
 	Page map[string]string
 }
 
+func computePageFingerprints(
+	moduleNonpageFiles map[string][]string, pageFiles []string, templates fs.FS,
+) (map[string]string, error) {
+	moduleNonpages := make(map[string][]byte)
+	for module, files := range moduleNonpageFiles {
+		loadedNonpages, err := fsutil.ReadConcatenated(files, templates)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf(
+				"couldn't load non-page template files in template module %s for fingerprinting", module,
+			))
+		}
+		moduleNonpages[module] = loadedNonpages
+	}
+
+	pages := make(map[string][]byte)
+	for _, file := range pageFiles {
+		loadedPage, err := fsutil.ReadFile(file, templates)
+		if err != nil {
+			return nil, errors.Wrap(err, fmt.Sprintf(
+				"couldn't load page template %s for fingerprinting", file,
+			))
+		}
+		pages[file] = loadedPage
+	}
+
+	pageFingerprints := make(map[string]string)
+	for _, pageFile := range pageFiles {
+		module := path.Dir(pageFile)
+		pageFingerprints[pageFile] = fingerprint.Compute(append(
+			// Each page's fingerprint is computed from the page template itself as well as any non-page
+			// files (e.g. partials) within its module, recursively including all non-page files in
+			// submodules (i.e. subdirectories)
+			pages[pageFile], moduleNonpages[module]...,
+		))
+	}
+	return pageFingerprints, nil
+}
+
 func ComputeTemplateFingerprints(
-	layoutFiles, pageFiles, appAssets []string, templates, app fs.FS,
+	sharedFiles []string, moduleNonpageFiles map[string][]string, pageFiles, appAssets []string,
+	templates, app fs.FS,
 ) (*TemplateFingerprints, error) {
-	// TODO: instead of App having all partials & layouts everywhere, it should only have the ones in
-	// shared; then the page fingerprints should only depend on the partials & layouts in the same
-	// top-level subdirectory of templates
-	pageFingerprints, err := fingerprint.ComputeFiles(pageFiles, templates)
+	sharedConcatenated, err := fsutil.ReadConcatenated(sharedFiles, templates)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't compute templated page fingerprints")
+		return nil, errors.Wrap(err, "couldn't load all shared templates together for fingerprinting")
+	}
+
+	pageFingerprints, err := computePageFingerprints(moduleNonpageFiles, pageFiles, templates)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't page/module templates for fingerprinting")
 	}
 
 	appConcatenated, err := fsutil.ReadConcatenated(appAssets, app)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't concatenate all app assets")
-	}
-
-	layoutConcatenated, err := fsutil.ReadConcatenated(layoutFiles, templates)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't concatenate all layout & partials templates")
+		return nil, errors.Wrap(err, "couldn't load all app assets together for fingerprinting")
 	}
 
 	tf := TemplateFingerprints{
-		App:  fingerprint.Compute(append(appConcatenated, layoutConcatenated...)),
+		App:  fingerprint.Compute(append(appConcatenated, sharedConcatenated...)),
 		Page: pageFingerprints,
 	}
 	return &tf, nil

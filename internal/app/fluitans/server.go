@@ -4,6 +4,7 @@ package fluitans
 import (
 	"net/http"
 
+	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -22,7 +23,9 @@ func NewHTTPErrorHandler(g *framework.Globals) (func(err error, c echo.Context),
 		if herr, ok := err.(*echo.HTTPError); ok {
 			code = herr.Code
 		}
-		perr := c.Render(code, "httperr.page.tmpl", route.MakeRenderData(c, g.Template, code))
+		perr := c.Render(
+			code, "app/httperr.page.tmpl", route.MakeRenderData(c, g.Template, struct{}{}, code),
+		)
 		if perr != nil {
 			c.Logger().Error(err)
 		}
@@ -55,6 +58,9 @@ func PrepareServer(e *echo.Echo) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't make server globals")
 	}
+
+	// Session Management
+	e.Use(session.Middleware(ag.Clients.Sessions.Store))
 
 	// Routes
 	if err = RegisterRoutes(g, e); err != nil {

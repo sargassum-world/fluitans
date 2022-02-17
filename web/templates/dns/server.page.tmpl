@@ -29,14 +29,20 @@
           <p>{{.Data.Server.Server}}</p>
         </div>
       </div>
-      {{template "dns/desec-read-quotas.partial.tmpl" dict "DesecAPISettings" .Data.DesecAPISettings "APILimiterStats" .Data.APILimiterStats}}
-      {{template "dns/desec-write-quotas.partial.tmpl" dict "DesecAPISettings" .Data.DesecAPISettings "APILimiterStats" .Data.APILimiterStats}}
+      {{
+        template "dns/desec-read-quotas.partial.tmpl"
+        dict "DesecAPISettings" .Data.DesecAPISettings "APILimiterStats" .Data.APILimiterStats
+      }}
+      {{
+        template "dns/desec-write-quotas.partial.tmpl"
+        dict "DesecAPISettings" .Data.DesecAPISettings "APILimiterStats" .Data.APILimiterStats
+      }}
     </turbo-frame>
     <h2>Domain</h2>
-    {{template "dns/domain.partial.tmpl" dict "Domain" .Data.Domain "ApexRRsets" .Data.ApexRRsets}}
+    {{template "dns/domain.partial.tmpl" dict "Domain" .Data.Domain "ApexRRsets" .Data.ApexRRsets "Auth" .Auth}}
     <h2>Subdomain Records</h2>
     {{range $subdomain := .Data.Subdomains}}
-    {{template "shared/subdomain.partial.tmpl" $subdomain}}
+    {{template "shared/dns/subdomain.partial.tmpl" dict "Subdomain" $subdomain "Auth" $.Auth}}
     {{end}}
   </section>
 </main>

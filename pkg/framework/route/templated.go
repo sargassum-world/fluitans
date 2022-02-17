@@ -18,10 +18,11 @@ type RenderData struct {
 	Meta    Meta
 	Inlines Inlines
 	Data    interface{}
+	Auth    interface{}
 }
 
 func MakeRenderData(
-	c echo.Context, g TemplateGlobals, data interface{},
+	c echo.Context, g TemplateGlobals, data interface{}, auth interface{},
 ) RenderData {
 	return RenderData{
 		Meta: Meta{
@@ -29,23 +30,33 @@ func MakeRenderData(
 		},
 		Inlines: g.Inlines,
 		Data:    data,
+		Auth:    auth,
 	}
 }
 
+type EtagData struct {
+	Data interface{}
+	Auth interface{}
+}
+
 func Render(
-	c echo.Context, templateName string, templateData interface{},
+	c echo.Context, templateName string, templateData interface{}, authData interface{},
 	te TemplateEtagSegments, g TemplateGlobals,
 ) error {
 	templateEtagSegment, err := te.GetSegment(templateName)
 	if err != nil {
 		return err
 	}
-	noContent, err := ProcessEtag(c, templateEtagSegment, templateData)
+	etagData := EtagData{
+		Data: templateData,
+		Auth: authData,
+	}
+	noContent, err := ProcessEtag(c, templateEtagSegment, etagData)
 	if err != nil || noContent {
 		return err
 	}
 
-	return c.Render(http.StatusOK, templateName, MakeRenderData(c, g, templateData))
+	return c.Render(http.StatusOK, templateName, MakeRenderData(c, g, templateData, authData))
 }
 
 // Route Handlers
@@ -101,4 +112,12 @@ func RegisterTemplated(e EchoRouter, r []Templated, tg TemplateGlobals) error {
 		reg(route.Path, h)
 	}
 	return nil
+}
+
+func CollectTemplated(collections [][]Templated) []Templated {
+	collected := make([]Templated, 0)
+	for _, collection := range collections {
+		collected = append(collected, collection...)
+	}
+	return collected
 }

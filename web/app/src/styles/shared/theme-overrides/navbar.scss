@@ -92,14 +92,14 @@ img.navbar-brand-logo {
   max-width: $navbar-height;
   height: 100%;
   max-height: $navbar-height;
-}
-.navbar-burger:hover, .navbar-burger:focus {
-  color: $navbar-button-active-color;
-  background-color: $navbar-button-active-background;
-}
-.navbar-burger span {
-  transition: unset;
-  height: 0.5px;
+  &:hover, &:focus {
+    color: $navbar-button-active-color;
+    background-color: $navbar-button-active-background;
+  }
+  span {
+    transition: unset;
+    height: 0.5px;
+  }
 }
 .navbar-menu {
   @include until($navbar-breakpoint) {
@@ -140,8 +140,41 @@ img.navbar-brand-logo {
   }
 }
 .navbar-item {
+  margin: $navbar-margin;
+  padding: 0.5em;
+
+  @include from($navbar-breakpoint) {
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-right: 0em;
+    height: 100%;
+    max-height: $navbar-height * 0.625;
+  }
+  @include from($navside-breakpoint) {
+    margin-top: 0em;
+    margin-bottom: $navbar-margin;
+    margin-right: $navbar-margin;
+    height: unset;
+  }
+  .icon img {
+    height: 1em;
+  }
+}
+.navbar-item.end-buttons{
   padding-top: 0;
   padding-bottom: 0;
+
+  @include until($navside-breakpoint) {
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: 0;
+    padding-left: 0.75em;
+  }
+  @include from($navside-breakpoint) {
+    margin: $navbar-margin;
+    height: unset;
+  }
+
   .buttons {
     margin-left: auto;
     margin-right: auto;
@@ -159,15 +192,16 @@ img.navbar-brand-logo {
     border-radius: 0;
     margin-top: auto;
     margin-bottom: auto;
+    @include until($navbar-breakpoint) {
+      padding-left: calc(0.5em - 1px);
+      padding-right: calc(0.5em - 1px);
+    }
     @include from($navbar-breakpoint) {
       height: 100%;
       max-height: $navbar-height * 0.625;
     }
   }
   .icon-button {
-    @include until($navbar-breakpoint) {
-      width: 2.5em;
-    }
     @include from($navbar-breakpoint) {
       padding-top: 0.25 * $gap;
       padding-bottom: 0.25 * $gap;
@@ -187,31 +221,9 @@ img.navbar-brand-logo {
     outline: 4px solid $focus-color;
   }
 }
-a.navbar-item {
-  margin: $navbar-margin;
-  padding: 0.5em;
-
-  @include from($navbar-breakpoint) {
-    margin-top: auto;
-    margin-bottom: auto;
-    margin-right: 0em;
-    height: 100%;
-    max-height: $navbar-height * 0.625;
-  }
-
-  @include from($navside-breakpoint) {
-    margin-top: 0em;
-    margin-bottom: $navbar-margin;
-    margin-right: $navbar-margin;
-    height: unset;
-  }
-}
 a.navbar-item.is-active:not(:focus):not(:hover), a.navbar-item:hover, a.navbar-item:focus {
   color: $navbar-button-active-color;
   background-color: $navbar-button-active-background;
-}
-.navbar-item .icon img {
-  height: 1em;
 }
 .navbar-end {
   @include from($navside-breakpoint) {

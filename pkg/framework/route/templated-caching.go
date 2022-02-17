@@ -2,12 +2,12 @@ package route
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
-	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/sargassum-eco/fluitans/pkg/framework/fingerprint"
 	"github.com/sargassum-eco/fluitans/pkg/framework/httpcache"
@@ -50,13 +50,16 @@ func ProcessEtag(
 	c echo.Context, templateEtagSegments []string, data interface{},
 ) (bool, error) {
 	var buf bytes.Buffer
-	enc := msgpack.NewEncoder(&buf)
-	enc.SetCustomStructTag("json")
-	enc.SetSortMapKeys(true)
+	// github.com/vmihailenco/msgpack has better performance, but we use the JSON encoder because
+	// the msgpack encoder can only sort the map keys of map[string]string and map[string]interface{}
+	// maps, and it's too much trouble to convert our maps into map[string]interface{}. If we can
+	// work around this limitation, we should use msgpack though.
+	enc := json.NewEncoder(&buf)
 	if err := enc.Encode(data); err != nil {
 		return false, err
 	}
+	encoded := buf.Bytes()
 	return httpcache.ProcessEtag(
-		c, append(templateEtagSegments, fingerprint.Compute(buf.Bytes()))...,
+		c, append(templateEtagSegments, fingerprint.Compute(encoded))...,
 	)
 }

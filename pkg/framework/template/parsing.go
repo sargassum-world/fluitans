@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/pkg/errors"
 )
 
@@ -41,9 +42,9 @@ func parseFiles(
 	return t, nil
 }
 
-// readFileFS is an adaptation of the readFileFS helper function in text/template,
-// except it uses the fully-qualified path name of the template file in the filesystem
-// rather than just the template file's basename.
+// readFileFS is an adaptation of the readFileFS helper function in text/template, except it uses
+// the fully-qualified path name of the template file in the filesystem rather than just the
+// template file's basename.
 func readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
 	return func(file string) (name string, b []byte, err error) {
 		name = file
@@ -52,13 +53,15 @@ func readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
 	}
 }
 
-// ParseFS is a direct copy of the parseFS helper function in text/template,
-// except it uses the fully-qualified path name of the template file in the filesystem
-// rather than just the template file's basename.
-func ParseFS(t *template.Template, fsys fs.FS, patterns ...string) (*template.Template, error) {
+// ParseFS is a direct copy of the parseFS helper function in text/template, except it uses the
+// fully-qualified path name of the template file in the filesystem rather than just the template
+// file's basename, and it allows double-star globs (e.g. "**/*.txt").
+func ParseFS(
+	t *template.Template, fsys fs.FS, patterns ...string,
+) (*template.Template, error) {
 	var filenames []string
 	for _, pattern := range patterns {
-		list, err := fs.Glob(fsys, pattern)
+		list, err := doublestar.Glob(fsys, pattern)
 		if err != nil {
 			return nil, err
 		}

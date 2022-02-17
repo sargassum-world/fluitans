@@ -1,11 +1,12 @@
 {{$network := (get . "Network")}}
 {{$networkDNS := (get . "NetworkDNS")}}
 {{$domainName := (get . "DomainName")}}
+{{$auth := (get . "Auth")}}
 <turbo-frame id="network-{{$network.Id}}-basics">
   <h1>
     {{if eq 0 (len $network.Name)}}Unnamed Network{{else}}{{$network.Name}}{{end}}
   </h1>
-  <p>ID: {{template "shared/network-id.partial.tmpl" $network.Id}}</p>
+  <p>ID: {{template "shared/networks/network-id.partial.tmpl" $network.Id}}</p>
   {{if $networkDNS.Named}}
   <p>
     Domain Name:
@@ -23,7 +24,7 @@
     {{end}}
   </ul>
   {{end}}
-  {{else}}
+  {{else if .Auth.Identity.Authenticated}}
   <div class="card section-card is-block" id="network-{{$network.Id}}-name">
     <div class="card-content">
       <h2 class="is-size-4">Name</h2>

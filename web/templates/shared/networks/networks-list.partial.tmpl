@@ -1,12 +1,15 @@
 {{$controller := get . "Controller"}}
 {{$networks := get . "Networks"}}
+{{$auth := get . "Auth"}}
 <turbo-frame id="networks-{{$controller.Name}}-list">
-  {{template "shared/create-network.partial.tmpl" $controller}}
+  {{if $auth.Identity.Authenticated}}
+  {{template "shared/networks/create-network.partial.tmpl" $controller}}
+  {{end}}
   <ul>
     {{range $networkID, $network := $networks}}
     <li>
       <a href="/networks/{{$networkID}}" data-turbo-frame="_top">
-        {{template "shared/network-name.partial.tmpl" $network}}
+        {{template "shared/networks/network-name.partial.tmpl" $network}}
       </a>
       <!-- TODO: show these as network entity cards instead -->
     </li>

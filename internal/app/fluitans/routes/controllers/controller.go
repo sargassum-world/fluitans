@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
@@ -63,30 +64,35 @@ func getController(
 		return nil, err
 	}
 
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
-
-			// Parse params
-			name := c.Param("name")
-
-			// Run queries
-			controllerData, err := getControllerData(
-				ctx, name, app.Clients.ZTControllers, app.Clients.Zerotier,
-			)
-			if err != nil {
-				return err
-			}
-
-			// Produce output
-			// Zero out clocks, since they will always change the Etag
-			*controllerData.Status.Clock = 0
-			*controllerData.ControllerStatus.Clock = 0
-			return route.Render(c, t, *controllerData, te, g)
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		if err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		name := c.Param("name")
+
+		// Run queries
+		controllerData, err := getControllerData(
+			ctx, name, app.Clients.ZTControllers, app.Clients.Zerotier,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Produce output
+		// Zero out clocks, since they will always change the Etag
+		*controllerData.Status.Clock = 0
+		*controllerData.ControllerStatus.Clock = 0
+		return route.Render(c, t, *controllerData, a, te, g)
+	}, nil
 }

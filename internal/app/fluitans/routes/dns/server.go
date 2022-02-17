@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
@@ -80,24 +81,29 @@ func getServer(
 		return nil, err
 	}
 
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
-
-			// Run queries
-			serverData, err := getServerData(
-				ctx, app.Clients.Desec, app.Clients.Zerotier, app.Clients.ZTControllers,
-			)
-			if err != nil {
-				return err
-			}
-
-			// Produce output
-			return route.Render(c, t, *serverData, te, g)
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		if err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Run queries
+		serverData, err := getServerData(
+			ctx, app.Clients.Desec, app.Clients.Zerotier, app.Clients.ZTControllers,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Produce output
+		return route.Render(c, t, *serverData, a, te, g)
+	}, nil
 }

@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
@@ -52,67 +53,71 @@ func getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 		return nil, err
 	}
 
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
-
-			// Run queries
-			networksData, err := getNetworksData(ctx, app.Clients.Zerotier, app.Clients.ZTControllers)
-			if err != nil {
-				return err
-			}
-
-			// Produce output
-			return route.Render(c, t, networksData, te, g)
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		if err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Run queries
+		networksData, err := getNetworksData(ctx, app.Clients.Zerotier, app.Clients.ZTControllers)
+		if err != nil {
+			return err
+		}
+
+		// Produce output
+		return route.Render(c, t, networksData, a, te, g)
+	}, nil
 }
 
 func postNetworks(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
-
-			// Parse params
-			name := c.FormValue("controller")
-			if name == "" {
-				return echo.NewHTTPError(
-					http.StatusBadRequest, "zerotier controller name not specified",
-				)
-			}
-
-			// Run queries
-			controller, err := app.Clients.ZTControllers.FindController(name)
-			if err != nil {
-				return err
-			}
-			if controller == nil {
-				return echo.NewHTTPError(
-					http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
-				)
-			}
-
-			createdNetwork, err := app.Clients.Zerotier.CreateNetwork(
-				ctx, *controller, app.Clients.ZTControllers,
-			)
-			if err != nil {
-				return err
-			}
-			created := createdNetwork.Id
-			if created == nil {
-				return echo.NewHTTPError(http.StatusInternalServerError, "network status unknown")
-			}
-			return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		name := c.FormValue("controller")
+		if name == "" {
+			return echo.NewHTTPError(
+				http.StatusBadRequest, "zerotier controller name not specified",
+			)
+		}
+
+		// Run queries
+		controller, err := app.Clients.ZTControllers.FindController(name)
+		if err != nil {
+			return err
+		}
+		if controller == nil {
+			return echo.NewHTTPError(
+				http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
+			)
+		}
+
+		createdNetwork, err := app.Clients.Zerotier.CreateNetwork(
+			ctx, *controller, app.Clients.ZTControllers,
+		)
+		if err != nil {
+			return err
+		}
+		created := createdNetwork.Id
+		if created == nil {
+			return echo.NewHTTPError(http.StatusInternalServerError, "network status unknown")
+		}
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
+	}, nil
 }

@@ -5,7 +5,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/conf"
+	"github.com/sargassum-eco/fluitans/internal/clients/authn"
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
+	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
@@ -13,7 +15,9 @@ import (
 )
 
 type Clients struct {
+	Authn         *authn.Client
 	Desec         *desec.Client
+	Sessions      *sessions.Client
 	Zerotier      *zerotier.Client
 	ZTControllers *ztcontrollers.Client
 }
@@ -34,9 +38,19 @@ func NewGlobals(l log.Logger) (*Globals, error) {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
 
+	authnClient, err := authn.MakeClient(l)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up authn client")
+	}
+
 	desecClient, err := desec.MakeClient(config.DomainName, cache, l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up desec client")
+	}
+
+	sessionsClient, err := sessions.MakeClient(l)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up sessions client")
 	}
 
 	ztClient, err := zerotier.MakeClient(cache, l)
@@ -52,7 +66,9 @@ func NewGlobals(l log.Logger) (*Globals, error) {
 	return &Globals{
 		Config: *config,
 		Clients: &Clients{
+			Authn:         authnClient,
 			Desec:         desecClient,
+			Sessions:      sessionsClient,
 			Zerotier:      ztClient,
 			ZTControllers: ztcClient,
 		},

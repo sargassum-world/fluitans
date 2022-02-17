@@ -2,6 +2,7 @@
 package env
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/url"
 	"os"
@@ -26,6 +27,24 @@ func GetBool(varName string) (bool, error) {
 	return false, errors.Errorf(
 		"unknown value %s for boolean environment variable %s", value, varName,
 	)
+}
+
+func GetUint64(varName string, defaultValue uint64) (uint64, error) {
+	value := os.Getenv(varName)
+	if len(value) == 0 {
+		return defaultValue, nil
+	}
+
+	base := 10
+	width := 64 // bits
+	parsed, err := strconv.ParseUint(value, base, width)
+	if err != nil {
+		return 0, errors.Wrap(err, fmt.Sprintf(
+			"unparseable value %s for uint64 environment variable %s", value, varName,
+		))
+	}
+
+	return parsed, nil
 }
 
 func GetInt64(varName string, defaultValue int64) (int64, error) {
@@ -70,6 +89,15 @@ func GetString(varName string, defaultValue string) string {
 	}
 
 	return value
+}
+
+func GetBase64(varName string) ([]byte, error) {
+	rawValue := os.Getenv(varName)
+	if len(rawValue) == 0 {
+		return nil, nil
+	}
+
+	return base64.StdEncoding.DecodeString(rawValue)
 }
 
 func GetURL(varName string, defaultValue string) (*url.URL, error) {

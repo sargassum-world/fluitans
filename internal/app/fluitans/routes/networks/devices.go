@@ -117,95 +117,93 @@ func unsetMemberName(
 }
 
 func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
-
-			// Parse params
-			networkID := c.Param("id")
-			controllerAddress := ztc.GetControllerAddress(networkID)
-			memberAddress := c.Param("address")
-			method := c.FormValue("method")
-
-			// Run queries
-			controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
-			if err != nil {
-				return err
-			}
-
-			switch method {
-			default:
-				return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-					"invalid POST method %s", method,
-				))
-			case "AUTHORIZE":
-				if err = setMemberAuthorization(
-					ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
-				); err != nil {
-					return err
-				}
-			case "DEAUTHORIZE":
-				if err = setMemberAuthorization(
-					ctx, *controller, networkID, memberAddress, false, app.Clients.Zerotier,
-				); err != nil {
-					return err
-				}
-			case "SETNAME":
-				memberName := c.FormValue("name")
-				if err = setMemberName(
-					ctx, *controller, networkID, memberAddress, memberName,
-					app.Clients.Zerotier, app.Clients.Desec,
-				); err != nil {
-					return err
-				}
-			case "UNSETNAME":
-				memberName := c.FormValue("name")
-				if err = unsetMemberName(
-					ctx, *controller, networkID, memberAddress, memberName,
-					app.Clients.Zerotier, app.Clients.Desec,
-				); err != nil {
-					return err
-				}
-			}
-
-			return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
-				"/networks/%s#device-%s", networkID, memberAddress,
-			))
-		}, nil
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
-}
+	return func(c echo.Context) error {
+		// Extract context
+		ctx := c.Request().Context()
 
-func postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	switch app := g.App.(type) {
-	default:
-		return nil, client.NewUnexpectedGlobalsTypeError(app)
-	case *client.Globals:
-		return func(c echo.Context) error {
-			// Extract context
-			ctx := c.Request().Context()
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
+		memberAddress := c.Param("address")
+		method := c.FormValue("method")
 
-			// Parse params
-			networkID := c.Param("id")
-			controllerAddress := ztc.GetControllerAddress(networkID)
-			memberAddress := c.FormValue("address")
+		// Run queries
+		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return err
+		}
 
-			// Run queries
-			controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
-			if err != nil {
-				return err
-			}
+		switch method {
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+				"invalid POST method %s", method,
+			))
+		case "AUTHORIZE":
 			if err = setMemberAuthorization(
 				ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
 			); err != nil {
 				return err
 			}
-			return c.Redirect(
-				http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
-			)
-		}, nil
+		case "DEAUTHORIZE":
+			if err = setMemberAuthorization(
+				ctx, *controller, networkID, memberAddress, false, app.Clients.Zerotier,
+			); err != nil {
+				return err
+			}
+		case "SETNAME":
+			memberName := c.FormValue("name")
+			if err = setMemberName(
+				ctx, *controller, networkID, memberAddress, memberName,
+				app.Clients.Zerotier, app.Clients.Desec,
+			); err != nil {
+				return err
+			}
+		case "UNSETNAME":
+			memberName := c.FormValue("name")
+			if err = unsetMemberName(
+				ctx, *controller, networkID, memberAddress, memberName,
+				app.Clients.Zerotier, app.Clients.Desec,
+			); err != nil {
+				return err
+			}
+		}
+
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
+			"/networks/%s#device-%s", networkID, memberAddress,
+		))
+	}, nil
+}
+
+func postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	return func(c echo.Context) error {
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
+		memberAddress := c.FormValue("address")
+
+		// Run queries
+		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return err
+		}
+		if err = setMemberAuthorization(
+			ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
+		); err != nil {
+			return err
+		}
+		return c.Redirect(
+			http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
+		)
+	}, nil
 }

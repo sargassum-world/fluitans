@@ -13,7 +13,7 @@
   <link id="light-theme" as="style" rel="preload" href={{appHashed "theme-light.min.css"}} turbo-data-track="reload">
   <link id="dark-theme" as="style" rel="preload" href={{appHashed "theme-dark.min.css"}} turbo-data-track="reload">
   <script>{{.Inlines.JS.BundleEager}}</script>
-  {{block "navbar.assets" .}}{{end}}
+  {{block "nav/navbar.assets" .}}{{end}}
   <link rel="preload" as="font" type="font/woff2" href="/fonts/atkinson-hyperlegible-latin-400-normal.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="/fonts/atkinson-hyperlegible-latin-700-normal.woff2" crossorigin>
   <link rel="preload" as="script" href={{appHashed "bundle-deferred.js"}}>
@@ -27,7 +27,7 @@
 
 <body>
   <div class="main-window is-flex is-flex-direction-column-touch is-flex-direction-row-desktop">
-    {{block "navbar" .}}{{end}}
+    {{block "nav/navbar" .}}{{end}}
     {{block "content" .}}{{end}}
   </div>
 </body>

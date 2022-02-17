@@ -25,12 +25,18 @@
     </header>
     <details data-accordion-item class="panel-block accordion-item">
       <summary class="accordion-header level">
+        {{if .Auth.Identity.Authenticated}}
         <h4>Basic Settings</h4>
+        {{else}}
+        <h4>Basic Details</h4>
+        {{end}}
         {{template "shared/accordion-icon.partial.tmpl"}}
       </summary>
       <div class="accordion-content">
         <h5 class="is-size-6">Zerotier Address</h5>
         <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+
+        {{if .Auth.Identity.Authenticated}}
         <h5 class="is-size-6">Network Membership</h5>
         <form
           action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
@@ -52,10 +58,12 @@
             >
           </div>
         </form>
+        {{end}}
 
         {{if $networkDNS.Named}}
         <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
         {{range $domainName := $domainNames}}
+        {{if $.Auth.Identity.Authenticated}}
         <form
           id="unset-name-{{$domainName}}"
           action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
@@ -79,6 +87,10 @@
           </div>
         </form>
         {{else}}
+        <span class="tag domain-name">{{$domainName}}</span>
+        {{end}}
+        {{else}}
+        {{if .Auth.Identity.Authenticated}}
         <form
           action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
           method="POST"
@@ -106,6 +118,9 @@
             </div>
           </div>
         </form>
+        {{else}}
+        <span class="tag is-warning">Unknown</span>
+        {{end}}
         {{end}}
         {{end}}
       </div>
@@ -124,6 +139,7 @@
           <span class="tag is-warning">None</span>
           {{end}}
         </p>
+        {{if .Auth.Identity.Authenticated}}
         <h5 class="is-size-6">Troubleshooting Information</h5>
         <p>Configuration revision: {{$zerotierMember.Revision}}</p>
         <p>
@@ -134,6 +150,7 @@
           v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
           {{end}}
         </p>
+        {{end}}
       </div>
     </details>
   </article>

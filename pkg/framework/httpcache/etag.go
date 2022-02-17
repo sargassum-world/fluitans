@@ -23,11 +23,13 @@ func MakeEtag(segments ...string) string {
 // Headers for Etags
 
 func SetNoEtag(resh http.Header) {
-	resh.Set("Cache-Control", "no-store, max-age=0")
+	// Don't cache cookies - see the "Web Content Caching" subsection of
+	// https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+	resh.Set("Cache-Control", "no-cache=\"Set-Cookie, Set-Cookie2\", no-store, max-age=0")
 }
 
 func SetEtag(resh http.Header, etag string) {
-	resh.Set("Cache-Control", "no-cache")
+	resh.Set("Cache-Control", "private, no-cache")
 	resh.Set("Etag", etag)
 }
 

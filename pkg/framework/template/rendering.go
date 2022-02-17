@@ -28,7 +28,7 @@ func NewTemplateRenderer(fsys fs.FS, functions ...template.FuncMap) *TemplateRen
 		tmpl = tmpl.Funcs(f)
 	}
 	return &TemplateRenderer{
-		templates:   template.Must(ParseFS(tmpl, fsys, "*.tmpl", "*/*.tmpl")),
+		templates:   template.Must(ParseFS(tmpl, fsys, "**/*.tmpl")),
 		templatesFS: fsys,
 	}
 }

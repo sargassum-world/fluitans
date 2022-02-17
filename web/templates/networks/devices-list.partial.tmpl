@@ -10,6 +10,7 @@
   {{else}}
   <p>This network does not yet have any devices!</p>
   {{end}}
+  {{if .Auth.Identity.Authenticated}}
   <div class="card section-card is-block">
     <div class="card-content">
       <h3>Manually Add Device</h3>
@@ -39,4 +40,5 @@
       </form>
     </div>
   </div>
+  {{end}}
 </turbo-frame>

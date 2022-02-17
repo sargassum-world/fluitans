@@ -20,7 +20,7 @@ var (
 )
 
 var (
-	//go:embed templates/*.tmpl templates/*/*.tmpl
+	//go:embed templates/*
 	templatesEFS   embed.FS
 	templatesFS, _ = fs.Sub(templatesEFS, "templates")
 )
