@@ -1,11 +1,12 @@
 {{$network := (get . "Network")}}
 {{$jsonPrintedRules := (get . "JSONPrintedRules")}}
+
 <turbo-frame id="network-{{$network.Id}}-rules">
   <h3>Traffic Rules</h3>
   <ol>
     <li>Inspect the packet,</li>
     {{range $rule := $network.Rules}}
-    {{template "networks/network-rule.partial.tmpl" $rule}}
+      {{template "networks/network-rule.partial.tmpl" $rule}}
     {{end}}
     <li>discard the packet</li>
   </ol>

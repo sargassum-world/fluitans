@@ -3,9 +3,9 @@
   <h3>Miscellaneous</h3>
   <h4 class="is-size-6">Access Control</h4>
   {{if derefBool $network.Private}}
-  <span class="tag is-success">Private</span>
+    <span class="tag is-success">Private</span>
   {{else}}
-  <span class="tag is-warning">Public</span>
+    <span class="tag is-warning">Public</span>
   {{end}}
   <h4 class="is-size-6">Ethernet Settings</h4>
   <p>Maximum transmission unit: {{$network.Mtu}}</p>
@@ -13,9 +13,9 @@
   <p>
     Broadcast (ff:ff:ff:ff:ff:ff):
     {{if derefBool $network.EnableBroadcast}}
-    <span class="tag is-info">Allowed</span>
+      <span class="tag is-info">Allowed</span>
     {{else}}
-    <span class="tag is-info">Not allowed</span>
+      <span class="tag is-info">Not allowed</span>
     {{end}}
   </p>
   <h4 class="is-size-6">Troubleshooting Information</h4>

@@ -1,6 +1,7 @@
 {{$rrset := get . "RRset"}}
-{{$turboFrameTarget := get . "TurboFrameTarget"}}
 {{$auth := get . "Auth"}}
+{{$turboFrameTarget := get . "TurboFrameTarget"}}
+
 <p>Created: {{dateInZone  "2006-01-02 15:04:05 UTC" $rrset.Created "UTC"}}</p>
 <p>Touched: {{dateInZone  "2006-01-02 15:04:05 UTC" $rrset.Touched "UTC"}}</p>
 <label class="label" for="ttl">TTL</label>
@@ -15,32 +16,32 @@
 <div class="field">
   <label class="label">Records</label>
   {{range $record := $rrset.Records}}
-  <div class="control">
-    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" value="{{$record}}" readonly />
-  </div>
+    <div class="control">
+      <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" value="{{$record}}" readonly />
+    </div>
   {{else}}
-  <div class="control">
-    <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" readonly />
-  </div>
+    <div class="control">
+      <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" readonly />
+    </div>
   {{end}}
 </div>
 <!-- TODO: make a controller with a confirmation dialog -->
 {{if $auth.Identity.Authenticated}}
-<form
-  action="/dns/{{derefString $rrset.Subname "@"}}/{{$rrset.Type}}"
-  method="POST"
-  data-turbo-frame="{{$turboFrameTarget}}"
-  data-controller="form-submission"
-  data-action="submit->form-submission#submit"
->
-  <input type="hidden" name="method" value="DELETE">
-  <div class="control" data-form-submission-target="submitter">
-    <input
-      class="button is-danger"
-      type="submit"
-      value="Delete records"
-      data-form-submission-target="submit"
-    >
-  </div>
-</form>
+  <form
+    action="/dns/{{derefString $rrset.Subname "@"}}/{{$rrset.Type}}"
+    method="POST"
+    data-turbo-frame="{{$turboFrameTarget}}"
+    data-controller="form-submission"
+    data-action="submit->form-submission#submit"
+  >
+    <input type="hidden" name="method" value="DELETE">
+    <div class="control" data-form-submission-target="submitter">
+      <input
+        class="button is-danger"
+        type="submit"
+        value="Delete records"
+        data-form-submission-target="submit"
+      >
+    </div>
+  </form>
 {{end}}

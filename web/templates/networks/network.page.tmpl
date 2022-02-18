@@ -4,72 +4,88 @@
 {{define "description"}}The ZeroTier network {{identifyNetwork .Data.Network}}{{end}}
 
 {{define "content"}}
-<main class="main-container" tabindex="-1" data-controller="default-scrollable">
-  <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
-    <ul>
-      <li><a href="/">Fluitans</a></li>
-      <li><a href="/networks">Networks</a></li>
-      <li class="is-active"><a href="/networks/{{.Data.Network.Id}}" aria-current="page">
-        {{template "shared/networks/network-name.partial.tmpl" .Data.Network}}
-      </a></li>
-    </ul>
-  </nav>
+  <main class="main-container" tabindex="-1" data-controller="default-scrollable">
+    <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="/">Fluitans</a></li>
+        <li><a href="/networks">Networks</a></li>
+        <li class="is-active"><a href="/networks/{{.Data.Network.Id}}" aria-current="page">
+          {{template "shared/networks/network-name.partial.tmpl" .Data.Network}}
+        </a></li>
+      </ul>
+    </nav>
 
-  <section class="section content">
-    {{
-      template "networks/network-basics.partial.tmpl"
-      dict "Network" .Data.Network "NetworkDNS" .Data.NetworkDNS "DomainName" .Data.DomainName "Auth" .Auth
-    }}
-    <h2>Devices</h2>
-    {{
-      template "networks/devices-list.partial.tmpl"
-      dict "Members" .Data.Members "Network" .Data.Network "NetworkDNS" .Data.NetworkDNS
-    }}
-    {{if .Auth.Identity.Authenticated}}
-    {{if .Data.NetworkDNS.Named}}
-    <h2>DNS Records</h2>
-    {{range $subdomain := .Data.NetworkDNS.OtherSubdomains}}
-    {{template "shared/dns/subdomain.partial.tmpl" dict "Subdomain" $subdomain "Auth" $.Auth}}
-    {{end}}
-    {{end}}
-    <h2>Advanced</h2>
-    <div class="card section-card">
-      <div class="card-content">
-        {{
-          template "networks/network-rules.partial.tmpl"
-          dict "Network" .Data.Network "JSONPrintedRules" .Data.JSONPrintedRules
-        }}
-      </div>
-    </div>
-    <div class="card section-card">
-      <div class="card-content">
-        {{template "networks/network-ipaddr.partial.tmpl" dict "Network" .Data.Network}}
-      </div>
-    </div>
-    <div class="card section-card">
-      <div class="card-content">
-        {{template "networks/network-advancedmisc.partial.tmpl" dict "Network" .Data.Network}}
-      </div>
-    </div>
-    <!-- TODO: make a controller with a confirmation dialog -->
-    <form
-      action="/networks/{{.Data.Network.Id}}"
-      method="POST"
-      data-turbo-frame="_top"
-      data-controller="form-submission"
-      data-action="submit->form-submission#submit"
-    >
-      <input type="hidden" name="method" value="DELETE">
-      <div class="control" data-form-submission-target="submitter">
-        <input
-          class="button is-danger"
-          type="submit"
-          value="Delete network"
-          data-form-submission-target="submit"
+    <section class="section content">
+      {{
+        template "networks/network-basics.partial.tmpl" dict
+        "Network" .Data.Network
+        "NetworkDNS" .Data.NetworkDNS
+        "DomainName" .Data.DomainName
+        "Auth" .Auth
+      }}
+      <h2>Devices</h2>
+      {{
+        template "networks/devices-list.partial.tmpl" dict
+        "Members" .Data.Members
+        "Network" .Data.Network
+        "NetworkDNS" .Data.NetworkDNS
+      }}
+      {{if .Auth.Identity.Authenticated}}
+        {{if .Data.NetworkDNS.Named}}
+          <h2>DNS Records</h2>
+          {{range $subdomain := .Data.NetworkDNS.OtherSubdomains}}
+            {{
+              template "shared/dns/subdomain.partial.tmpl" dict
+              "Subdomain" $subdomain
+              "Auth" $.Auth
+            }}
+          {{end}}
+        {{end}}
+        <h2>Advanced</h2>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-rules.partial.tmpl" dict
+              "Network" .Data.Network
+              "JSONPrintedRules" .Data.JSONPrintedRules
+            }}
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-ipaddr.partial.tmpl" dict
+              "Network" .Data.Network
+            }}
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-advancedmisc.partial.tmpl" dict
+              "Network" .Data.Network
+            }}
+          </div>
+        </div>
+        <!-- TODO: make a controller with a confirmation dialog -->
+        <form
+          action="/networks/{{.Data.Network.Id}}"
+          method="POST"
+          data-turbo-frame="_top"
+          data-controller="form-submission"
+          data-action="submit->form-submission#submit"
         >
-      </div>
-    </form>
-    {{end}}
-  </section>
-</main>
+          <input type="hidden" name="method" value="DELETE">
+          <div class="control" data-form-submission-target="submitter">
+            <input
+              class="button is-danger"
+              type="submit"
+              value="Delete network"
+              data-form-submission-target="submit"
+            >
+          </div>
+        </form>
+      {{end}}
+    </section>
+  </main>
 {{end}}

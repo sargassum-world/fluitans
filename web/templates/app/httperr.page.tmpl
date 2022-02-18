@@ -4,10 +4,10 @@
 {{define "description"}}We have some trouble.{{end}}
 
 {{define "content"}}
-<main class="main-container">
-  <section class="section content">
-    <h1>{{(describeError .Data).Name}} ({{.Data}})</h1>
-    <p>{{(describeError .Data).Description}}</p>
-  </section>
-</main>
+  <main class="main-container">
+    <section class="section content">
+      <h1>{{(describeError .Data).Name}} ({{.Data}})</h1>
+      <p>{{(describeError .Data).Description}}</p>
+    </section>
+  </main>
 {{end}}

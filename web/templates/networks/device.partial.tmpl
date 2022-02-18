@@ -7,28 +7,28 @@
     <header class="panel-heading">
       <h3 class="entity-name">
         {{if $domainNames}}
-        <span class="tag domain-name">{{index $domainNames 0}}</span>
+          <span class="tag domain-name">{{index $domainNames 0}}</span>
         {{else}}
-        <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+          <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
         {{end}}
       </h3>
       <div class="tags">
         {{if (derefBool $zerotierMember.Authorized)}}
-        <span class="tag is-success">Authorized</span>
+          <span class="tag is-success">Authorized</span>
         {{else}}
-        <span class="tag is-warning">Not authorized</span>
+          <span class="tag is-warning">Not authorized</span>
         {{end}}
         {{if (derefBool $zerotierMember.ActiveBridge)}}
-        <span class="tag is-info">Bridge</span>
+          <span class="tag is-info">Bridge</span>
         {{end}}
       </div>
     </header>
     <details data-accordion-item class="panel-block accordion-item">
       <summary class="accordion-header level">
         {{if .Auth.Identity.Authenticated}}
-        <h4>Basic Settings</h4>
+          <h4>Basic Settings</h4>
         {{else}}
-        <h4>Basic Details</h4>
+          <h4>Basic Details</h4>
         {{end}}
         {{template "shared/accordion-icon.partial.tmpl"}}
       </summary>
@@ -37,91 +37,91 @@
         <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
 
         {{if .Auth.Identity.Authenticated}}
-        <h5 class="is-size-6">Network Membership</h5>
-        <form
-          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
-          method="POST"
-          data-controller="form-submission"
-          data-action="submit->form-submission#submit"
-        >
-          <input
-            type="hidden"
-            name="method"
-            value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}"
+          <h5 class="is-size-6">Network Membership</h5>
+          <form
+            action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+            method="POST"
+            data-controller="form-submission"
+            data-action="submit->form-submission#submit"
           >
-          <div class="control" data-form-submission-target="submitter">
             <input
-              class="button"
-              type="submit"
-              value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
-              data-form-submission-target="submit"
+              type="hidden"
+              name="method"
+              value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}"
             >
-          </div>
-        </form>
-        {{end}}
-
-        {{if $networkDNS.Named}}
-        <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
-        {{range $domainName := $domainNames}}
-        {{if $.Auth.Identity.Authenticated}}
-        <form
-          id="unset-name-{{$domainName}}"
-          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
-          method="POST"
-          data-controller="form-submission"
-          data-action="submit->form-submission#submit"
-        >
-          <input type="hidden" name="method" value="UNSETNAME">
-          <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
-          <div class="control" data-form-submission-target="submitter">
-            <span class="tag domain-name">
-              {{$domainName}}
-              <span class="control">
-                <button
-                  class="delete"
-                  form="unset-name-{{$domainName}}"
-                  data-form-submission-target="submit"
-                ></button>
-              </span>
-            </span>
-          </div>
-        </form>
-        {{else}}
-        <span class="tag domain-name">{{$domainName}}</span>
-        {{end}}
-        {{else}}
-        {{if .Auth.Identity.Authenticated}}
-        <form
-          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
-          method="POST"
-          data-controller="form-submission"
-          data-action="submit->form-submission#submit"
-          data-form-submission-target="submitter"
-        >
-          <input type="hidden" name="method" value="SETNAME">
-          <div class="field has-addons">
-            <div class="control">
-              <input type="text" class="input" name="name">
-            </div>
-            <div class="control">
-              <span class="button is-static">.d.{{$network.Name}}</span>
-            </div>
-          </div>
-          <div class="field">
             <div class="control" data-form-submission-target="submitter">
               <input
-                type="submit"
                 class="button"
-                value="Set domain name"
+                type="submit"
+                value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
                 data-form-submission-target="submit"
               >
             </div>
-          </div>
-        </form>
-        {{else}}
-        <span class="tag is-warning">Unknown</span>
+          </form>
         {{end}}
-        {{end}}
+
+        {{if $networkDNS.Named}}
+          <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
+          {{range $domainName := $domainNames}}
+            {{if $.Auth.Identity.Authenticated}}
+              <form
+                id="unset-name-{{$domainName}}"
+                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+                method="POST"
+                data-controller="form-submission"
+                data-action="submit->form-submission#submit"
+              >
+                <input type="hidden" name="method" value="UNSETNAME">
+                <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+                <div class="control" data-form-submission-target="submitter">
+                  <span class="tag domain-name">
+                    {{$domainName}}
+                    <span class="control">
+                      <button
+                        class="delete"
+                        form="unset-name-{{$domainName}}"
+                        data-form-submission-target="submit"
+                      ></button>
+                    </span>
+                  </span>
+                </div>
+              </form>
+            {{else}}
+              <span class="tag domain-name">{{$domainName}}</span>
+            {{end}}
+          {{else}}
+            {{if .Auth.Identity.Authenticated}}
+              <form
+                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+                method="POST"
+                data-controller="form-submission"
+                data-action="submit->form-submission#submit"
+                data-form-submission-target="submitter"
+              >
+                <input type="hidden" name="method" value="SETNAME">
+                <div class="field has-addons">
+                  <div class="control">
+                    <input type="text" class="input" name="name">
+                  </div>
+                  <div class="control">
+                    <span class="button is-static">.d.{{$network.Name}}</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="control" data-form-submission-target="submitter">
+                    <input
+                      type="submit"
+                      class="button"
+                      value="Set domain name"
+                      data-form-submission-target="submit"
+                    >
+                  </div>
+                </div>
+              </form>
+            {{else}}
+              <span class="tag is-warning">Unknown</span>
+            {{end}}
+          {{end}}
         {{end}}
       </div>
     </details>
@@ -134,22 +134,22 @@
         <h5 class="is-size-6">IP Assignments</h5>
         <p>
           {{range $ipAddr := $zerotierMember.IpAssignments}}
-          <span class="tag ip-address">{{$ipAddr}}</span>
+            <span class="tag ip-address">{{$ipAddr}}</span>
           {{else}}
-          <span class="tag is-warning">None</span>
+            <span class="tag is-warning">None</span>
           {{end}}
         </p>
         {{if .Auth.Identity.Authenticated}}
-        <h5 class="is-size-6">Troubleshooting Information</h5>
-        <p>Configuration revision: {{$zerotierMember.Revision}}</p>
-        <p>
-          Version:
-          {{if eq -1 (derefInt $zerotierMember.VMajor -1)}}
-          <span class="tag is-warning">Unknown</span>
-          {{else}}
-          v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
-          {{end}}
-        </p>
+          <h5 class="is-size-6">Troubleshooting Information</h5>
+          <p>Configuration revision: {{$zerotierMember.Revision}}</p>
+          <p>
+            Version:
+            {{if eq -1 (derefInt $zerotierMember.VMajor -1)}}
+              <span class="tag is-warning">Unknown</span>
+            {{else}}
+              v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
+            {{end}}
+          </p>
         {{end}}
       </div>
     </details>

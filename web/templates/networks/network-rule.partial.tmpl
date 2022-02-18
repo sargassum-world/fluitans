@@ -1,167 +1,166 @@
 {{$type := index . "type"}}
+
 <li>
-    {{if eq $type "ACTION_DROP"}}
+  {{if eq $type "ACTION_DROP"}}
     then discard the packet and terminate further rule evaluation, including capabilities; otherwise
-    {{else if eq $type "ACTION_BREAK"}}
+  {{else if eq $type "ACTION_BREAK"}}
     then terminate evaluation of the rules, but continue evaluating capabilities; otherwise
-    {{else if eq $type "ACTION_ACCEPT"}}
+  {{else if eq $type "ACTION_ACCEPT"}}
     then accept the packet and terminate further rule evaluation; otherwise
-    {{else if eq $type "ACTION_TEE"}}
+  {{else if eq $type "ACTION_TEE"}}
     then send a copy of up to the first {{index . "length"}} bytes to {{index . "address"}}; and then
-    {{else if eq $type "ACTION_REDIRECT"}}
+  {{else if eq $type "ACTION_REDIRECT"}}
     then transparently redirect the packet to {{index . "address"}} without changing its headers; and then
-    {{else}}
+  {{else}}
     {{if eq (index . "or") true}}
-    or
+      or
     {{else}}
-    and
+      and
     {{end}}
     if
 
     {{if or (contains "SOURCE" $type) (contains "DEST" $type)}}
-
-    the packet
-    {{if eq (index . "not") true}}
-    was not
-    {{else}}
-    was
-    {{end}}
-    sent
-    {{if contains "SOURCE" $type}}
-    from
-    {{else}}
-    to
-    {{end}}
-    {{if contains "ZEROTIER_ADDRESS" $type}}
-    {{index . "zt"}}
-    {{else if contains "MAC" $type}}
-    {{index . "mac"}}
-    {{else if or (contains "IPV4" $type) (contains "IPV6" $type)}}
-    {{index . "ip"}}
-    {{else if contains "PORT_RANGE" $type}}
-    a port in the range [{{index . "start"}} - {{index . "end"}}]
-    {{end}}
-
+      the packet
+      {{if eq (index . "not") true}}
+        was not
+      {{else}}
+        was
+      {{end}}
+      sent
+      {{if contains "SOURCE" $type}}
+        from
+      {{else}}
+        to
+      {{end}}
+      {{if contains "ZEROTIER_ADDRESS" $type}}
+        {{index . "zt"}}
+      {{else if contains "MAC" $type}}
+        {{index . "mac"}}
+      {{else if or (contains "IPV4" $type) (contains "IPV6" $type)}}
+        {{index . "ip"}}
+      {{else if contains "PORT_RANGE" $type}}
+        a port in the range [{{index . "start"}} - {{index . "end"}}]
+      {{end}}
     {{else if eq $type "MATCH_IP_TOS"}}
-    the packet's IP TOS field, when bitwise-AND-masked with {{index . "mask"}},
-    {{if eq (index . "not") true}}
-    is not
-    {{else}}
-    is
-    {{end}}
-    in the range [{{index . "start"}} - {{index . "end"}}]
+      the packet's IP TOS field, when bitwise-AND-masked with {{index . "mask"}},
+      {{if eq (index . "not") true}}
+        is not
+      {{else}}
+        is
+      {{end}}
+      in the range [{{index . "start"}} - {{index . "end"}}]
     {{else if eq $type "MATCH_IP_PROTOCOL"}}
-    the packet's IP protocol number
-    {{if eq (index . "not") true}}
-    is not
-    {{else}}
-    is
-    {{end}}
-    {{index . "ipProtocol"}}
+      the packet's IP protocol number
+      {{if eq (index . "not") true}}
+        is not
+      {{else}}
+        is
+      {{end}}
+      {{index . "ipProtocol"}}
     {{else if eq $type "MATCH_ETHERTYPE"}}
-    the packet
-    {{if eq (index . "not") true}}
-    is not
-    {{else}}
-    is
-    {{end}}
-    {{if eq (index . "etherType") 2048.0}}
-    an IPv4 packet
-    {{else if eq (index . "etherType") 2054.0}}
-    an IPv4 ARP packet
-    {{else if eq (index . "etherType") 34525.0}}
-    an IPv6 packet
-    {{else}}
-    of Ethernet frame type {{index . "etherType"}}
-    {{end}}
+      the packet
+      {{if eq (index . "not") true}}
+        is not
+      {{else}}
+        is
+      {{end}}
+      {{if eq (index . "etherType") 2048.0}}
+        an IPv4 packet
+      {{else if eq (index . "etherType") 2054.0}}
+        an IPv4 ARP packet
+      {{else if eq (index . "etherType") 34525.0}}
+        an IPv6 packet
+      {{else}}
+        of Ethernet frame type {{index . "etherType"}}
+      {{end}}
     {{else if eq $type "MATCH_ICMP"}}
-    the packet
-    {{if eq (index . "not") true}}
-    is not
-    {{else}}
-    is
-    {{end}}
-    an ICMP packet of type {{index . "icmpType"}} and code {{index . "icmpCode"}}
+      the packet
+      {{if eq (index . "not") true}}
+        is not
+      {{else}}
+        is
+      {{end}}
+      an ICMP packet of type {{index . "icmpType"}} and code {{index . "icmpCode"}}
     {{else if eq $type "MATCH_CHARACTERISTICS"}}
-    the packet
-    {{if eq (index . "not") true}}
-    does not
-    {{else}}
-    does
-    {{end}}
-    have a nonzero bits after a bitwise AND mask of the characteristic bits with {{index . "mask"}}
+      the packet
+      {{if eq (index . "not") true}}
+        does not
+      {{else}}
+        does
+      {{end}}
+      have a nonzero bits after a bitwise AND mask of the characteristic bits with {{index . "mask"}}
     {{else if eq $type "MATCH_FRAME_SIZE_RANGE"}}
-    the packet
-    {{if eq (index . "not") true}}
-    does not
-    {{else}}
-    does
-    {{end}}
-    have an Ethernet frame size in the range [{{index . "start"}} - {{index . "end"}}]
+      the packet
+      {{if eq (index . "not") true}}
+        does not
+      {{else}}
+        does
+      {{end}}
+      have an Ethernet frame size in the range [{{index . "start"}} - {{index . "end"}}]
     {{else if eq $type "MATCH_RANDOM"}}
-    a random 32-bit number
-    {{if eq (index . "not") true}}
-    is not
-    {{else}}
-    is
-    {{end}}
-    less than or equal to {{index . "probability"}}
+      a random 32-bit number
+      {{if eq (index . "not") true}}
+        is not
+      {{else}}
+        is
+      {{end}}
+      less than or equal to {{index . "probability"}}
     {{else if eq $type "MATCH_TAGS_DIFFERENCE"}}
-    the difference between the packet sender and receiver's tags with id {{index . "id"}} is
-    {{if eq (index . "not") true}}
-    greater than
-    {{else}}
-    less than or equal to
-    {{end}}
-    {{index . "value"}}
+      the difference between the packet sender and receiver's tags with id {{index . "id"}} is
+      {{if eq (index . "not") true}}
+        greater than
+      {{else}}
+        less than or equal to
+      {{end}}
+      {{index . "value"}}
     {{else if eq $type "MATCH_TAGS_BITWISE_AND"}}
-    the bitwise AND between the packet sender and receiver's tags with id {{index . "id"}} is
-    {{if eq (index . "not") true}}
-    not equal
-    {{else}}
-    equal
-    {{end}}
-    to {{index . "value"}}
+      the bitwise AND between the packet sender and receiver's tags with id {{index . "id"}} is
+      {{if eq (index . "not") true}}
+        not equal
+      {{else}}
+        equal
+      {{end}}
+      to {{index . "value"}}
     {{else if eq $type "MATCH_TAGS_BITWISE_OR"}}
-    the bitwise OR between the packet sender and receiver's tags with id {{index . "id"}} is
-    {{if eq (index . "not") true}}
-    not equal
-    {{else}}
-    equal
-    {{end}}
-    to {{index . "value"}}
+      the bitwise OR between the packet sender and receiver's tags with id {{index . "id"}} is
+      {{if eq (index . "not") true}}
+        not equal
+      {{else}}
+        equal
+      {{end}}
+      to {{index . "value"}}
     {{else if eq $type "MATCH_TAGS_BITWISE_XOR"}}
-    the bitwise XOR between the packet sender and receiver's tags with id {{index . "id"}} is
-    {{if eq (index . "not") true}}
-    not equal
-    {{else}}
-    equal
-    {{end}}
-    to {{index . "value"}}
+      the bitwise XOR between the packet sender and receiver's tags with id {{index . "id"}} is
+      {{if eq (index . "not") true}}
+        not equal
+      {{else}}
+        equal
+      {{end}}
+      to {{index . "value"}}
     {{else if eq $type "MATCH_TAGS_EQUAL"}}
-    the packet sender and receiver's tags with id {{index . "id"}} are both
-    {{if eq (index . "not") true}}
-    not equal
-    {{else}}
-    equal
-    {{end}}
-    to {{index . "value"}}
+      the packet sender and receiver's tags with id {{index . "id"}} are both
+      {{if eq (index . "not") true}}
+        not equal
+      {{else}}
+        equal
+      {{end}}
+      to {{index . "value"}}
     {{else if eq $type "MATCH_TAG_SENDER"}}
-    the packet sender's tag with id {{index . "id"}} is both
-    {{if eq (index . "not") true}}
-    not equal
-    {{else}}
-    equal
-    {{end}}
-    to {{index . "value"}}
+      the packet sender's tag with id {{index . "id"}} is both
+      {{if eq (index . "not") true}}
+        not equal
+      {{else}}
+        equal
+      {{end}}
+      to {{index . "value"}}
     {{else if eq $type "MATCH_TAG_RECEIVER"}}
-    the packet receiver's tag with id {{index . "id"}} is both
-    {{if eq (index . "not") true}}
-    not equal
-    {{else}}
-    equal
+      the packet receiver's tag with id {{index . "id"}} is both
+      {{if eq (index . "not") true}}
+        not equal
+      {{else}}
+        equal
+      {{end}}
+      to {{index . "value"}}
     {{end}}
-    to {{index . "value"}}
-    {{end}}
-    {{end}}
+  {{end}}
 </li>

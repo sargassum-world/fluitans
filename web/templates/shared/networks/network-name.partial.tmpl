@@ -1,5 +1,5 @@
 {{if ne (trim .Name) ""}}
-{{.Name}}
+  {{.Name}}
 {{else}}
-{{template "shared/networks/network-id.partial.tmpl" .Id}}
+  {{template "shared/networks/network-id.partial.tmpl" .Id}}
 {{end}}
