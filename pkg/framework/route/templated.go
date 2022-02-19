@@ -11,7 +11,8 @@ import (
 // Template rendering
 
 type Meta struct {
-	Path string
+	Path       string
+	RequestURI string
 }
 
 type RenderData struct {
@@ -26,7 +27,8 @@ func NewRenderData(
 ) RenderData {
 	return RenderData{
 		Meta: Meta{
-			Path: c.Request().URL.Path,
+			Path:       c.Request().URL.Path,
+			RequestURI: c.Request().URL.RequestURI(),
 		},
 		Inlines: g.Inlines,
 		Data:    data,

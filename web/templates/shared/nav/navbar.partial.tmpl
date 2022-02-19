@@ -52,7 +52,7 @@
   {{
     template "shared/nav/navlink.partial.tmpl" dict
     "Display" true
-    "Href" "/login"
+    "Href" (list "/login?return=" (queryEscape .Meta.RequestURI) | join "")
     "Name" "Login"
     "MetaPath" .Meta.Path
   }}

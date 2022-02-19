@@ -4,6 +4,7 @@ package routes
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/labstack/echo/v4"
 
@@ -31,6 +32,7 @@ var AuthnPages = []route.Templated{
 
 type LoginData struct {
 	NoAuth        bool
+	ReturnURL     string
 	ErrorMessages []string
 }
 
@@ -59,6 +61,7 @@ func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Hand
 		}
 		loginData := LoginData{
 			NoAuth:        app.Clients.Authn.Config.NoAuth,
+			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
 		}
 		if err = session.Save(sess, c); err != nil {
@@ -70,34 +73,59 @@ func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Hand
 	}, nil
 }
 
-func handleAuthenticationSuccess(ctx echo.Context, username string, sc *sessions.Client) error {
+func sanitizeReturnURL(returnURL string) (*url.URL, error) {
+	u, err := url.ParseRequestURI(returnURL)
+	if err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func handleAuthenticationSuccess(
+	ctx echo.Context, username, returnURL string, sc *sessions.Client,
+) error {
+	// Update session
 	sess, err := sc.Regenerate(ctx)
 	if err != nil {
 		return err
 	}
-
-	// TODO: add intrusion detection
 	auth.SetIdentity(sess, username)
 	if err = session.Save(sess, ctx); err != nil {
 		return err
 	}
-	// TODO: redirect to the previous page by getting the path from a GET parameter
-	return nil
+
+	// Redirect user
+	u, err := sanitizeReturnURL(returnURL)
+	if err != nil {
+		// TODO: log the error, too
+		return ctx.Redirect(http.StatusSeeOther, "/")
+	}
+	return ctx.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(ctx echo.Context, sc *sessions.Client) error {
+func handleAuthenticationFailure(ctx echo.Context, returnURL string, sc *sessions.Client) error {
+	// Update session
 	sess, serr := sc.Get(ctx)
 	if serr != nil {
 		return serr
 	}
-
 	session.AddErrorMessage(sess, "Could not log in!")
 	auth.SetIdentity(sess, "")
 	if err := session.Save(sess, ctx); err != nil {
 		return err
 	}
-	// TODO: preserve GET redirect parameter
-	return ctx.Redirect(http.StatusSeeOther, "/login")
+
+	// Redirect user
+	u, err := sanitizeReturnURL(returnURL)
+	if err != nil {
+		// TODO: log the error, too
+		return ctx.Redirect(http.StatusSeeOther, "/login")
+	}
+	r := url.URL{Path: "/login"}
+	q := r.Query()
+	q.Set("return", u.String())
+	r.RawQuery = q.Encode()
+	return ctx.Redirect(http.StatusSeeOther, r.String())
 }
 
 func postSessions(
@@ -121,14 +149,16 @@ func postSessions(
 		case "AUTHENTICATE":
 			username := c.FormValue("username")
 			password := c.FormValue("password")
+			returnURL := c.FormValue("return")
+			// TODO: add intrusion detection
 			identified, err := app.Clients.Authn.CheckCredentials(username, password)
 			if err != nil {
 				return err
 			}
-			if identified {
-				return handleAuthenticationSuccess(c, username, sc)
+			if !identified {
+				return handleAuthenticationFailure(c, returnURL, sc)
 			}
-			return handleAuthenticationFailure(c, sc)
+			return handleAuthenticationSuccess(c, username, returnURL, sc)
 		case "DELETE":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
