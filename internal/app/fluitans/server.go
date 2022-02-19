@@ -2,8 +2,6 @@
 package fluitans
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -16,22 +14,6 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/web"
 )
-
-func NewHTTPErrorHandler(g *framework.Globals) (func(err error, c echo.Context), error) {
-	return func(err error, c echo.Context) {
-		code := http.StatusInternalServerError
-		if herr, ok := err.(*echo.HTTPError); ok {
-			code = herr.Code
-		}
-		perr := c.Render(
-			code, "app/httperr.page.tmpl", route.MakeRenderData(c, g.Template, struct{}{}, code),
-		)
-		if perr != nil {
-			c.Logger().Error(err)
-		}
-		c.Logger().Error(err)
-	}, nil
-}
 
 func RegisterRoutes(g *framework.Globals, e route.EchoRouter) error {
 	return g.RegisterRoutes(e, routes.TemplatedAssets, routes.StaticAssets, routes.Pages)
@@ -53,7 +35,6 @@ func PrepareServer(e *echo.Echo) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't make app globals")
 	}
-
 	g, err := framework.NewGlobals(embeds, ag)
 	if err != nil {
 		return errors.Wrap(err, "couldn't make server globals")
@@ -68,11 +49,10 @@ func PrepareServer(e *echo.Echo) error {
 	}
 
 	// Error Handling
-	errorHandler, err := NewHTTPErrorHandler(g)
+	e.HTTPErrorHandler, err = NewHTTPErrorHandler(g.Template, ag.Clients.Sessions)
 	if err != nil {
 		return errors.Wrap(err, "couldn't register HTTP error handler")
 	}
-	e.HTTPErrorHandler = errorHandler
 
 	// Background Workers
 	LaunchBackgroundWorkers(ag)

@@ -10,6 +10,7 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework/session"
 )
 
 var AuthnPages = []route.Templated{
@@ -27,6 +28,11 @@ var AuthnPages = []route.Templated{
 	},
 }
 
+type LoginData struct {
+	NoAuth bool
+	ErrorMessages []string
+}
+
 func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "auth/login.page.tmpl"
 	err := te.RequireSegments("authn.getLogin", t)
@@ -38,16 +44,28 @@ func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Hand
 	if !ok {
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
-	anc := app.Clients.Authn
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, sess, err := auth.GetWithSession(c, app.Clients.Sessions)
 		if err != nil {
 			return err
 		}
 
+		// Consume & save session
+		errorMessages, err := session.GetErrorMessages(sess)
+		if err != nil {
+			return err
+		}
+		loginData := LoginData{
+			NoAuth: app.Clients.Authn.Config.NoAuth,
+			ErrorMessages: errorMessages,
+		}
+		if err = sess.Save(c.Request(), c.Response()); err != nil {
+			return err
+		}
+
 		// Produce output
-		return route.Render(c, t, anc.Config.NoAuth, a, te, g)
+		return route.Render(c, t, loginData, a, te, g)
 	}, nil
 }
 
@@ -58,7 +76,6 @@ func postSessions(
 	if !ok {
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
-	anc := app.Clients.Authn
 	sc := app.Clients.Sessions
 	return func(c echo.Context) error {
 		// Parse params
@@ -73,12 +90,21 @@ func postSessions(
 		case "AUTHENTICATE":
 			username := c.FormValue("username")
 			password := c.FormValue("password")
-			authenticated, err := anc.CheckCredentials(username, password)
+			authenticated, err := app.Clients.Authn.CheckCredentials(username, password)
 			if err != nil {
 				return err
 			}
 			if !authenticated {
-				// TODO: add Flash messages and pass them into the login template
+				sess, err := sc.Get(c)
+				if err != nil {
+					return err
+				}
+
+				session.AddErrorMessage(sess, "Could not log in!")
+				auth.SetIdentity(sess, "")
+				if err = sess.Save(c.Request(), c.Response()); err != nil {
+					return err
+				}
 				return c.Redirect(http.StatusSeeOther, "/login")
 			}
 
@@ -87,9 +113,10 @@ func postSessions(
 				return err
 			}
 
-			// TODO: whenever we get a session, use Clients.Session to save expiration date, and change
-			// the session's maxage to -1 if we're past the expiration date
-			// TODO: how to invalidate old session IDs, e.g. upon privilege change?
+			// TODO: implement idle timeout, and implement renewal timeout (if we can). Refer to the
+			// "Automatic Session Expiration" section of
+			// https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
+			// TODO: regenerate the session upon privilege change
 			// TODO: implement idle timeout and automatic renewal timeout
 			// TODO: log the session life cycle
 			// TODO: add intrusion detection

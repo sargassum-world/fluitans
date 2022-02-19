@@ -13,8 +13,15 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/env"
 )
 
+type Timeouts struct {
+	Absolute time.Duration
+	// TODO: add idle timeout
+	// TODO: add renewal timeout, if we can implement session renewal
+}
+
 type Config struct {
 	SessionKey    []byte
+	Timeouts      Timeouts
 	CookieOptions sessions.Options
 	CookieName    string
 }
@@ -25,7 +32,13 @@ func GetConfig() (*Config, error) {
 		return nil, errors.Wrap(err, "couldn't make session key config")
 	}
 
-	cookieOptions, err := getCookieOptions()
+	timeouts, err := getTimeouts()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't make session timeouts config")
+	}
+
+	// TODO: when we implement idle timeout, pass that instead of absolute timeout
+	cookieOptions, err := getCookieOptions(timeouts.Absolute)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't make cookie options config")
 	}
@@ -64,14 +77,20 @@ func getSessionKey() ([]byte, error) {
 	return sessionKey, nil
 }
 
-func getCookieOptions() (sessions.Options, error) {
-	var defaultMaxAge int64 = 12 // default: 12 hours
-	rawMaxAge, err := env.GetInt64("FLUITANS_SESSIONS_COOKIE_MAXAGE", defaultMaxAge)
-	maxAge := int((time.Duration(rawMaxAge) * time.Hour).Seconds())
+func getTimeouts() (Timeouts, error) {
+	var defaultAbsolute int64 = 12 * 60 // default: 12 hours
+	rawAbsolute, err := env.GetInt64("FLUITANS_SESSIONS_TIMEOUTS_ABSOLUTE", defaultAbsolute)
 	if err != nil {
-		return sessions.Options{}, errors.Wrap(err, "couldn't make max age config")
+		return Timeouts{}, errors.Wrap(err, "couldn't make absolute timeout config")
 	}
+	absolute := time.Duration(rawAbsolute) * time.Minute
 
+	return Timeouts{
+		Absolute: absolute,
+	}, nil
+}
+
+func getCookieOptions(absoluteTimeout time.Duration) (sessions.Options, error) {
 	noHTTPSOnly, err := env.GetBool("FLUITANS_SESSIONS_COOKIE_NOHTTPSONLY")
 	if err != nil {
 		return sessions.Options{}, errors.Wrap(err, "couldn't make HTTPS-only config")
@@ -80,7 +99,7 @@ func getCookieOptions() (sessions.Options, error) {
 	return sessions.Options{
 		Path:     "/",
 		Domain:   "",
-		MaxAge:   maxAge,
+		MaxAge:   int(absoluteTimeout.Seconds()),
 		Secure:   !noHTTPSOnly,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,

@@ -6,8 +6,18 @@
 {{define "content"}}
   <main class="main-container">
     <section class="section content">
-      <h1>{{(describeError .Data).Name}} ({{.Data}})</h1>
-      <p>{{(describeError .Data).Description}}</p>
+      <h1>{{.Data.Error.Name}} ({{.Data.Code}})</h1>
+      <p>{{.Data.Error.Description}}</p>
+      {{range $flashMessage := .Data.Messages}}
+        <article class="message is-danger card section-card is-block">
+          <div class="message-header">
+            <p>Error</p>
+          </div>
+          <div class="message-body">
+            {{$flashMessage}}
+          </div>
+        </article>
+      {{end}}
     </section>
   </main>
 {{end}}

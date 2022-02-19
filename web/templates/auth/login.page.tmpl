@@ -7,8 +7,18 @@
   <main class="main-container">
     <section class="section content">
       <h1>Login</h1>
-      {{if .Data}}
-        <div class="message is-danger">
+      {{range $message := .Data.ErrorMessages}}
+        <article class="message is-danger card section-card is-block">
+          <div class="message-header">
+            <p>Error</p>
+          </div>
+          <div class="message-body">
+            {{$message}}
+          </div>
+        </article>
+      {{end}}
+      {{if .Data.NoAuth}}
+        <div class="message is-danger card section-card is-block">
           <div class="message-header">
             <p>Security Warning</p>
           </div>
@@ -18,9 +28,9 @@
           </div>
         </div>
       {{end}}
-      <div class="card section-card is-block">
-        <div class="card-content">
-          {{if .Auth.Identity.Authenticated}}
+      {{if .Auth.Identity.Authenticated}}
+        <article class="message is-success card section-card is-block">
+          <div class="message-body">
             <p class="mb-4">You are already logged in as {{.Auth.Identity.User}}!</p>
             <form
               action="/sessions"
@@ -42,42 +52,49 @@
                 </div>
               </div>
             </form>
-          {{else}}
-            <form
-              action="/sessions"
-              method="POST"
-              data-turbo-frame="_top"
-              data-controller="form-submission turbo-cache"
-              data-action="submit->form-submission#submit submit->turbo-cache#clear"
-              data-form-submission-target="submitter"
-            >
-              <input type="hidden" name="method" value="AUTHENTICATE">
-              <div class="field">
-                <label class="label" for="username">Username</label>
-                <div class="control">
-                  <input class="input" type="text" id="username" name="username" autofocus>
+          </div>
+        </article>
+      {{else}}
+        <div class="card section-card is-block">
+          <div class="card-content">
+            {{if .Auth.Identity.Authenticated}}
+            {{else}}
+              <form
+                action="/sessions"
+                method="POST"
+                data-turbo-frame="_top"
+                data-controller="form-submission turbo-cache"
+                data-action="submit->form-submission#submit submit->turbo-cache#clear"
+                data-form-submission-target="submitter"
+              >
+                <input type="hidden" name="method" value="AUTHENTICATE">
+                <div class="field">
+                  <label class="label" for="username">Username</label>
+                  <div class="control">
+                    <input class="input" type="text" id="username" name="username" autofocus>
+                  </div>
                 </div>
-              </div>
-              <div class="field">
-                <label class="label" for="password">Password</label>
-                <div class="control">
-                  <input class="input" type="password" id="password" name="password">
+                <div class="field">
+                  <label class="label" for="password">Password</label>
+                  <div class="control">
+                    <input class="input" type="password" id="password" name="password">
+                  </div>
                 </div>
-              </div>
-              <div class="field">
-                <div class="control" data-form-submission-target="submitter">
-                  <input
-                  type="submit"
-                  class="button is-primary"
-                  value="Sign in"
-                  data-form-submission-target="submit"
-                >
+                <div class="field">
+                  <div class="control" data-form-submission-target="submitter">
+                    <input
+                    type="submit"
+                    class="button is-primary"
+                    value="Sign in"
+                    data-form-submission-target="submit"
+                  >
+                  </div>
                 </div>
-              </div>
-            </form>
-          {{end}}
+              </form>
+            {{end}}
+          </div>
         </div>
-      </div>
+      {{end}}
     </section>
   </main>
 {{end}}

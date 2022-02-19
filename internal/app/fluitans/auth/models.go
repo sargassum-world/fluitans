@@ -6,11 +6,6 @@ type Identity struct {
 	User          string
 }
 
-type Session struct {
-	ID string
-}
-
 type Auth struct {
 	Identity Identity
-	Session  Session
 }

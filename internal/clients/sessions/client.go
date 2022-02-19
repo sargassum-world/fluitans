@@ -38,7 +38,7 @@ func (c *Client) Invalidate(ctx echo.Context) (*sessions.Session, error) {
 		return nil, err
 	}
 
-	s.Options.MaxAge = -1
+	s.Options.MaxAge = 0
 	s.Values = make(map[interface{}]interface{})
 	if err := s.Save(ctx.Request(), ctx.Response()); err != nil {
 		return nil, err

@@ -10,14 +10,11 @@ import (
 	sc "github.com/sargassum-eco/fluitans/internal/clients/sessions"
 )
 
-func GetSession(s sessions.Session) (session Session) {
-	session.ID = s.ID
-	return
-}
+// Identity
 
 func SetIdentity(s *sessions.Session, username string) {
 	identity := Identity{
-		Authenticated: true,
+		Authenticated: username != "",
 		User:          username,
 	}
 	s.Values["identity"] = identity
@@ -31,7 +28,8 @@ func GetIdentity(s sessions.Session) (identity Identity, err error) {
 
 	rawIdentity, ok := s.Values["identity"]
 	if !ok {
-		err = fmt.Errorf("missing field identity in session")
+		// A zero value for Identity indicates that the session has no identity associated with it
+		identity = Identity{}
 		return
 	}
 	identity, ok = rawIdentity.(Identity)
@@ -42,12 +40,10 @@ func GetIdentity(s sessions.Session) (identity Identity, err error) {
 	return
 }
 
+// Access
+
 func Get(s sessions.Session) (a Auth, err error) {
-	a.Session = GetSession(s)
 	a.Identity, err = GetIdentity(s)
-	if !a.Identity.Authenticated {
-		a.Session.ID = ""
-	}
 	return
 }
 
