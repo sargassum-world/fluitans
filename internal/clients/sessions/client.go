@@ -18,16 +18,16 @@ type Client struct {
 	Store sessions.Store
 }
 
-func (c *Client) Get(ctx echo.Context) (*sessions.Session, error) {
-	return session.Get(ctx, c.Config.CookieName, c.Store)
+func (sc *Client) Get(c echo.Context) (*sessions.Session, error) {
+	return session.Get(c, sc.Config.CookieName, sc.Store)
 }
 
-func (c *Client) Regenerate(ctx echo.Context) (*sessions.Session, error) {
-	return session.Regenerate(ctx, c.Config.CookieName, c.Store)
+func (sc *Client) Regenerate(c echo.Context) (*sessions.Session, error) {
+	return session.Regenerate(c, sc.Config.CookieName, sc.Store)
 }
 
-func (c *Client) Invalidate(ctx echo.Context) (*sessions.Session, error) {
-	return session.Invalidate(ctx, c.Config.CookieName, c.Store)
+func (sc *Client) Invalidate(c echo.Context) (*sessions.Session, error) {
+	return session.Invalidate(c, sc.Config.CookieName, sc.Store)
 }
 
 func NewMemStoreClient(l log.Logger) (*Client, error) {

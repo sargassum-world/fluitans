@@ -1,5 +1,4 @@
-// Package routes contains the route handlers for the Fluitans server.
-package routes
+package auth
 
 import (
 	"fmt"
@@ -14,21 +13,6 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/framework/session"
 )
-
-var AuthnPages = []route.Templated{
-	{
-		Path:         "/login",
-		Method:       http.MethodGet,
-		HandlerMaker: getLogin,
-		Templates:    []string{"auth/login.page.tmpl"},
-	},
-	{
-		Path:         "/sessions",
-		Method:       http.MethodPost,
-		HandlerMaker: postSessions,
-		Templates:    []string{},
-	},
-}
 
 type LoginData struct {
 	NoAuth        bool
@@ -82,15 +66,15 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	ctx echo.Context, username, returnURL string, sc *sessions.Client,
+	c echo.Context, username, returnURL string, sc *sessions.Client,
 ) error {
 	// Update session
-	sess, err := sc.Regenerate(ctx)
+	sess, err := sc.Regenerate(c)
 	if err != nil {
 		return err
 	}
 	auth.SetIdentity(sess, username)
-	if err = session.Save(sess, ctx); err != nil {
+	if err = session.Save(sess, c); err != nil {
 		return err
 	}
 
@@ -98,20 +82,20 @@ func handleAuthenticationSuccess(
 	u, err := sanitizeReturnURL(returnURL)
 	if err != nil {
 		// TODO: log the error, too
-		return ctx.Redirect(http.StatusSeeOther, "/")
+		return c.Redirect(http.StatusSeeOther, "/")
 	}
-	return ctx.Redirect(http.StatusSeeOther, u.String())
+	return c.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(ctx echo.Context, returnURL string, sc *sessions.Client) error {
+func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.Client) error {
 	// Update session
-	sess, serr := sc.Get(ctx)
+	sess, serr := sc.Get(c)
 	if serr != nil {
 		return serr
 	}
 	session.AddErrorMessage(sess, "Could not log in!")
 	auth.SetIdentity(sess, "")
-	if err := session.Save(sess, ctx); err != nil {
+	if err := session.Save(sess, c); err != nil {
 		return err
 	}
 
@@ -119,13 +103,13 @@ func handleAuthenticationFailure(ctx echo.Context, returnURL string, sc *session
 	u, err := sanitizeReturnURL(returnURL)
 	if err != nil {
 		// TODO: log the error, too
-		return ctx.Redirect(http.StatusSeeOther, "/login")
+		return c.Redirect(http.StatusSeeOther, "/login")
 	}
 	r := url.URL{Path: "/login"}
 	q := r.Query()
 	q.Set("return", u.String())
 	r.RawQuery = q.Encode()
-	return ctx.Redirect(http.StatusSeeOther, r.String())
+	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
 func postSessions(

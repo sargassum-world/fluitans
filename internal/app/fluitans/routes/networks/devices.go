@@ -8,6 +8,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
@@ -107,8 +108,6 @@ func unsetMemberName(
 		return err
 	}
 
-	fmt.Printf("Deleting AAAA for %s\n", memberSubname)
-
 	// TODO: first confirm that the RRset contains an IP address associated with the member
 	if err := dc.DeleteRRset(ctx, memberSubname, "AAAA"); err != nil {
 		return err
@@ -121,7 +120,14 @@ func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 	if !ok {
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
+	zc := app.Clients.Zerotier
+	dc := app.Clients.Desec
 	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+			return err
+		}
+
 		// Extract context
 		ctx := c.Request().Context()
 
@@ -137,36 +143,29 @@ func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 			return err
 		}
 
+		// TODO: split this into postDeviceAuthorization and postDeviceName
 		switch method {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 				"invalid POST method %s", method,
 			))
-		case "AUTHORIZE":
+		case "AUTHORIZE", "DEAUTHORIZE":
 			if err = setMemberAuthorization(
-				ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
-			); err != nil {
-				return err
-			}
-		case "DEAUTHORIZE":
-			if err = setMemberAuthorization(
-				ctx, *controller, networkID, memberAddress, false, app.Clients.Zerotier,
+				ctx, *controller, networkID, memberAddress, method == "AUTHORIZE", zc,
 			); err != nil {
 				return err
 			}
 		case "SETNAME":
 			memberName := c.FormValue("name")
 			if err = setMemberName(
-				ctx, *controller, networkID, memberAddress, memberName,
-				app.Clients.Zerotier, app.Clients.Desec,
+				ctx, *controller, networkID, memberAddress, memberName, zc, dc,
 			); err != nil {
 				return err
 			}
 		case "UNSETNAME":
 			memberName := c.FormValue("name")
 			if err = unsetMemberName(
-				ctx, *controller, networkID, memberAddress, memberName,
-				app.Clients.Zerotier, app.Clients.Desec,
+				ctx, *controller, networkID, memberAddress, memberName, zc, dc,
 			); err != nil {
 				return err
 			}
@@ -184,6 +183,11 @@ func postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
 	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+			return err
+		}
+
 		// Extract context
 		ctx := c.Request().Context()
 

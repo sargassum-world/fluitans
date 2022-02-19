@@ -86,6 +86,11 @@ func postNetworks(
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
 	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+			return err
+		}
+
 		// Extract context
 		ctx := c.Request().Context()
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
@@ -16,6 +17,11 @@ func postRRset(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Han
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
 	}
 	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+			return err
+		}
+
 		// Extract context
 		ctx := c.Request().Context()
 

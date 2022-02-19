@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 
-	sc "github.com/sargassum-eco/fluitans/internal/clients/sessions"
+	sessionsc "github.com/sargassum-eco/fluitans/internal/clients/sessions"
 )
 
 // Identity
@@ -47,8 +47,8 @@ func Get(s sessions.Session) (a Auth, err error) {
 	return
 }
 
-func GetWithSession(ctx echo.Context, c *sc.Client) (a Auth, s *sessions.Session, err error) {
-	s, err = c.Get(ctx)
+func GetWithSession(c echo.Context, sc *sessionsc.Client) (a Auth, s *sessions.Session, err error) {
+	s, err = sc.Get(c)
 	if err != nil {
 		return Auth{}, nil, err
 	}

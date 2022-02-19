@@ -116,7 +116,7 @@ func RegisterTemplated(e EchoRouter, r []Templated, tg TemplateGlobals) error {
 	return nil
 }
 
-func CollectTemplated(collections [][]Templated) []Templated {
+func CollectTemplated(collections ...[]Templated) []Templated {
 	collected := make([]Templated, 0)
 	for _, collection := range collections {
 		collected = append(collected, collection...)

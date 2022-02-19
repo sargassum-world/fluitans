@@ -91,6 +91,9 @@ func getServer(
 		if err != nil {
 			return err
 		}
+		if err = a.RequireAuthorized(); err != nil {
+			return err
+		}
 
 		// Extract context
 		ctx := c.Request().Context()

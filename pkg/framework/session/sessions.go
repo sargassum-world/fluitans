@@ -6,23 +6,23 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func Get(ctx echo.Context, cookieName string, store sessions.Store) (*sessions.Session, error) {
+func Get(c echo.Context, cookieName string, store sessions.Store) (*sessions.Session, error) {
 	// TODO: implement idle timeout, and implement automatic renewal timeout (if we can). Refer to the
 	// "Automatic Session Expiration" section of
 	// https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
 	// TODO: regenerate the session upon privilege change
 	// TODO: log the session life cycle
-	return store.Get(ctx.Request(), cookieName)
+	return store.Get(c.Request(), cookieName)
 }
 
-func Save(s *sessions.Session, ctx echo.Context) error {
-	return s.Save(ctx.Request(), ctx.Response())
+func Save(s *sessions.Session, c echo.Context) error {
+	return s.Save(c.Request(), c.Response())
 }
 
 func Regenerate(
-	ctx echo.Context, cookieName string, store sessions.Store,
+	c echo.Context, cookieName string, store sessions.Store,
 ) (*sessions.Session, error) {
-	s, err := Get(ctx, cookieName, store)
+	s, err := Get(c, cookieName, store)
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +32,9 @@ func Regenerate(
 }
 
 func Invalidate(
-	ctx echo.Context, cookieName string, store sessions.Store,
+	c echo.Context, cookieName string, store sessions.Store,
 ) (*sessions.Session, error) {
-	s, err := Get(ctx, cookieName, store)
+	s, err := Get(c, cookieName, store)
 	if err != nil {
 		return nil, err
 	}
