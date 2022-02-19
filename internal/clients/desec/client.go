@@ -75,7 +75,7 @@ func (c *Client) tryAddLimitedRead() error {
 	return nil
 }
 
-func MakeClient(domainName string, cache clientcache.Cache, l log.Logger) (*Client, error) {
+func NewClient(domainName string, cache clientcache.Cache, l log.Logger) (*Client, error) {
 	config, err := GetConfig(domainName)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up desec client config")

@@ -2,7 +2,6 @@
 package fluitans
 
 import (
-	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -39,9 +38,6 @@ func PrepareServer(e *echo.Echo) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't make server globals")
 	}
-
-	// Session Management
-	e.Use(session.Middleware(ag.Clients.Sessions.Store))
 
 	// Routes
 	if err = RegisterRoutes(g, e); err != nil {

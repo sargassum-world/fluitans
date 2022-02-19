@@ -9,8 +9,8 @@ import (
 
 func FuncMap(appNamer, staticNamer HashNamer) template.FuncMap {
 	return template.FuncMap{
-		"appHashed":     getHashedName("app", appNamer),
-		"staticHashed":  getHashedName("static", staticNamer),
+		"appHashed":    getHashedName("app", appNamer),
+		"staticHashed": getHashedName("static", staticNamer),
 	}
 }
 

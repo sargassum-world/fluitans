@@ -15,7 +15,7 @@ type Client struct {
 	Logger log.Logger
 }
 
-func MakeClient(l log.Logger) (*Client, error) {
+func NewClient(l log.Logger) (*Client, error) {
 	config, err := GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions client config")

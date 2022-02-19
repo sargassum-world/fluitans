@@ -38,27 +38,27 @@ func NewGlobals(l log.Logger) (*Globals, error) {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
 
-	authnClient, err := authn.MakeClient(l)
+	authnClient, err := authn.NewClient(l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up authn client")
 	}
 
-	desecClient, err := desec.MakeClient(config.DomainName, cache, l)
+	desecClient, err := desec.NewClient(config.DomainName, cache, l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up desec client")
 	}
 
-	sessionsClient, err := sessions.MakeClient(l)
+	sessionsClient, err := sessions.NewMemStoreClient(l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions client")
 	}
 
-	ztClient, err := zerotier.MakeClient(cache, l)
+	ztClient, err := zerotier.NewClient(cache, l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier client")
 	}
 
-	ztcClient, err := ztcontrollers.MakeClient(cache, l)
+	ztcClient, err := ztcontrollers.NewClient(cache, l)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier controllers client")
 	}

@@ -15,7 +15,7 @@ type Client struct {
 	Cache  *Cache
 }
 
-func MakeClient(cache clientcache.Cache, l log.Logger) (*Client, error) {
+func NewClient(cache clientcache.Cache, l log.Logger) (*Client, error) {
 	config, err := GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier controllers client config")

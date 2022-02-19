@@ -1,4 +1,3 @@
-// Package session provides a reusable pattern for session management
 package session
 
 import (

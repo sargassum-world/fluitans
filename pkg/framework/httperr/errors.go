@@ -1,3 +1,4 @@
+// Package httperr standardizes presentation of HTTP errors to end-users
 package httperr
 
 import (
@@ -25,7 +26,7 @@ var Errors = map[int]Error{
 		Description: "Permission has not been granted to access the requested resource.",
 	},
 	http.StatusNotFound: {
-		Name:        "Not available",
+		Name: "Not available",
 		Description: "The requested resource is not available because it could not be found, " +
 			"it requires authentication, or permission has not been granted to access it.",
 	},

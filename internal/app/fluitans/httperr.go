@@ -15,8 +15,8 @@ import (
 )
 
 type ErrorData struct {
-	Code int
-	Error httperr.Error
+	Code     int
+	Error    httperr.Error
 	Messages []string
 }
 
@@ -38,7 +38,7 @@ func NewHTTPErrorHandler(
 			code = herr.Code
 		}
 		errorData := ErrorData{
-			Code: code,
+			Code:  code,
 			Error: httperr.DescribeError(code),
 		}
 
@@ -51,14 +51,14 @@ func NewHTTPErrorHandler(
 				))
 			}
 			errorData.Messages = messages
-			if serr = sess.Save(c.Request(), c.Response()); serr != nil {
+			if serr = session.Save(sess, c); serr != nil {
 				c.Logger().Error(errors.Wrap(serr, "couldn't save session in error handler"))
 			}
 		}
 
 		// Render error page
 		perr := c.Render(
-			code, "app/httperr.page.tmpl", route.MakeRenderData(c, tg, errorData, a),
+			code, "app/httperr.page.tmpl", route.NewRenderData(c, tg, errorData, a),
 		)
 		if perr != nil {
 			c.Logger().Error(errors.Wrap(perr, "couldn't render error page in error handler"))

@@ -21,7 +21,7 @@ type RenderData struct {
 	Auth    interface{}
 }
 
-func MakeRenderData(
+func NewRenderData(
 	c echo.Context, g TemplateGlobals, data interface{}, auth interface{},
 ) RenderData {
 	return RenderData{
@@ -56,7 +56,7 @@ func Render(
 		return err
 	}
 
-	return c.Render(http.StatusOK, templateName, MakeRenderData(c, g, templateData, authData))
+	return c.Render(http.StatusOK, templateName, NewRenderData(c, g, templateData, authData))
 }
 
 // Route Handlers
