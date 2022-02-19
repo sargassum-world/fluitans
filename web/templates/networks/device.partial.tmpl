@@ -2,6 +2,8 @@
 {{$domainNames := (get . "Member").DomainNames}}
 {{$network := (get . "Network")}}
 {{$networkDNS := (get . "NetworkDNS")}}
+{{$auth := (get . "Auth")}}
+
 <turbo-frame id="network-{{$network.Id}}-device-{{$zerotierMember.Address}}">
   <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
@@ -25,7 +27,7 @@
     </header>
     <details data-accordion-item class="panel-block accordion-item">
       <summary class="accordion-header level">
-        {{if .Auth.Identity.Authenticated}}
+        {{if $auth.Identity.Authenticated}}
           <h4>Basic Settings</h4>
         {{else}}
           <h4>Basic Details</h4>
@@ -36,10 +38,10 @@
         <h5 class="is-size-6">Zerotier Address</h5>
         <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
 
-        {{if .Auth.Identity.Authenticated}}
+        {{if $auth.Identity.Authenticated}}
           <h5 class="is-size-6">Network Membership</h5>
           <form
-            action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+            action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/authorization"
             method="POST"
             data-controller="form-submission"
             data-action="submit->form-submission#submit"
@@ -47,7 +49,7 @@
             <input
               type="hidden"
               name="method"
-              value="{{if derefBool $zerotierMember.Authorized}}DEAUTHORIZE{{else}}AUTHORIZE{{end}}"
+              value="{{if derefBool $zerotierMember.Authorized}}UNSET{{else}}SET{{end}}"
             >
             <div class="control" data-form-submission-target="submitter">
               <input
@@ -63,15 +65,15 @@
         {{if $networkDNS.Named}}
           <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
           {{range $domainName := $domainNames}}
-            {{if $.Auth.Identity.Authenticated}}
+            {{if $auth.Identity.Authenticated}}
               <form
                 id="unset-name-{{$domainName}}"
-                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
                 method="POST"
                 data-controller="form-submission"
                 data-action="submit->form-submission#submit"
               >
-                <input type="hidden" name="method" value="UNSETNAME">
+                <input type="hidden" name="method" value="UNSET">
                 <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
                 <div class="control" data-form-submission-target="submitter">
                   <span class="tag domain-name">
@@ -90,15 +92,15 @@
               <span class="tag domain-name">{{$domainName}}</span>
             {{end}}
           {{else}}
-            {{if .Auth.Identity.Authenticated}}
+            {{if $auth.Identity.Authenticated}}
               <form
-                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}"
+                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
                 method="POST"
                 data-controller="form-submission"
                 data-action="submit->form-submission#submit"
                 data-form-submission-target="submitter"
               >
-                <input type="hidden" name="method" value="SETNAME">
+                <input type="hidden" name="method" value="SET">
                 <div class="field has-addons">
                   <div class="control">
                     <input type="text" class="input" name="name">
@@ -139,7 +141,7 @@
             <span class="tag is-warning">None</span>
           {{end}}
         </p>
-        {{if .Auth.Identity.Authenticated}}
+        {{if $auth.Identity.Authenticated}}
           <h5 class="is-size-6">Troubleshooting Information</h5>
           <p>Configuration revision: {{$zerotierMember.Revision}}</p>
           <p>

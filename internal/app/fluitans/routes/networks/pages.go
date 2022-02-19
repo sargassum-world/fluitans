@@ -33,15 +33,33 @@ var Pages = []route.Templated{
 		Templates:    []string{},
 	},
 	{
+		Path:         "/networks/:id/name",
+		Method:       http.MethodPost,
+		HandlerMaker: postNetworkName,
+		Templates:    []string{},
+	},
+	{
+		Path:         "/networks/:id/rules",
+		Method:       http.MethodPost,
+		HandlerMaker: postNetworkRules,
+		Templates:    []string{},
+	},
+	{
 		Path:         "/networks/:id/devices",
 		Method:       http.MethodPost,
 		HandlerMaker: postDevices,
 		Templates:    []string{},
 	},
 	{
-		Path:         "/networks/:id/devices/:address",
+		Path:         "/networks/:id/devices/:address/authorization",
 		Method:       http.MethodPost,
-		HandlerMaker: postDevice,
+		HandlerMaker: postDeviceAuthorization,
+		Templates:    []string{},
+	},
+	{
+		Path:         "/networks/:id/devices/:address/name",
+		Method:       http.MethodPost,
+		HandlerMaker: postDeviceName,
 		Templates:    []string{},
 	},
 }

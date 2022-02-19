@@ -83,13 +83,9 @@ func (c *Client) GetAllNetworkIDs(
 	allNetworkIDs := make([][]string, len(controllers))
 	for i, controller := range controllers {
 		eg.Go(func(i int, controller ztcontrollers.Controller) func() error {
-			return func() error {
-				networkIDs, err := c.GetNetworkIDs(ctx, controller, cc)
-				if err != nil {
-					return err
-				}
-				allNetworkIDs[i] = networkIDs
-				return nil
+			return func() (err error) {
+				allNetworkIDs[i], err = c.GetNetworkIDs(ctx, controller, cc)
+				return
 			}
 		}(i, controller))
 	}
@@ -106,13 +102,9 @@ func (c *Client) GetNetworks(
 	networks := make([]*zerotier.ControllerNetwork, len(ids))
 	for i, id := range ids {
 		eg.Go(func(i int, id string) func() error {
-			return func() error {
-				network, err := c.GetNetwork(ctx, controller, id)
-				if err != nil {
-					return err
-				}
-				networks[i] = network
-				return nil
+			return func() (err error) {
+				networks[i], err = c.GetNetwork(ctx, controller, id)
+				return
 			}
 		}(i, id))
 	}
@@ -137,13 +129,9 @@ func (c *Client) GetAllNetworks(
 	allNetworks := make([]map[string]zerotier.ControllerNetwork, len(controllers))
 	for i, controller := range controllers {
 		eg.Go(func(i int, controller ztcontrollers.Controller, someIDs []string) func() error {
-			return func() error {
-				networks, err := c.GetNetworks(ctx, controller, someIDs)
-				if err != nil {
-					return err
-				}
-				allNetworks[i] = networks
-				return nil
+			return func() (err error) {
+				allNetworks[i], err = c.GetNetworks(ctx, controller, someIDs)
+				return
 			}
 		}(i, controller, ids[i]))
 	}
@@ -259,21 +247,13 @@ func (c *Client) GetNetworkInfo(
 	eg, ctx := errgroup.WithContext(ctx)
 	var network *zerotier.ControllerNetwork
 	var addresses []string
-	eg.Go(func() error {
-		n, err := c.GetNetwork(ctx, controller, id)
-		if err != nil {
-			return err
-		}
-		network = n
-		return nil
+	eg.Go(func() (err error) {
+		network, err = c.GetNetwork(ctx, controller, id)
+		return
 	})
-	eg.Go(func() error {
-		a, err := c.GetNetworkMemberAddresses(ctx, controller, id)
-		if err != nil {
-			return err
-		}
-		addresses = a
-		return err
+	eg.Go(func() (err error) {
+		addresses, err = c.GetNetworkMemberAddresses(ctx, controller, id)
+		return
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, nil, err

@@ -115,7 +115,62 @@ func unsetMemberName(
 	return nil
 }
 
-func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func postDeviceAuthorization(
+	g route.TemplateGlobals, te route.TemplateEtagSegments,
+) (echo.HandlerFunc, error) {
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
+	}
+	zc := app.Clients.Zerotier
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
+		memberAddress := c.Param("address")
+		method := c.FormValue("method")
+
+		// Run queries
+		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return err
+		}
+
+		// TODO: split this into postDeviceAuthorization and postDeviceName
+		switch method {
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+				"invalid POST method %s", method,
+			))
+		case "SET":
+			if err = setMemberAuthorization(
+				ctx, *controller, networkID, memberAddress, true, zc,
+			); err != nil {
+				return err
+			}
+		case "UNSET":
+			if err = setMemberAuthorization(
+				ctx, *controller, networkID, memberAddress, false, zc,
+			); err != nil {
+				return err
+			}
+		}
+
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
+			"/networks/%s#device-%s", networkID, memberAddress,
+		))
+	}, nil
+}
+
+func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	app, ok := g.App.(*client.Globals)
 	if !ok {
 		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
@@ -149,20 +204,14 @@ func postDevice(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 				"invalid POST method %s", method,
 			))
-		case "AUTHORIZE", "DEAUTHORIZE":
-			if err = setMemberAuthorization(
-				ctx, *controller, networkID, memberAddress, method == "AUTHORIZE", zc,
-			); err != nil {
-				return err
-			}
-		case "SETNAME":
+		case "SET":
 			memberName := c.FormValue("name")
 			if err = setMemberName(
 				ctx, *controller, networkID, memberAddress, memberName, zc, dc,
 			); err != nil {
 				return err
 			}
-		case "UNSETNAME":
+		case "UNSET":
 			memberName := c.FormValue("name")
 			if err = unsetMemberName(
 				ctx, *controller, networkID, memberAddress, memberName, zc, dc,

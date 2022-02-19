@@ -23,14 +23,15 @@
         "DomainName" .Data.DomainName
         "Auth" .Auth
       }}
-      <h2>Devices</h2>
-      {{
-        template "networks/devices-list.partial.tmpl" dict
-        "Members" .Data.Members
-        "Network" .Data.Network
-        "NetworkDNS" .Data.NetworkDNS
-      }}
       {{if .Auth.Identity.Authenticated}}
+        <h2>Devices</h2>
+        {{
+          template "networks/devices-list.partial.tmpl" dict
+          "Members" .Data.Members
+          "Network" .Data.Network
+          "NetworkDNS" .Data.NetworkDNS
+          "Auth" .Auth
+        }}
         {{if .Data.NetworkDNS.Named}}
           <h2>DNS Records</h2>
           {{range $subdomain := .Data.NetworkDNS.OtherSubdomains}}

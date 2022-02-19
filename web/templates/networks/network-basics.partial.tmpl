@@ -34,14 +34,13 @@
       <div class="card-content">
         <h2 class="is-size-4">Name</h2>
         <form
-          action="/networks/{{$network.Id}}"
+          action="/networks/{{$network.Id}}/name"
           method="POST"
           data-turbo-frame="_top"
           data-controller="form-submission"
           data-action="submit->form-submission#submit"
           data-form-submission-target="submitter"
         >
-          <input type="hidden" name="method" value="SETNAME">
           <label class="label" for="name">Domain Name</label>
           <div class="field has-addons">
             <div class="control">

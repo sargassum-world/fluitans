@@ -50,22 +50,13 @@ func (c *Client) GetControllerInfo(
 	var status *zerotier.Status
 	var controllerStatus *zerotier.ControllerStatus
 	var networkIDs []string
-	eg.Go(func() error {
-		s, cs, err := c.GetControllerStatuses(ctx, controller, cc)
-		if err != nil {
-			return err
-		}
-		status = s
-		controllerStatus = cs
-		return nil
+	eg.Go(func() (err error) {
+		status, controllerStatus, err = c.GetControllerStatuses(ctx, controller, cc)
+		return
 	})
-	eg.Go(func() error {
-		ids, err := c.GetNetworkIDs(ctx, controller, cc)
-		if err != nil {
-			return err
-		}
-		networkIDs = ids
-		return err
+	eg.Go(func() (err error) {
+		networkIDs, err = c.GetNetworkIDs(ctx, controller, cc)
+		return
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, nil, nil, err
