@@ -7,8 +7,8 @@ type Identity struct {
 }
 
 type CSRFBehavior struct {
-	OmitToken  bool
-	FieldName  string
+	OmitToken bool
+	FieldName string
 }
 
 type CSRF struct {
@@ -17,6 +17,6 @@ type CSRF struct {
 }
 
 type Auth struct {
-	Identity  Identity
-	CSRF      CSRF
+	Identity Identity
+	CSRF     CSRF
 }

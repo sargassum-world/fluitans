@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
@@ -158,19 +159,19 @@ func postSessions(
 	sc := app.Clients.Sessions
 	return func(c echo.Context) error {
 		// Parse params
-		method := c.FormValue("method")
+		formAction := c.FormValue("form-action")
 
 		// Run queries
-		switch method {
+		switch formAction {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid POST method %s", method,
+				"invalid POST form action %s", formAction,
 			))
-		case "AUTHENTICATE":
+		case "create":
 			username := c.FormValue("username")
 			password := c.FormValue("password")
 			returnURL := c.FormValue("return")
-			omitCSRFToken := c.FormValue("omit-csrf-token") == "true"
+			omitCSRFToken := strings.ToLower(c.FormValue("omit-csrf-token")) == "true"
 
 			// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
 			// the OWASP Session Management Cheat Sheet
@@ -184,7 +185,7 @@ func postSessions(
 				return handleAuthenticationFailure(c, returnURL, sc)
 			}
 			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, sc)
-		case "DELETE":
+		case "delete":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
 			sess, err := sc.Invalidate(c)

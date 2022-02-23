@@ -49,8 +49,8 @@
             {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
             <input
               type="hidden"
-              name="method"
-              value="{{if derefBool $zerotierMember.Authorized}}UNSET{{else}}SET{{end}}"
+              name="authorization"
+              value="{{if derefBool $zerotierMember.Authorized}}false{{else}}true{{end}}"
             >
             <div class="control" data-form-submission-target="submitter">
               <input
@@ -76,8 +76,8 @@
                 data-action="submit->form-submission#submit submit->csrf#addToken"
               >
                 {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-                <input type="hidden" name="method" value="UNSET">
-                <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+                <input type="hidden" name="unset-name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+                <input type="hidden" name="set-name" value="">
                 <div class="control" data-form-submission-target="submitter">
                   <span class="tag domain-name">
                     {{$domainName}}
@@ -104,10 +104,9 @@
                 data-action="submit->form-submission#submit submit->csrf#addToken"
               >
                 {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-                <input type="hidden" name="method" value="SET">
                 <div class="field has-addons">
                   <div class="control">
-                    <input type="text" class="input" name="name">
+                    <input type="text" class="input" name="set-name">
                   </div>
                   <div class="control">
                     <span class="button is-static">.d.{{$network.Name}}</span>

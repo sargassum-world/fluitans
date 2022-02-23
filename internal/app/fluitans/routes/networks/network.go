@@ -401,7 +401,7 @@ func postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
-		method := c.FormValue("method")
+		formAction := c.FormValue("form-action")
 
 		// Run queries
 		controller, err := cc.FindControllerByAddress(ctx, address)
@@ -409,12 +409,12 @@ func postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 			return err
 		}
 
-		switch method {
+		switch formAction {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid POST method %s", method,
+				"invalid POST form action %s", formAction,
 			))
-		case "DELETE":
+		case "delete":
 			if err = app.Clients.Zerotier.DeleteNetwork(ctx, *controller, id, cc); err != nil {
 				// TODO: add a tombstone to the TXT RRset?
 				return err

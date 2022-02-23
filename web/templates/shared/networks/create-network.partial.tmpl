@@ -9,7 +9,7 @@
   data-action="submit->form-submission#submit submit->csrf#addToken"
 >
   {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-  <input type="hidden" name="method" value="CREATE">
+  <input type="hidden" name="form-action" value="create">
   <input type="hidden" name="controller" value="{{$controller.Name}}">
   <div class="field">
     <div class="control" data-form-submission-target="submitter">

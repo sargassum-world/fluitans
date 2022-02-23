@@ -23,7 +23,7 @@
         (or (eq .Data.Code 401) (eq .Data.Code 403) (eq .Data.Code 404))
         (not .Auth.Identity.Authenticated)
       }}
-        <a href="/login?return={{queryEscape .Meta.RequestURI}}" class="button is-primary">
+        <a href="/login?return={{.Meta.RequestURI}}" class="button is-primary">
           Sign In
         </a>
       {{end}}

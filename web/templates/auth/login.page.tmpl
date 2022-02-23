@@ -6,7 +6,11 @@
 {{define "content"}}
   <main class="main-container">
     <section class="section content">
-      <h1>Sign In</h1>
+      {{if .Auth.Identity.Authenticated}}
+        <h1>Sign Out</h1>
+      {{else}}
+        <h1>Sign In</h1>
+      {{end}}
       {{range $message := .Data.ErrorMessages}}
         <article class="message is-danger card section-card is-block">
           <div class="message-header">
@@ -40,7 +44,7 @@
               data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
             >
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
-              <input type="hidden" name="method" value="DELETE">
+              <input type="hidden" name="form-action" value="delete">
               <input
                 type="hidden"
                 name="omit-csrf-inputs"
@@ -73,7 +77,7 @@
               data-form-submission-target="submitter"
             >
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
-              <input type="hidden" name="method" value="AUTHENTICATE">
+              <input type="hidden" name="form-action" value="create">
               <input type="hidden" name="return" value="{{.Data.ReturnURL}}">
               <div class="field">
                 <label class="label" for="username">Username</label>

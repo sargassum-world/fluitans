@@ -27,7 +27,7 @@
           data-form-submission-target="submitter"
         >
           {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-          <input type="hidden" name="method" value="CREATE">
+          <input type="hidden" name="form-action" value="create">
           <label class="label" for="address">ZeroTier Address</label>
           <div class="field is-grouped">
             <div class="control">

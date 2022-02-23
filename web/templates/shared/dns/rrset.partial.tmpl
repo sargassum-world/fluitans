@@ -35,7 +35,7 @@
     data-action="submit->form-submission#submit submit->csrf#addToken"
   >
     {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-    <input type="hidden" name="method" value="DELETE">
+    <input type="hidden" name="form-action" value="delete">
     <div class="control" data-form-submission-target="submitter">
       <input
         class="button is-danger"

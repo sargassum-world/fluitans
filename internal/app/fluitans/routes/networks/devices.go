@@ -136,34 +136,18 @@ func postDeviceAuthorization(
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
 		memberAddress := c.Param("address")
-		method := c.FormValue("method")
+		authorization := strings.ToLower(c.FormValue("authorization")) == "true"
 
 		// Run queries
 		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
 		}
-
-		// TODO: split this into postDeviceAuthorization and postDeviceName
-		switch method {
-		default:
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid POST method %s", method,
-			))
-		case "SET":
-			if err = setMemberAuthorization(
-				ctx, *controller, networkID, memberAddress, true, zc,
-			); err != nil {
-				return err
-			}
-		case "UNSET":
-			if err = setMemberAuthorization(
-				ctx, *controller, networkID, memberAddress, false, zc,
-			); err != nil {
-				return err
-			}
+		if err = setMemberAuthorization(
+			ctx, *controller, networkID, memberAddress, authorization, zc,
+		); err != nil {
+			return err
 		}
-
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
 			"/networks/%s#device-%s", networkID, memberAddress,
 		))
@@ -190,7 +174,7 @@ func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
 		memberAddress := c.Param("address")
-		method := c.FormValue("method")
+		setName := c.FormValue("set-name")
 
 		// Run queries
 		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
@@ -198,23 +182,17 @@ func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 			return err
 		}
 
-		// TODO: split this into postDeviceAuthorization and postDeviceName
-		switch method {
+		switch setName {
 		default:
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid POST method %s", method,
-			))
-		case "SET":
-			memberName := c.FormValue("name")
 			if err = setMemberName(
-				ctx, *controller, networkID, memberAddress, memberName, zc, dc,
+				ctx, *controller, networkID, memberAddress, setName, zc, dc,
 			); err != nil {
 				return err
 			}
-		case "UNSET":
-			memberName := c.FormValue("name")
+		case "":
+			nameToUnset := c.FormValue("unset-name")
 			if err = unsetMemberName(
-				ctx, *controller, networkID, memberAddress, memberName, zc, dc,
+				ctx, *controller, networkID, memberAddress, nameToUnset, zc, dc,
 			); err != nil {
 				return err
 			}

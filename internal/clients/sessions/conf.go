@@ -57,10 +57,7 @@ func GetConfig() (*Config, error) {
 		cookieName = "session"
 	}
 
-	csrfOptions, err := getCSRFOptions()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make CSRF options config")
-	}
+	csrfOptions := getCSRFOptions()
 
 	return &Config{
 		AuthKey:       authKey,
@@ -119,12 +116,12 @@ func getCookieOptions(absoluteTimeout time.Duration) (sessions.Options, error) {
 	}, nil
 }
 
-func getCSRFOptions() (CSRFOptions, error) {
+func getCSRFOptions() CSRFOptions {
 	headerName := env.GetString("FLUITANS_SESSIONS_CSRF_HEADERNAME", "X-CSRF-Token")
 	fieldName := env.GetString("FLUITANS_SESSIONS_CSRF_FIELDNAME", "csrf-token")
 
 	return CSRFOptions{
 		HeaderName: headerName,
 		FieldName:  fieldName,
-	}, nil
+	}
 }
