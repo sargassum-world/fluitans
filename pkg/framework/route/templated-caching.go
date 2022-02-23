@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/pkg/framework/fingerprint"
@@ -47,7 +47,7 @@ func (te TemplateEtagSegments) NewNotFoundError(t string) error {
 }
 
 func ProcessEtag(
-	c echo.Context, templateEtagSegments []string, data interface{},
+	w http.ResponseWriter, r *http.Request, templateEtagSegments []string, data interface{},
 ) (bool, error) {
 	var buf bytes.Buffer
 	// github.com/vmihailenco/msgpack has better performance, but we use the JSON encoder because
@@ -60,6 +60,6 @@ func ProcessEtag(
 	}
 	encoded := buf.Bytes()
 	return httpcache.ProcessEtag(
-		c, append(templateEtagSegments, fingerprint.Compute(encoded))...,
-	)
+		w, r, append(templateEtagSegments, fingerprint.Compute(encoded))...,
+	), nil
 }

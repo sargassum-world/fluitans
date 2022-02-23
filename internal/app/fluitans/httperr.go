@@ -4,6 +4,7 @@ package fluitans
 import (
 	"net/http"
 
+	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/httperr"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/framework/session"
+	"github.com/sargassum-eco/fluitans/pkg/framework/template"
 )
 
 type ErrorData struct {
@@ -22,7 +24,7 @@ type ErrorData struct {
 
 func NewHTTPErrorHandler(
 	tg route.TemplateGlobals, sc *sessions.Client,
-) (func(err error, c echo.Context), error) {
+) echo.HTTPErrorHandler {
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
 
@@ -57,11 +59,45 @@ func NewHTTPErrorHandler(
 		}
 
 		// Render error page
-		perr := c.Render(
-			code, "app/httperr.page.tmpl", route.NewRenderData(c, tg, errorData, a),
-		)
-		if perr != nil {
+		if perr := c.Render(
+			code, "app/httperr.page.tmpl", route.NewRenderData(c.Request(), tg, errorData, a),
+		); perr != nil {
 			c.Logger().Error(errors.Wrap(perr, "couldn't render error page in error handler"))
 		}
-	}, nil
+	}
+}
+
+func NewCSRFErrorHandler(
+	tg route.TemplateGlobals, renderer *template.TemplateRenderer, l echo.Logger, sc *sessions.Client,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l.Error(csrf.FailureReason(r))
+		// Check authentication & authorization
+		sess, serr := session.Get(r, sc.Config.CookieName, sc.Store)
+		if serr != nil {
+			l.Error(errors.Wrap(serr, "couldn't get session in error handler"))
+		}
+
+		var a auth.Auth
+		if sess != nil {
+			a, serr = auth.GetFromRequest(r, *sess)
+			if serr != nil {
+				l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
+			}
+		}
+
+		// Generate error code
+		code := http.StatusForbidden
+		errorData := ErrorData{
+			Code:     code,
+			Error:    httperr.DescribeError(code),
+			Messages: []string{csrf.FailureReason(r).Error()},
+		}
+
+		if rerr := route.WriteTemplatedResponse(
+			w, r, renderer, "app/httperr.page.tmpl", code, errorData, a, tg,
+		); rerr != nil {
+			l.Error(errors.Wrap(rerr, "couldn't render error page in error handler"))
+		}
+	}
 }

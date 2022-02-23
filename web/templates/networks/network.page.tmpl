@@ -48,6 +48,7 @@
             {{
               template "networks/network-rules.partial.tmpl" dict
               "Network" .Data.Network
+              "Auth" .Auth
               "JSONPrintedRules" .Data.JSONPrintedRules
             }}
           </div>
@@ -76,6 +77,7 @@
           data-controller="form-submission"
           data-action="submit->form-submission#submit"
         >
+          {{.Auth.CSRFInput}}
           <input type="hidden" name="method" value="DELETE">
           <div class="control" data-form-submission-target="submitter">
             <input

@@ -39,6 +39,7 @@
     data-controller="turbo-cache"
     data-action="submit->turbo-cache#clear"
   >
+    {{.Auth.CSRFInput}}
     <input type="hidden" name="method" value="DELETE">
     <input
       type="submit"

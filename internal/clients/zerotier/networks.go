@@ -125,6 +125,10 @@ func (c *Client) GetNetworks(
 func (c *Client) GetAllNetworks(
 	ctx context.Context, controllers []ztcontrollers.Controller, ids [][]string,
 ) ([]map[string]zerotier.ControllerNetwork, error) {
+	if len(controllers) != len(ids) {
+		return nil, fmt.Errorf("lists of controllers and ids must have the same length")
+	}
+
 	eg, ctx := errgroup.WithContext(ctx)
 	allNetworks := make([]map[string]zerotier.ControllerNetwork, len(controllers))
 	for i, controller := range controllers {

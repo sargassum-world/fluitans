@@ -2,6 +2,7 @@
 package fluitans
 
 import (
+	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
@@ -27,7 +28,8 @@ func LaunchBackgroundWorkers(ag *client.Globals) {
 
 func PrepareServer(e *echo.Echo) error {
 	embeds := web.NewEmbeds()
-	e.Renderer = embeds.NewTemplateRenderer(tmplfunc.FuncMap)
+	r := embeds.NewTemplateRenderer(tmplfunc.FuncMap)
+	e.Renderer = r
 
 	// Globals
 	ag, err := client.NewGlobals(e.Logger)
@@ -39,16 +41,20 @@ func PrepareServer(e *echo.Echo) error {
 		return errors.Wrap(err, "couldn't make server globals")
 	}
 
+	// CSRF Mitigation
+	e.Use(ag.Clients.Sessions.NewCSRFMiddleware(
+		csrf.ErrorHandler(NewCSRFErrorHandler(
+			g.Template, r, e.Logger, ag.Clients.Sessions,
+		)),
+	))
+
 	// Routes
 	if err = RegisterRoutes(g, e); err != nil {
 		return errors.Wrap(err, "couldn't register routes")
 	}
 
 	// Error Handling
-	e.HTTPErrorHandler, err = NewHTTPErrorHandler(g.Template, ag.Clients.Sessions)
-	if err != nil {
-		return errors.Wrap(err, "couldn't register HTTP error handler")
-	}
+	e.HTTPErrorHandler = NewHTTPErrorHandler(g.Template, ag.Clients.Sessions)
 
 	// Background Workers
 	LaunchBackgroundWorkers(ag)

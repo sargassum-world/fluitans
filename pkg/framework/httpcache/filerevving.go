@@ -3,13 +3,12 @@ package httpcache
 
 import (
 	"fmt"
-
-	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
-func WrapStaticHeader(h echo.HandlerFunc, age int) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		c.Response().Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", age))
-		return h(c)
-	}
+func WrapStaticHeader(h http.Handler, age int) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d", age))
+		h.ServeHTTP(w, r)
+	})
 }

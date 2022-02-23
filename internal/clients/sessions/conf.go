@@ -20,14 +20,14 @@ type Timeouts struct {
 }
 
 type Config struct {
-	SessionKey    []byte
+	AuthKey       []byte
 	Timeouts      Timeouts
 	CookieOptions sessions.Options
 	CookieName    string
 }
 
 func GetConfig() (*Config, error) {
-	sessionKey, err := getSessionKey()
+	authKey, err := getAuthKey()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't make session key config")
 	}
@@ -52,29 +52,30 @@ func GetConfig() (*Config, error) {
 	}
 
 	return &Config{
-		SessionKey:    sessionKey,
+		AuthKey:       authKey,
+		Timeouts:      timeouts,
 		CookieOptions: cookieOptions,
 		CookieName:    cookieName,
 	}, nil
 }
 
-func getSessionKey() ([]byte, error) {
-	sessionKey, err := env.GetBase64("FLUITANS_SESSIONS_AUTH_KEY")
+func getAuthKey() ([]byte, error) {
+	authKey, err := env.GetBase64("FLUITANS_SESSIONS_AUTH_KEY")
 	if err != nil {
 		return nil, err
 	}
 
-	if sessionKey == nil {
-		sessionKeySize := 32
-		sessionKey = securecookie.GenerateRandomKey(sessionKeySize)
+	if authKey == nil {
+		authKeySize := 32
+		authKey = securecookie.GenerateRandomKey(authKeySize)
 		// TODO: print to the logger instead?
 		fmt.Printf(
-			"Record this session key for future use as FLUITANS_SESSIONS_AUTH_KEY: %s\n",
-			base64.StdEncoding.EncodeToString(sessionKey),
+			"Record this key for future use as FLUITANS_SESSIONS_AUTH_KEY: %s\n",
+			base64.StdEncoding.EncodeToString(authKey),
 		)
 	}
 
-	return sessionKey, nil
+	return authKey, nil
 }
 
 func getTimeouts() (Timeouts, error) {

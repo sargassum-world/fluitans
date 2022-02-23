@@ -34,6 +34,7 @@
     data-controller="form-submission"
     data-action="submit->form-submission#submit"
   >
+    {{$auth.CSRFInput}}
     <input type="hidden" name="method" value="DELETE">
     <div class="control" data-form-submission-target="submitter">
       <input

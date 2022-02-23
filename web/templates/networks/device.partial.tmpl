@@ -46,6 +46,7 @@
             data-controller="form-submission"
             data-action="submit->form-submission#submit"
           >
+            {{$auth.CSRFInput}}
             <input
               type="hidden"
               name="method"
@@ -73,6 +74,7 @@
                 data-controller="form-submission"
                 data-action="submit->form-submission#submit"
               >
+                {{$auth.CSRFInput}}
                 <input type="hidden" name="method" value="UNSET">
                 <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
                 <div class="control" data-form-submission-target="submitter">
@@ -100,6 +102,7 @@
                 data-action="submit->form-submission#submit"
                 data-form-submission-target="submitter"
               >
+                {{$auth.CSRFInput}}
                 <input type="hidden" name="method" value="SET">
                 <div class="field has-addons">
                   <div class="control">

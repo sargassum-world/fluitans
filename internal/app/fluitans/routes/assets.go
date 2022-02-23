@@ -62,15 +62,15 @@ func getWebmanifest(
 }
 
 func favicon(g route.StaticGlobals) (echo.HandlerFunc, error) {
-	return httpcache.WrapStaticHeader(echo.WrapHandler(
+	return echo.WrapHandler(httpcache.WrapStaticHeader(
 		http.StripPrefix("/", http.FileServer(http.FS(g.FS["Web"]))),
-	), week), nil
+		week)), nil
 }
 
 func fonts(g route.StaticGlobals) (echo.HandlerFunc, error) {
-	return httpcache.WrapStaticHeader(echo.WrapHandler(
+	return echo.WrapHandler(httpcache.WrapStaticHeader(
 		http.StripPrefix("/fonts/", http.FileServer(http.FS(g.FS["Fonts"]))),
-	), year), nil
+		year)), nil
 }
 
 func static(g route.StaticGlobals) (echo.HandlerFunc, error) {

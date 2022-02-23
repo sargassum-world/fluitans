@@ -1,11 +1,14 @@
 package route
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+
+	"github.com/sargassum-eco/fluitans/pkg/framework/template"
 )
 
 // Template rendering
@@ -23,12 +26,12 @@ type RenderData struct {
 }
 
 func NewRenderData(
-	c echo.Context, g TemplateGlobals, data interface{}, auth interface{},
+	r *http.Request, g TemplateGlobals, data interface{}, auth interface{},
 ) RenderData {
 	return RenderData{
 		Meta: Meta{
-			Path:       c.Request().URL.Path,
-			RequestURI: c.Request().URL.RequestURI(),
+			Path:       r.URL.Path,
+			RequestURI: r.URL.RequestURI(),
 		},
 		Inlines: g.Inlines,
 		Data:    data,
@@ -36,29 +39,61 @@ func NewRenderData(
 	}
 }
 
+func WriteTemplatedResponse(
+	w http.ResponseWriter, r *http.Request, renderer *template.TemplateRenderer,
+	templateName string, status int, templateData interface{}, authData interface{},
+	g TemplateGlobals,
+) error {
+	// This is basically a reimplementation of the echo.Context.Render method, but without requiring
+	// having an echo.Context for use. It's useful for rendering templated responses from non-echo
+	// middleware, e.g. the error handler in github.com/gorilla/csrf
+	buf := new(bytes.Buffer)
+	if rerr := renderer.RenderWithoutContext(
+		buf, templateName, NewRenderData(r, g, templateData, authData),
+	); rerr != nil {
+		return rerr
+	}
+
+	// Write render result
+	w.Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
+	w.WriteHeader(status)
+	_, werr := w.Write(buf.Bytes())
+	return werr
+}
+
 type EtagData struct {
 	Data interface{}
 	Auth interface{}
+}
+
+func ProcessEtagData(
+	w http.ResponseWriter, r *http.Request,
+	templateName string, templateData interface{}, authData interface{}, te TemplateEtagSegments,
+) (noContent bool, err error) {
+	templateEtagSegment, err := te.GetSegment(templateName)
+	if err != nil {
+		return
+	}
+	etagData := EtagData{
+		Data: templateData,
+		Auth: authData,
+	}
+	noContent, err = ProcessEtag(w, r, templateEtagSegment, etagData)
+	return
 }
 
 func Render(
 	c echo.Context, templateName string, templateData interface{}, authData interface{},
 	te TemplateEtagSegments, g TemplateGlobals,
 ) error {
-	templateEtagSegment, err := te.GetSegment(templateName)
-	if err != nil {
+	if noContent, err := ProcessEtagData(
+		c.Response(), c.Request(), templateName, templateData, authData, te,
+	); noContent || (err != nil) {
 		return err
 	}
-	etagData := EtagData{
-		Data: templateData,
-		Auth: authData,
-	}
-	noContent, err := ProcessEtag(c, templateEtagSegment, etagData)
-	if err != nil || noContent {
-		return err
-	}
-
-	return c.Render(http.StatusOK, templateName, NewRenderData(c, g, templateData, authData))
+	return c.Render(
+		http.StatusOK, templateName, NewRenderData(c.Request(), g, templateData, authData),
+	)
 }
 
 // Route Handlers

@@ -4,7 +4,11 @@
 
 <turbo-frame id="networks-{{$controller.Name}}-list">
   {{if $auth.Identity.Authenticated}}
-    {{template "shared/networks/create-network.partial.tmpl" $controller}}
+    {{
+      template "shared/networks/create-network.partial.tmpl" dict
+      "Controller" $controller
+      "Auth" $auth
+    }}
   {{end}}
   <ul>
     {{range $networkID, $network := $networks}}

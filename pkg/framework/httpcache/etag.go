@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/labstack/echo/v4"
 )
 
 // Etag Assembly
@@ -41,11 +39,12 @@ func CheckEtagMatch(reqh http.Header, etag string) bool {
 	return match == etag
 }
 
-func ProcessEtag(c echo.Context, etagSegments ...string) (bool, error) {
+func ProcessEtag(w http.ResponseWriter, r *http.Request, etagSegments ...string) bool {
 	etag := MakeEtag(JoinEtagSegments(etagSegments...))
-	SetEtag(c.Response().Header(), etag)
-	if CheckEtagMatch(c.Request().Header, etag) {
-		return true, c.NoContent(http.StatusNotModified)
+	SetEtag(w.Header(), etag)
+	if !CheckEtagMatch(r.Header, etag) {
+		return false
 	}
-	return false, nil
+	w.WriteHeader(http.StatusNotModified)
+	return true
 }

@@ -1,4 +1,5 @@
 {{$network := (get . "Network")}}
+{{$auth := get . "Auth"}}
 {{$jsonPrintedRules := (get . "JSONPrintedRules")}}
 
 <turbo-frame id="network-{{$network.Id}}-rules">
@@ -17,6 +18,7 @@
     data-action="submit->form-submission#submit"
     data-form-submission-target="submitter"
   >
+    {{$auth.CSRFInput}}
     <label class="label" for="rules">Rule Editor</label>
     <div class="field">
       <div class="control">

@@ -44,12 +44,12 @@
       <div class="accordion-content">
         {{if eq (len $domain.Keys) 1}}
           {{range $key := $domain.Keys}}
-            {{template "dns/dnssec-key.partial.tmpl" $key}}
+            {{template "dns/dnssec-key.partial.tmpl" dict "Key" $key "Auth" $auth}}
           {{end}}
         {{else}}
           <ul>
             {{range $key := $domain.Keys}}
-              <li>{{template "dns/dnssec-key.partial.tmpl" $key}}</li>
+              <li>{{template "dns/dnssec-key.partial.tmpl" dict "Key" $key "Auth" $auth}}</li>
             {{end}}
           </ul>
         {{end}}

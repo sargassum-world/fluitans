@@ -17,6 +17,10 @@ type TemplateRenderer struct {
 func (t *TemplateRenderer) Render(
 	w io.Writer, name string, data interface{}, c echo.Context,
 ) error {
+	return t.RenderWithoutContext(w, name, data)
+}
+
+func (t *TemplateRenderer) RenderWithoutContext(w io.Writer, name string, data interface{}) error {
 	tmpl := template.Must(t.templates.Clone())
 	tmpl = template.Must(ParseFS(tmpl, t.templatesFS, name))
 	return tmpl.ExecuteTemplate(w, name, data)

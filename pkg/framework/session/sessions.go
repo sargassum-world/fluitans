@@ -2,17 +2,21 @@
 package session
 
 import (
+	"net/http"
+
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 )
 
-func Get(c echo.Context, cookieName string, store sessions.Store) (*sessions.Session, error) {
+func Get(
+	r *http.Request, cookieName string, store sessions.Store,
+) (*sessions.Session, error) {
 	// TODO: implement idle timeout, and implement automatic renewal timeout (if we can). Refer to the
 	// "Automatic Session Expiration" section of
 	// https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
 	// TODO: regenerate the session upon privilege change
 	// TODO: log the session life cycle
-	return store.Get(c.Request(), cookieName)
+	return store.Get(r, cookieName)
 }
 
 func Save(s *sessions.Session, c echo.Context) error {
@@ -20,9 +24,9 @@ func Save(s *sessions.Session, c echo.Context) error {
 }
 
 func Regenerate(
-	c echo.Context, cookieName string, store sessions.Store,
+	r *http.Request, cookieName string, store sessions.Store,
 ) (*sessions.Session, error) {
-	s, err := Get(c, cookieName, store)
+	s, err := Get(r, cookieName, store)
 	if err != nil {
 		return nil, err
 	}
@@ -32,9 +36,9 @@ func Regenerate(
 }
 
 func Invalidate(
-	c echo.Context, cookieName string, store sessions.Store,
+	r *http.Request, cookieName string, store sessions.Store,
 ) (*sessions.Session, error) {
-	s, err := Get(c, cookieName, store)
+	s, err := Get(r, cookieName, store)
 	if err != nil {
 		return nil, err
 	}
