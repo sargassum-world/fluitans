@@ -1,6 +1,6 @@
 <input
   type="hidden"
-  name="{{.Behavior.FieldName}}"
+  name="{{.Config.FieldName}}"
   value="{{.Token}}"
   data-csrf-target="token"
 >
@@ -12,6 +12,6 @@
 <input
   type="hidden"
   name="omit-csrf-token"
-  value="{{.Behavior.OmitToken}}"
+  value="{{not .Behavior.InlineToken}}"
   data-csrf-target="omit"
 >

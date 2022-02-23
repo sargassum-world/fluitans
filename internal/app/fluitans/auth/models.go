@@ -1,17 +1,21 @@
 // Package auth provides application-level standardization for authentication
 package auth
 
+import (
+	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
+)
+
 type Identity struct {
 	Authenticated bool
 	User          string
 }
 
 type CSRFBehavior struct {
-	OmitToken bool
-	FieldName string
+	InlineToken bool
 }
 
 type CSRF struct {
+	Config   sessions.CSRFOptions
 	Behavior CSRFBehavior
 	Token    string
 }

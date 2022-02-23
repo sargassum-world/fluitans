@@ -85,6 +85,9 @@ func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Hand
 			return err
 		}
 
+		// Add non-persistent overrides of session data
+		a.CSRF = auth.OverrideCSRFInlining(c.Request(), a.CSRF, true)
+
 		// Produce output
 		return route.Render(c, t, loginData, a, te, g)
 	}, nil
@@ -110,7 +113,7 @@ func handleAuthenticationSuccess(
 	// This allows client-side Javascript to specify for server-side session data that we only need
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
 	// bodies, in order to make HTML responses cacheable.
-	auth.SetCSRFBehavior(sess, omitCSRFToken)
+	auth.SetCSRFBehavior(sess, !omitCSRFToken)
 	if err = session.Save(sess, c); err != nil {
 		return err
 	}

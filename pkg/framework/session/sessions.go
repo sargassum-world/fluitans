@@ -32,6 +32,7 @@ func Regenerate(
 	}
 
 	s.ID = ""
+	s.Values = make(map[interface{}]interface{})
 	return s, nil
 }
 

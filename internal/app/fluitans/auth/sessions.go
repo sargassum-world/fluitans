@@ -43,33 +43,42 @@ func GetIdentity(s sessions.Session) (identity Identity, err error) {
 
 // CSRF
 
-func SetCSRFBehavior(s *sessions.Session, omitToken bool) {
+func SetCSRFBehavior(s *sessions.Session, inlineToken bool) {
 	behavior := CSRFBehavior{
-		OmitToken: omitToken,
+		InlineToken: inlineToken,
 	}
 	s.Values["csrfBehavior"] = behavior
 	gob.Register(behavior)
 }
 
-func GetCSRFBehavior(s sessions.Session, sc *sessionsc.Client) (behavior CSRFBehavior, err error) {
-	behavior.FieldName = sc.Config.CSRFOptions.FieldName
+func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 	if s.IsNew {
 		return
 	}
 
 	rawBehavior, ok := s.Values["csrfBehavior"]
 	if !ok {
-		// By default, HTML responses don't omit the CSRF input fields (so they can't be cached),
-		// to enable functionality with non-JS browsers
+		// By default, HTML responses won't inline the CSRF input fields (so responses can be cached),
+		// because the app only allows POST requests after user authentication. This default behavior
+		// can be overridden, e.g. on the login form for user authentication, with OverrideCSRFInlining.
 		return
 	}
 	behavior, ok = rawBehavior.(CSRFBehavior)
-	behavior.FieldName = sc.Config.CSRFOptions.FieldName
 	if !ok {
 		err = fmt.Errorf("unexpected type for field csrfBehavior in session")
 		return
 	}
 	return
+}
+
+func OverrideCSRFInlining(r *http.Request, c CSRF, inlineToken bool) CSRF {
+	c.Behavior.InlineToken = inlineToken
+	if c.Behavior.InlineToken {
+		c.Token = csrf.Token(r)
+	} else {
+		c.Token = ""
+	}
+	return c
 }
 
 // Access
@@ -84,11 +93,12 @@ func GetFromRequest(r *http.Request, s sessions.Session, sc *sessionsc.Client) (
 		return
 	}
 
-	a.CSRF.Behavior, err = GetCSRFBehavior(s, sc)
+	a.CSRF.Config = sc.Config.CSRFOptions
+	a.CSRF.Behavior, err = GetCSRFBehavior(s)
 	if err != nil {
 		return
 	}
-	if !a.CSRF.Behavior.OmitToken {
+	if a.CSRF.Behavior.InlineToken {
 		a.CSRF.Token = csrf.Token(r)
 	}
 	return
