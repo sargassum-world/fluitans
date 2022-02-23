@@ -357,6 +357,7 @@ func nameNetwork(
 		// TODO: if a TXT RRset already exists but doesn't have the ID, just append a
 		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch to avoid
 		// data races)
+		// TODO: if the returned error code was an HTTP error, preserve the status code
 		return errors.Wrap(err, fmt.Sprintf(
 			"couldn't create a DNS TXT RRset at %s for network %s", fqdn, id,
 		))

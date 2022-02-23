@@ -39,7 +39,7 @@ func (c *Client) handleDesecMissingRRsetError(
 	res http.Response, subname, recordType string,
 ) error {
 	if res.StatusCode == http.StatusNotFound {
-		c.Cache.SetNonexistentDomainByName(c.Config.DomainName)
+		c.Cache.SetNonexistentRRsetByNameAndType(c.Config.DomainName, subname, recordType)
 		return echo.NewHTTPError(http.StatusNotFound, fmt.Sprintf(
 			"couldn't find %s RRset for %s.%s", recordType, subname, c.Config.DomainName,
 		))
@@ -58,7 +58,7 @@ func (c *Client) handleDesecClientError(res http.Response, l log.Logger) error {
 		return newReadRateLimitError(retryWaitSec)
 	case http.StatusBadRequest:
 		// TODO: handle pagination when there's a Link: header
-		return echo.NewHTTPError(http.StatusBadRequest, "invalid request")
+		return echo.NewHTTPError(http.StatusBadRequest)
 	}
 
 	return nil
