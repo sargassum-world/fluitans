@@ -46,6 +46,8 @@ func PrepareServer(e *echo.Echo) error {
 		csrf.ErrorHandler(NewCSRFErrorHandler(
 			g.Template, r, e.Logger, ag.Clients.Sessions,
 		)),
+		csrf.RequestHeader(ag.Clients.Sessions.Config.CSRFOptions.HeaderName),
+		csrf.FieldName(ag.Clients.Sessions.Config.CSRFOptions.FieldName),
 	))
 
 	// Routes

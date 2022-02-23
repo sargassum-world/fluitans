@@ -4,7 +4,7 @@
 <p>Type: {{$key.Keytype}}</p>
 <p>Flags: {{$key.Flags}}</p>
 <form>
-  {{$auth.CSRFInput}}
+  {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
   <div class="field">
     <label class="label">DNSKEY</label>
     <div class="control">

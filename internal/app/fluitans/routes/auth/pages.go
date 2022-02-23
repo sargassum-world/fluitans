@@ -9,6 +9,12 @@ import (
 
 var Pages = []route.Templated{
 	{
+		Path:         "/csrf",
+		Method:       http.MethodGet,
+		HandlerMaker: getCSRF,
+		Templates:    []string{},
+	},
+	{
 		Path:         "/login",
 		Method:       http.MethodGet,
 		HandlerMaker: getLogin,

@@ -74,10 +74,10 @@
           action="/networks/{{.Data.Network.Id}}"
           method="POST"
           data-turbo-frame="_top"
-          data-controller="form-submission"
-          data-action="submit->form-submission#submit"
+          data-controller="form-submission csrf"
+          data-action="submit->form-submission#submit submit->csrf#addToken"
         >
-          {{.Auth.CSRFInput}}
+          {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
           <input type="hidden" name="method" value="DELETE">
           <div class="control" data-form-submission-target="submitter">
             <input
@@ -85,6 +85,7 @@
               type="submit"
               value="Delete network"
               data-form-submission-target="submit"
+              data-csrf-target="submit"
             >
           </div>
         </form>

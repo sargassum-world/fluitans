@@ -37,11 +37,10 @@
           action="/networks/{{$network.Id}}/name"
           method="POST"
           data-turbo-frame="_top"
-          data-controller="form-submission"
-          data-action="submit->form-submission#submit"
-          data-form-submission-target="submitter"
+          data-controller="form-submission csrf"
+          data-action="submit->form-submission#submit submit->csrf#addToken"
         >
-          {{$auth.CSRFInput}}
+          {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
           <label class="label" for="name">Domain Name</label>
           <div class="field has-addons">
             <div class="control">
@@ -67,6 +66,7 @@
                 class="button"
                 value="Set domain name"
                 data-form-submission-target="submit"
+                data-csrf-target="submit"
               >
             </div>
           </div>

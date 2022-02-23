@@ -14,11 +14,10 @@
   <form
     action="/networks/{{$network.Id}}/rules"
     method="POST"
-    data-controller="form-submission"
-    data-action="submit->form-submission#submit"
-    data-form-submission-target="submitter"
+    data-controller="form-submission csrf"
+    data-action="submit->form-submission#submit submit->csrf#addToken"
   >
-    {{$auth.CSRFInput}}
+    {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
     <label class="label" for="rules">Rule Editor</label>
     <div class="field">
       <div class="control">
@@ -26,12 +25,13 @@
       </div>
     </div>
     <div class="field">
-      <div class="control">
+      <div class="control" data-form-submission-target="submitter">
         <input
           class="button"
           type="submit"
           value="Set rules"
           data-form-submission-target="submit"
+          data-csrf-target="submit"
         >
       </div>
     </div>

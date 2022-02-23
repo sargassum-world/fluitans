@@ -43,10 +43,10 @@
           <form
             action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/authorization"
             method="POST"
-            data-controller="form-submission"
-            data-action="submit->form-submission#submit"
+            data-controller="form-submission csrf"
+            data-action="submit->form-submission#submit submit->csrf#addToken"
           >
-            {{$auth.CSRFInput}}
+            {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
             <input
               type="hidden"
               name="method"
@@ -58,6 +58,7 @@
                 type="submit"
                 value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
                 data-form-submission-target="submit"
+                data-csrf-target="submit"
               >
             </div>
           </form>
@@ -71,10 +72,10 @@
                 id="unset-name-{{$domainName}}"
                 action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
                 method="POST"
-                data-controller="form-submission"
-                data-action="submit->form-submission#submit"
+                data-controller="form-submission csrf"
+                data-action="submit->form-submission#submit submit->csrf#addToken"
               >
-                {{$auth.CSRFInput}}
+                {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
                 <input type="hidden" name="method" value="UNSET">
                 <input type="hidden" name="name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
                 <div class="control" data-form-submission-target="submitter">
@@ -85,6 +86,7 @@
                         class="delete"
                         form="unset-name-{{$domainName}}"
                         data-form-submission-target="submit"
+                        data-csrf-target="submit"
                       ></button>
                     </span>
                   </span>
@@ -98,11 +100,10 @@
               <form
                 action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
                 method="POST"
-                data-controller="form-submission"
-                data-action="submit->form-submission#submit"
-                data-form-submission-target="submitter"
+                data-controller="form-submission csrf"
+                data-action="submit->form-submission#submit submit->csrf#addToken"
               >
-                {{$auth.CSRFInput}}
+                {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
                 <input type="hidden" name="method" value="SET">
                 <div class="field has-addons">
                   <div class="control">
@@ -119,6 +120,7 @@
                       class="button"
                       value="Set domain name"
                       data-form-submission-target="submit"
+                      data-csrf-target="submit"
                     >
                   </div>
                 </div>

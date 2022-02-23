@@ -1,12 +1,12 @@
 {{template "shared/base.layout.tmpl" .}}
 
-{{define "title"}}Login{{end}}
-{{define "description"}}Log in to Fluitans.{{end}}
+{{define "title"}}Sign In{{end}}
+{{define "description"}}Sign in to Fluitans.{{end}}
 
 {{define "content"}}
   <main class="main-container">
     <section class="section content">
-      <h1>Login</h1>
+      <h1>Sign In</h1>
       {{range $message := .Data.ErrorMessages}}
         <article class="message is-danger card section-card is-block">
           <div class="message-header">
@@ -23,32 +23,38 @@
             <p>Security Warning</p>
           </div>
           <div class="message-body">
-            This server was started with authentication disabled, so everyone has can log in as admin
-            with a blank username and password!
+            This server was started with authentication disabled, so everyone has can sign in as
+            admin with a blank username and password!
           </div>
         </div>
       {{end}}
       {{if .Auth.Identity.Authenticated}}
         <article class="message is-success card section-card is-block">
           <div class="message-body">
-            <p class="mb-4">You are already logged in as {{.Auth.Identity.User}}!</p>
+            <p class="mb-4">You are currently signed in as {{.Auth.Identity.User}}.</p>
             <form
               action="/sessions"
               method="POST"
               data-turbo-frame="_top"
-              data-controller="form-submission turbo-cache"
-              data-action="submit->form-submission#submit submit->turbo-cache#clear"
-              data-form-submission-target="submitter"
+              data-controller="form-submission turbo-cache csrf"
+              data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
             >
-              {{.Auth.CSRFInput}}
+              {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
               <input type="hidden" name="method" value="DELETE">
+              <input
+                type="hidden"
+                name="omit-csrf-inputs"
+                value="false"
+                data-controller="csrf-behavior"
+              >
               <div class="field">
                 <div class="control" data-form-submission-target="submitter">
                   <input
                     type="submit"
                     class="button is-primary"
-                    value="Log Out"
+                    value="Sign Out"
                     data-form-submission-target="submit"
+                    data-csrf-target="submit"
                   >
                 </div>
               </div>
@@ -62,11 +68,11 @@
               action="/sessions"
               method="POST"
               data-turbo-frame="_top"
-              data-controller="form-submission turbo-cache"
-              data-action="submit->form-submission#submit submit->turbo-cache#clear"
+              data-controller="form-submission turbo-cache csrf"
+              data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
               data-form-submission-target="submitter"
             >
-              {{.Auth.CSRFInput}}
+              {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
               <input type="hidden" name="method" value="AUTHENTICATE">
               <input type="hidden" name="return" value="{{.Data.ReturnURL}}">
               <div class="field">
@@ -84,11 +90,12 @@
               <div class="field">
                 <div class="control" data-form-submission-target="submitter">
                   <input
-                  type="submit"
-                  class="button is-primary"
-                  value="Sign in"
-                  data-form-submission-target="submit"
-                >
+                    type="submit"
+                    class="button is-primary"
+                    value="Sign in"
+                    data-form-submission-target="submit"
+                    data-csrf-target="submit"
+                  >
                 </div>
               </div>
             </form>

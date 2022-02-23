@@ -31,7 +31,6 @@ func GetIdentity(s sessions.Session) (identity Identity, err error) {
 	rawIdentity, ok := s.Values["identity"]
 	if !ok {
 		// A zero value for Identity indicates that the session has no identity associated with it
-		identity = Identity{}
 		return
 	}
 	identity, ok = rawIdentity.(Identity)
@@ -42,19 +41,56 @@ func GetIdentity(s sessions.Session) (identity Identity, err error) {
 	return
 }
 
-// Access
+// CSRF
 
-func Get(c echo.Context, s sessions.Session) (a Auth, err error) {
-	a.Identity, err = GetIdentity(s)
-	// TODO: if CSRFInput isn't used by a templated page, it'll still change the ETag and thus prevent
-	// caching; we need a way to specify whether to blank out CSRFInput based on a.Authorized()
-	a.CSRFInput = csrf.TemplateField(c.Request())
+func SetCSRFBehavior(s *sessions.Session, omitToken bool) {
+	behavior := CSRFBehavior{
+		OmitToken: omitToken,
+	}
+	s.Values["csrfBehavior"] = behavior
+	gob.Register(behavior)
+}
+
+func GetCSRFBehavior(s sessions.Session, sc *sessionsc.Client) (behavior CSRFBehavior, err error) {
+	behavior.FieldName = sc.Config.CSRFOptions.FieldName
+	if s.IsNew {
+		return
+	}
+
+	rawBehavior, ok := s.Values["csrfBehavior"]
+	if !ok {
+		// By default, HTML responses don't omit the CSRF input fields (so they can't be cached),
+		// to enable functionality with non-JS browsers
+		return
+	}
+	behavior, ok = rawBehavior.(CSRFBehavior)
+	behavior.FieldName = sc.Config.CSRFOptions.FieldName
+	if !ok {
+		err = fmt.Errorf("unexpected type for field csrfBehavior in session")
+		return
+	}
 	return
 }
 
-func GetFromRequest(r *http.Request, s sessions.Session) (a Auth, err error) {
+// Access
+
+func Get(c echo.Context, s sessions.Session, sc *sessionsc.Client) (a Auth, err error) {
+	return GetFromRequest(c.Request(), s, sc)
+}
+
+func GetFromRequest(r *http.Request, s sessions.Session, sc *sessionsc.Client) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
-	a.CSRFInput = csrf.TemplateField(r)
+	if err != nil {
+		return
+	}
+
+	a.CSRF.Behavior, err = GetCSRFBehavior(s, sc)
+	if err != nil {
+		return
+	}
+	if !a.CSRF.Behavior.OmitToken {
+		a.CSRF.Token = csrf.Token(r)
+	}
 	return
 }
 
@@ -63,7 +99,7 @@ func GetWithSession(c echo.Context, sc *sessionsc.Client) (a Auth, s *sessions.S
 	if err != nil {
 		return Auth{}, nil, err
 	}
-	a, err = Get(c, *s)
+	a, err = Get(c, *s, sc)
 	if err != nil {
 		return Auth{}, s, err
 	}

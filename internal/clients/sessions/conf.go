@@ -19,11 +19,17 @@ type Timeouts struct {
 	// TODO: add renewal timeout, if we can implement session renewal
 }
 
+type CSRFOptions struct {
+	HeaderName string
+	FieldName  string
+}
+
 type Config struct {
 	AuthKey       []byte
 	Timeouts      Timeouts
 	CookieOptions sessions.Options
 	CookieName    string
+	CSRFOptions   CSRFOptions
 }
 
 func GetConfig() (*Config, error) {
@@ -51,11 +57,17 @@ func GetConfig() (*Config, error) {
 		cookieName = "session"
 	}
 
+	csrfOptions, err := getCSRFOptions()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't make CSRF options config")
+	}
+
 	return &Config{
 		AuthKey:       authKey,
 		Timeouts:      timeouts,
 		CookieOptions: cookieOptions,
 		CookieName:    cookieName,
+		CSRFOptions:   csrfOptions,
 	}, nil
 }
 
@@ -104,5 +116,15 @@ func getCookieOptions(absoluteTimeout time.Duration) (sessions.Options, error) {
 		Secure:   !noHTTPSOnly,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
+	}, nil
+}
+
+func getCSRFOptions() (CSRFOptions, error) {
+	headerName := env.GetString("FLUITANS_SESSIONS_CSRF_HEADERNAME", "X-CSRF-Token")
+	fieldName := env.GetString("FLUITANS_SESSIONS_CSRF_FIELDNAME", "csrf-token")
+
+	return CSRFOptions{
+		HeaderName: headerName,
+		FieldName:  fieldName,
 	}, nil
 }

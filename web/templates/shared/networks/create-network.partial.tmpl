@@ -1,11 +1,25 @@
 {{$controller := get . "Controller"}}
 {{$auth := get . "Auth"}}
 
-<form action="/networks" method="POST" data-turbo-frame="_top">
-  {{$auth.CSRFInput}}
+<form
+  action="/networks"
+  method="POST"
+  data-turbo-frame="_top"
+  data-controller="form-submission csrf"
+  data-action="submit->form-submission#submit submit->csrf#addToken"
+>
+  {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
   <input type="hidden" name="method" value="CREATE">
   <input type="hidden" name="controller" value="{{$controller.Name}}">
-  <div class="control">
-    <input class="button is-primary" type="submit" value="Create a network">
+  <div class="field">
+    <div class="control" data-form-submission-target="submitter">
+      <input
+        type="submit"
+        class="button is-primary"
+        value="Create a network"
+        data-form-submission-target="submit"
+        data-csrf-target="submit"
+      >
+    </div>
   </div>
 </form>

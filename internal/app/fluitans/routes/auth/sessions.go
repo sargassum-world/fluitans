@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
@@ -14,6 +15,37 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/session"
 )
 
+type CSRFData struct {
+	HeaderName string `json:"headerName,omitempty"`
+	FieldName  string `json:"fieldName,omitempty"`
+	Token      string `json:"token,omitempty"`
+}
+
+func getCSRF(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+	app, ok := g.App.(*client.Globals)
+	if !ok {
+		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
+	}
+	sc := app.Clients.Sessions
+	return func(c echo.Context) error {
+		// Get session
+		sess, err := sc.Get(c)
+		if err != nil {
+			return err
+		}
+		if err = session.Save(sess, c); err != nil {
+			return err
+		}
+
+		// Produce output
+		return c.JSON(http.StatusOK, CSRFData{
+			HeaderName: sc.Config.CSRFOptions.HeaderName,
+			FieldName:  sc.Config.CSRFOptions.FieldName,
+			Token:      csrf.Token(c.Request()),
+		})
+	}, nil
+}
+
 type LoginData struct {
 	NoAuth        bool
 	ReturnURL     string
@@ -22,7 +54,7 @@ type LoginData struct {
 
 func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "auth/login.page.tmpl"
-	err := te.RequireSegments("authn.getLogin", t)
+	err := te.RequireSegments("auth.getLogin", t)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +98,7 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, username, returnURL string, sc *sessions.Client,
+	c echo.Context, username, returnURL string, omitCSRFToken bool, sc *sessions.Client,
 ) error {
 	// Update session
 	sess, err := sc.Regenerate(c)
@@ -74,6 +106,10 @@ func handleAuthenticationSuccess(
 		return err
 	}
 	auth.SetIdentity(sess, username)
+	// This allows client-side Javascript to specify for server-side session data that we only need
+	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
+	// bodies, in order to make HTML responses cacheable.
+	auth.SetCSRFBehavior(sess, omitCSRFToken)
 	if err = session.Save(sess, c); err != nil {
 		return err
 	}
@@ -134,7 +170,12 @@ func postSessions(
 			username := c.FormValue("username")
 			password := c.FormValue("password")
 			returnURL := c.FormValue("return")
-			// TODO: add intrusion detection
+			omitCSRFToken := c.FormValue("omit-csrf-token") == "true"
+
+			// TODO: add session attacks detection. Refer to the "Session Attacks Detection" section of
+			// the OWASP Session Management Cheat Sheet
+
+			// Check authentication
 			identified, err := app.Clients.Authn.CheckCredentials(username, password)
 			if err != nil {
 				return err
@@ -142,7 +183,7 @@ func postSessions(
 			if !identified {
 				return handleAuthenticationFailure(c, returnURL, sc)
 			}
-			return handleAuthenticationSuccess(c, username, returnURL, sc)
+			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, sc)
 		case "DELETE":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message

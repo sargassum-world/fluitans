@@ -2,6 +2,7 @@
 package fluitans
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/csrf"
@@ -80,7 +81,7 @@ func NewCSRFErrorHandler(
 
 		var a auth.Auth
 		if sess != nil {
-			a, serr = auth.GetFromRequest(r, *sess)
+			a, serr = auth.GetFromRequest(r, *sess, sc)
 			if serr != nil {
 				l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 			}
@@ -91,7 +92,13 @@ func NewCSRFErrorHandler(
 		errorData := ErrorData{
 			Code:     code,
 			Error:    httperr.DescribeError(code),
-			Messages: []string{csrf.FailureReason(r).Error()},
+			Messages: []string{
+				fmt.Sprintf(
+					"%s. If you disabled Javascript after signing in, " +
+					"please clear your cookies for this site and sign in again.",
+					csrf.FailureReason(r).Error(),
+				),
+			},
 		}
 
 		if rerr := route.WriteTemplatedResponse(

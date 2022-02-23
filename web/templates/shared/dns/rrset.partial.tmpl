@@ -31,10 +31,10 @@
     action="/dns/{{derefString $rrset.Subname "@"}}/{{$rrset.Type}}"
     method="POST"
     data-turbo-frame="{{$turboFrameTarget}}"
-    data-controller="form-submission"
-    data-action="submit->form-submission#submit"
+    data-controller="form-submission csrf"
+    data-action="submit->form-submission#submit submit->csrf#addToken"
   >
-    {{$auth.CSRFInput}}
+    {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
     <input type="hidden" name="method" value="DELETE">
     <div class="control" data-form-submission-target="submitter">
       <input
@@ -42,6 +42,7 @@
         type="submit"
         value="Delete records"
         data-form-submission-target="submit"
+        data-csrf-target="submit"
       >
     </div>
   </form>

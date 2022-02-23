@@ -22,11 +22,11 @@
         <form
           action="/networks/{{$network.Id}}/devices"
           method="POST"
-          data-controller="form-submission"
-          data-action="submit->form-submission#submit"
+          data-controller="form-submission csrf"
+          data-action="submit->form-submission#submit submit->csrf#addToken"
           data-form-submission-target="submitter"
         >
-          {{$auth.CSRFInput}}
+          {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
           <input type="hidden" name="method" value="CREATE">
           <label class="label" for="address">ZeroTier Address</label>
           <div class="field is-grouped">
@@ -39,6 +39,7 @@
                 type="submit"
                 value="Add device"
                 data-form-submission-target="submit"
+                data-csrf-target="submit"
               >
             </div>
           </div>

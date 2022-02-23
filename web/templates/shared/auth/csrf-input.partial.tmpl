@@ -1,0 +1,17 @@
+<input
+  type="hidden"
+  name="{{.Behavior.FieldName}}"
+  value="{{.Token}}"
+  data-csrf-target="token"
+>
+<input
+  type="hidden"
+  value="/csrf"
+  data-csrf-target="route"
+>
+<input
+  type="hidden"
+  name="omit-csrf-token"
+  value="{{.Behavior.OmitToken}}"
+  data-csrf-target="omit"
+>

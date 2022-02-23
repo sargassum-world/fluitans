@@ -32,29 +32,20 @@
 {{end}}
 
 {{define "nav/navbar.menu.end-authenticated"}}
-  <form
-    action="/sessions"
-    method="POST"
-    data-turbo-frame="_top"
-    data-controller="turbo-cache"
-    data-action="submit->turbo-cache#clear"
-  >
-    {{.Auth.CSRFInput}}
-    <input type="hidden" name="method" value="DELETE">
-    <input
-      type="submit"
-      class="button is-href navbar-item"
-      value="Log Out"
-      data-form-submission-target="submit"
-    >
-  </form>
+  {{
+    template "shared/nav/navlink.partial.tmpl" dict
+    "Display" true
+    "Href" "/login"
+    "Name" "Sign Out"
+    "MetaPath" .Meta.Path
+  }}
 {{end}}
 {{define "nav/navbar.menu.end-unauthenticated"}}
   {{
     template "shared/nav/navlink.partial.tmpl" dict
     "Display" true
     "Href" (list "/login?return=" (queryEscape .Meta.RequestURI) | join "")
-    "Name" "Login"
+    "Name" "Sign In"
     "MetaPath" .Meta.Path
   }}
 {{end}}

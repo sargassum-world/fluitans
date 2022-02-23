@@ -1,16 +1,22 @@
 // Package auth provides application-level standardization for authentication
 package auth
 
-import (
-	"html/template"
-)
-
 type Identity struct {
 	Authenticated bool
 	User          string
 }
 
+type CSRFBehavior struct {
+	OmitToken  bool
+	FieldName  string
+}
+
+type CSRF struct {
+	Behavior CSRFBehavior
+	Token    string
+}
+
 type Auth struct {
 	Identity  Identity
-	CSRFInput template.HTML
+	CSRF      CSRF
 }
