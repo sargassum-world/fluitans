@@ -44,7 +44,7 @@
               data-action="submit->form-submission#submit submit->turbo-cache#clear submit->csrf#addToken"
             >
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
-              <input type="hidden" name="form-action" value="delete">
+              <input type="hidden" name="state" value="unauthenticated">
               <input
                 type="hidden"
                 name="omit-csrf-inputs"
@@ -77,7 +77,7 @@
               data-form-submission-target="submitter"
             >
               {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
-              <input type="hidden" name="form-action" value="create">
+              <input type="hidden" name="state" value="authenticated">
               <input type="hidden" name="return" value="{{.Data.ReturnURL}}">
               <div class="field">
                 <label class="label" for="username">Username</label>

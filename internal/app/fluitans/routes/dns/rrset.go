@@ -31,15 +31,13 @@ func postRRset(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Han
 			subname = ""
 		}
 		recordType := c.Param("type")
-		formAction := c.FormValue("form-action")
+		state := c.FormValue("state")
 
 		// Run queries
-		switch formAction {
+		switch state {
 		default:
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid POST form action %s", formAction,
-			))
-		case "delete":
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid RRset state %s", state))
+		case "deleted":
 			if err := app.Clients.Desec.DeleteRRset(ctx, subname, recordType); err != nil {
 				return err
 			}

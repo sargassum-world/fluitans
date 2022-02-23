@@ -162,15 +162,15 @@ func postSessions(
 	sc := app.Clients.Sessions
 	return func(c echo.Context) error {
 		// Parse params
-		formAction := c.FormValue("form-action")
+		state := c.FormValue("state")
 
 		// Run queries
-		switch formAction {
+		switch state {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid POST form action %s", formAction,
+				"invalid session %s", state,
 			))
-		case "create":
+		case "authenticated":
 			username := c.FormValue("username")
 			password := c.FormValue("password")
 			returnURL := c.FormValue("return")
@@ -188,7 +188,7 @@ func postSessions(
 				return handleAuthenticationFailure(c, returnURL, sc)
 			}
 			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, sc)
-		case "delete":
+		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
 			sess, err := sc.Invalidate(c)
