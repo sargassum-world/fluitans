@@ -10,7 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/framework/session"
@@ -22,15 +21,10 @@ type CSRFData struct {
 	Token      string `json:"token,omitempty"`
 }
 
-func getCSRF(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
-	sc := app.Clients.Sessions
+func (s *Service) getCSRF(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	return func(c echo.Context) error {
 		// Get session
-		sess, err := sc.Get(c)
+		sess, err := s.sc.Get(c)
 		if err != nil {
 			return err
 		}
@@ -40,8 +34,8 @@ func getCSRF(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Handl
 
 		// Produce output
 		return c.JSON(http.StatusOK, CSRFData{
-			HeaderName: sc.Config.CSRFOptions.HeaderName,
-			FieldName:  sc.Config.CSRFOptions.FieldName,
+			HeaderName: s.sc.Config.CSRFOptions.HeaderName,
+			FieldName:  s.sc.Config.CSRFOptions.FieldName,
 			Token:      csrf.Token(c.Request()),
 		})
 	}, nil
@@ -53,20 +47,12 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "auth/login.page.tmpl"
-	err := te.RequireSegments("auth.getLogin", t)
-	if err != nil {
-		return nil, err
-	}
-
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, sess, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, sess, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}
@@ -77,7 +63,7 @@ func getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Hand
 			return err
 		}
 		loginData := LoginData{
-			NoAuth:        app.Clients.Authn.Config.NoAuth,
+			NoAuth:        s.ac.Config.NoAuth,
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
 		}
@@ -152,14 +138,9 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.
 	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
-func postSessions(
+func (s *Service) postSessions(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
-	sc := app.Clients.Sessions
 	return func(c echo.Context) error {
 		// Parse params
 		state := c.FormValue("state")
@@ -180,18 +161,18 @@ func postSessions(
 			// the OWASP Session Management Cheat Sheet
 
 			// Check authentication
-			identified, err := app.Clients.Authn.CheckCredentials(username, password)
+			identified, err := s.ac.CheckCredentials(username, password)
 			if err != nil {
 				return err
 			}
 			if !identified {
-				return handleAuthenticationFailure(c, returnURL, sc)
+				return handleAuthenticationFailure(c, returnURL, s.sc)
 			}
-			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, sc)
+			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, s.sc)
 		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
-			sess, err := sc.Invalidate(c)
+			sess, err := s.sc.Invalidate(c)
 			if err != nil {
 				return err
 			}

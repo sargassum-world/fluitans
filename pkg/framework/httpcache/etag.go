@@ -15,7 +15,7 @@ func JoinEtagSegments(segments ...string) string {
 }
 
 func MakeEtag(segments ...string) string {
-	return fmt.Sprintf("W/\"%s\"", strings.Join(segments, etagSegmentDelimiter))
+	return fmt.Sprintf("W/\"%s\"", JoinEtagSegments(segments...))
 }
 
 // Headers for Etags
@@ -39,8 +39,8 @@ func CheckEtagMatch(reqh http.Header, etag string) bool {
 	return match == etag
 }
 
-func ProcessEtag(w http.ResponseWriter, r *http.Request, etagSegments ...string) bool {
-	etag := MakeEtag(JoinEtagSegments(etagSegments...))
+func SetAndCheckEtag(w http.ResponseWriter, r *http.Request, etagSegments ...string) bool {
+	etag := MakeEtag(etagSegments...)
 	SetEtag(w.Header(), etag)
 	if !CheckEtagMatch(r.Header, etag) {
 		return false

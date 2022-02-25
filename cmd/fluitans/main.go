@@ -29,7 +29,7 @@ func main() {
 		Level: gzipLevel,
 	}))
 	e.Use(middleware.Decompress())
-	// TODO: enable CORS, CSRF, auth, Prometheus, rate-limiting, and security
+	// TODO: enable Prometheus, rate-limiting, and security
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	// Prepare server

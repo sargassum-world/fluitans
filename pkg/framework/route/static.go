@@ -1,33 +1,21 @@
 package route
 
 import (
-	"fmt"
 	"io/fs"
+	"net/http"
+	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
+	"github.com/benbjohnson/hashfs"
+
+	"github.com/sargassum-eco/fluitans/pkg/framework/httpcache"
 )
 
-type StaticGlobals struct {
-	FS  map[string]fs.FS
-	HFS map[string]fs.FS
+func HandleFS(routePrefix string, fsys fs.FS, age time.Duration) http.Handler {
+	return httpcache.WrapStaticHeader(
+		http.StripPrefix(routePrefix, http.FileServer(http.FS(fsys))), int(age.Seconds()),
+	)
 }
 
-type Static struct {
-	Path         string
-	HandlerMaker func(g StaticGlobals) (echo.HandlerFunc, error)
-}
-
-func RegisterStatic(e EchoRouter, routes []Static, g StaticGlobals) error {
-	for _, route := range routes {
-		h, err := route.HandlerMaker(g)
-		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf(
-				"couldn't make the handler for static route %s", route.Path),
-			)
-		}
-
-		e.GET(route.Path, h)
-	}
-	return nil
+func HandleFSFileRevved(routePrefix string, fsys fs.FS) http.Handler {
+	return http.StripPrefix(routePrefix, hashfs.FileServer(fsys))
 }

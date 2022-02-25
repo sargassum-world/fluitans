@@ -8,16 +8,13 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/assets"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/tmplfunc"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
 	"github.com/sargassum-eco/fluitans/pkg/framework"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/web"
 )
-
-func RegisterRoutes(g *framework.Globals, e route.EchoRouter) error {
-	return g.RegisterRoutes(e, routes.TemplatedAssets, routes.StaticAssets, routes.Pages)
-}
 
 func LaunchBackgroundWorkers(ag *client.Globals) {
 	go workers.PrescanZerotierControllers(ag.Clients.ZTControllers)
@@ -36,23 +33,27 @@ func PrepareServer(e *echo.Echo) error {
 	if err != nil {
 		return errors.Wrap(err, "couldn't make app globals")
 	}
-	g, err := framework.NewGlobals(embeds, ag)
+	g, err := framework.NewGlobals(embeds)
 	if err != nil {
 		return errors.Wrap(err, "couldn't make server globals")
 	}
 
-	// CSRF Mitigation
+	// CSRF Defense
 	e.Use(ag.Clients.Sessions.NewCSRFMiddleware(
-		csrf.ErrorHandler(NewCSRFErrorHandler(
-			g.Template, r, e.Logger, ag.Clients.Sessions,
-		)),
-		csrf.RequestHeader(ag.Clients.Sessions.Config.CSRFOptions.HeaderName),
-		csrf.FieldName(ag.Clients.Sessions.Config.CSRFOptions.FieldName),
+		csrf.ErrorHandler(NewCSRFErrorHandler(g.Template, r, e.Logger, ag.Clients.Sessions)),
 	))
 
 	// Routes
-	if err = RegisterRoutes(g, e); err != nil {
-		return errors.Wrap(err, "couldn't register routes")
+	assets.RegisterStatic(e, embeds)
+	if err := route.RegisterTemplated(
+		e, assets.NewTemplatedService().Routes(), g.Template,
+	); err != nil {
+		return errors.Wrap(err, "couldn't register templated assets")
+	}
+	if err := route.RegisterTemplated(
+		e, routes.NewService(ag.Clients).Routes(), g.Template,
+	); err != nil {
+		return errors.Wrap(err, "couldn't register templated routes")
 	}
 
 	// Error Handling

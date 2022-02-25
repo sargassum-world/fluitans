@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
@@ -55,22 +54,14 @@ func getControllerData(
 	}, nil
 }
 
-func getController(
+func (s *Service) getController(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "controllers/controller.page.tmpl"
-	err := te.RequireSegments("controllers.getController", t)
-	if err != nil {
-		return nil, err
-	}
-
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, _, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}
@@ -82,9 +73,7 @@ func getController(
 		name := c.Param("name")
 
 		// Run queries
-		controllerData, err := getControllerData(
-			ctx, name, app.Clients.ZTControllers, app.Clients.Zerotier,
-		)
+		controllerData, err := getControllerData(ctx, name, s.ztcc, s.ztc)
 		if err != nil {
 			return err
 		}

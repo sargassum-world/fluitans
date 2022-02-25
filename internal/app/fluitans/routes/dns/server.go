@@ -72,22 +72,14 @@ func getServerData(
 	}, nil
 }
 
-func getServer(
+func (s *Service) getServer(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "dns/server.page.tmpl"
-	err := te.RequireSegments("dns.getServer", t)
-	if err != nil {
-		return nil, err
-	}
-
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, _, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}
@@ -100,7 +92,7 @@ func getServer(
 
 		// Run queries
 		serverData, err := getServerData(
-			ctx, app.Clients.Desec, app.Clients.Zerotier, app.Clients.ZTControllers,
+			ctx, s.dc, s.ztc, s.ztcc,
 		)
 		if err != nil {
 			return err

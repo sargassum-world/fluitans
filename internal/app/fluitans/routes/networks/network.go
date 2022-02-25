@@ -290,20 +290,12 @@ func getNetworkData(
 	}, nil
 }
 
-func getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "networks/network.page.tmpl"
-	err := te.RequireSegments("networks.getNetwork", t)
-	if err != nil {
-		return nil, err
-	}
-
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, _, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}
@@ -316,9 +308,7 @@ func getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Ha
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
-		networkData, err := getNetworkData(
-			ctx, address, id, app.Clients.Zerotier, app.Clients.ZTControllers, app.Clients.Desec,
-		)
+		networkData, err := getNetworkData(ctx, address, id, s.ztc, s.ztcc, s.dc)
 		if err != nil {
 			return err
 		}
@@ -367,6 +357,42 @@ func nameNetwork(
 	)
 }
 
+func (s *Service) postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+		state := c.FormValue("state")
+
+		// Run queries
+		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
+		if err != nil {
+			return err
+		}
+
+		switch state {
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+				"invalid network state %s", state,
+			))
+		case "deleted":
+			if err = s.ztc.DeleteNetwork(ctx, *controller, id, s.ztcc); err != nil {
+				// TODO: add a tombstone to the TXT RRset?
+				return err
+			}
+			return c.Redirect(http.StatusSeeOther, "/networks")
+		}
+	}, nil
+}
+
 func setNetworkRules(
 	ctx context.Context, controller ztcontrollers.Controller,
 	id string, jsonRules string, c *ztc.Client,
@@ -384,57 +410,12 @@ func setNetworkRules(
 	return nil
 }
 
-func postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
-	cc := app.Clients.ZTControllers
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
-			return err
-		}
-
-		// Extract context
-		ctx := c.Request().Context()
-
-		// Parse params
-		id := c.Param("id")
-		address := ztc.GetControllerAddress(id)
-		state := c.FormValue("state")
-
-		// Run queries
-		controller, err := cc.FindControllerByAddress(ctx, address)
-		if err != nil {
-			return err
-		}
-
-		switch state {
-		default:
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid network state %s", state,
-			))
-		case "deleted":
-			if err = app.Clients.Zerotier.DeleteNetwork(ctx, *controller, id, cc); err != nil {
-				// TODO: add a tombstone to the TXT RRset?
-				return err
-			}
-			return c.Redirect(http.StatusSeeOther, "/networks")
-		}
-	}, nil
-}
-
-func postNetworkRules(
+func (s *Service) postNetworkRules(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
@@ -446,13 +427,11 @@ func postNetworkRules(
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
-		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, address)
+		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
 		if err != nil {
 			return err
 		}
-		if err = setNetworkRules(
-			ctx, *controller, id, c.FormValue("rules"), app.Clients.Zerotier,
-		); err != nil {
+		if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), s.ztc); err != nil {
 			return err
 		}
 
@@ -460,16 +439,12 @@ func postNetworkRules(
 	}, nil
 }
 
-func postNetworkName(
+func (s *Service) postNetworkName(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
@@ -481,12 +456,12 @@ func postNetworkName(
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
-		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, address)
+		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
 		if err != nil {
 			return err
 		}
 		if err = nameNetwork(
-			ctx, *controller, id, c.FormValue("name"), app.Clients.Zerotier, app.Clients.Desec,
+			ctx, *controller, id, c.FormValue("name"), s.ztc, s.dc,
 		); err != nil {
 			return err
 		}

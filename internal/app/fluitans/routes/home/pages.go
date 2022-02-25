@@ -7,33 +7,37 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
-var Pages = []route.Templated{
-	{
-		Path:         "/",
-		Method:       http.MethodGet,
-		HandlerMaker: getHome,
-		Templates:    []string{"home/home.page.tmpl"},
-	},
+type Service struct {
+	sc *sessions.Client
 }
 
-func getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	t := "home/home.page.tmpl"
-	err := te.RequireSegments("pages.getHome", t)
-	if err != nil {
-		return nil, err
+func NewService(sc *sessions.Client) *Service {
+	return &Service{
+		sc: sc,
 	}
+}
 
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
+func (s *Service) Routes() []route.Templated {
+	return []route.Templated{
+		{
+			Path:         "/",
+			Method:       http.MethodGet,
+			HandlerMaker: s.getHome,
+			Templates:    []string{"home/home.page.tmpl"},
+		},
 	}
+}
+
+func (s *Service) getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+	t := "home/home.page.tmpl"
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, _, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}

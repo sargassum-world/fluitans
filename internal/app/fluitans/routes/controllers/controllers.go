@@ -4,32 +4,23 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
-func getControllers(
+func (s *Service) getControllers(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
 	t := "controllers/controllers.page.tmpl"
-	err := te.RequireSegments("controllers.getControllers", t)
-	if err != nil {
-		return nil, err
-	}
-
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, _, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}
 
 		// Run queries
-		controllers, err := app.Clients.ZTControllers.GetControllers()
+		controllers, err := s.ztcc.GetControllers()
 		if err != nil {
 			return err
 		}

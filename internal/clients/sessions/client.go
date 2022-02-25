@@ -50,6 +50,8 @@ func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) echo.MiddlewareFunc {
 		csrf.Secure(sc.Config.CookieOptions.Secure),
 		csrf.HttpOnly(sc.Config.CookieOptions.HttpOnly),
 		csrf.SameSite(sameSite),
+		csrf.RequestHeader(sc.Config.CSRFOptions.HeaderName),
+		csrf.FieldName(sc.Config.CSRFOptions.FieldName),
 	}
 	options = append(options, opts...)
 	return echo.WrapMiddleware(csrf.Protect(sc.Config.AuthKey, options...))

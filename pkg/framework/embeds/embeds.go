@@ -2,7 +2,6 @@
 package embeds
 
 import (
-	"fmt"
 	"html/template"
 	"io/fs"
 
@@ -24,76 +23,43 @@ type Embeds struct {
 	Inlines     route.Inlines
 }
 
-func (e Embeds) IdentifyModuleNonpageFiles() (map[string][]string, error) {
-	modules, err := fsutil.ListDirectories(e.TemplatesFS, tp.FilterModule)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't list template modules")
-	}
-
-	moduleFiles := make(map[string][]string)
-	for _, module := range modules {
-		var subfs fs.FS
-		if module == "" {
-			subfs = e.TemplatesFS
-		} else {
-			subfs, err = fs.Sub(e.TemplatesFS, module)
-		}
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("couldn't list template module %s", module))
-		}
-		moduleSubfiles, err := fsutil.ListFiles(subfs, tp.FilterNonpage)
-		moduleFiles[module] = make([]string, len(moduleSubfiles))
-		for i, subfile := range moduleSubfiles {
-			if module == "" {
-				moduleFiles[module][i] = subfile
-			} else {
-				moduleFiles[module][i] = fmt.Sprintf("%s/%s", module, subfile)
-			}
-		}
-		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("couldn't list template files in module %s", module))
-		}
-	}
-	return moduleFiles, nil
-}
-
-func (e Embeds) ComputeTemplateFingerprints() (*route.TemplateFingerprints, error) {
-	sharedFiles, err := fsutil.ListFiles(e.TemplatesFS, tp.FilterShared)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't list shared templates")
-	}
-
-	moduleNonpageFiles, err := e.IdentifyModuleNonpageFiles()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't list template module non-page template files")
-	}
-
-	pageFiles, err := fsutil.ListFiles(e.TemplatesFS, tp.FilterPage)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't list template pages")
-	}
-
+func (e Embeds) ComputeAppFingerprint() (fingerprint string, err error) {
 	appAssetFiles, err := fsutil.ListFiles(e.AppFS, tp.FilterAsset)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't list app assets")
+		err = errors.Wrap(err, "couldn't list app assets")
+		return
 	}
-
-	return route.ComputeTemplateFingerprints(
-		sharedFiles, moduleNonpageFiles, pageFiles, appAssetFiles, e.TemplatesFS, e.AppFS,
-	)
+	sharedFiles, err := fsutil.ListFiles(e.TemplatesFS, tp.FilterShared)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't list shared templates")
+		return
+	}
+	fingerprint, err = route.ComputeAppFingerprint(appAssetFiles, sharedFiles, e.TemplatesFS, e.AppFS)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't compute fingerprint for app")
+		return
+	}
+	return
 }
 
-func (e Embeds) MakeStaticGlobals() route.StaticGlobals {
-	return route.StaticGlobals{
-		FS: map[string]fs.FS{
-			"Web":   e.StaticFS,
-			"Fonts": e.FontsFS,
-		},
-		HFS: map[string]fs.FS{
-			"Static": e.StaticHFS,
-			"App":    e.AppHFS,
-		},
+func (e Embeds) ComputePageFingerprints() (fingerprints map[string]string, err error) {
+	moduleNonpageFiles, err := IdentifyModuleNonpageFiles(e.TemplatesFS)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't list template module non-page template files")
+		return
 	}
+	pageFiles, err := fsutil.ListFiles(e.TemplatesFS, tp.FilterPage)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't list template pages")
+		return
+	}
+
+	fingerprints, err = route.ComputePageFingerprints(moduleNonpageFiles, pageFiles, e.TemplatesFS)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't compute fingerprint for page/module templates")
+		return
+	}
+	return
 }
 
 func (e Embeds) NewTemplateRenderer(functions ...template.FuncMap) *tp.TemplateRenderer {

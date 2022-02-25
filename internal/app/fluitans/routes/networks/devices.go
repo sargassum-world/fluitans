@@ -9,7 +9,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
@@ -35,6 +34,40 @@ func setMemberAuthorization(
 		c.Cache.UnsetNetworkMembersByID(networkID)
 	}
 	return nil
+}
+
+func (s *Service) postDeviceAuthorization(
+	g route.TemplateGlobals, te route.TemplateEtagSegments,
+) (echo.HandlerFunc, error) {
+	return func(c echo.Context) error {
+		// Check authentication & authorization
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
+			return err
+		}
+
+		// Extract context
+		ctx := c.Request().Context()
+
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
+		memberAddress := c.Param("address")
+		authorization := strings.ToLower(c.FormValue("authorization")) == "true"
+
+		// Run queries
+		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return err
+		}
+		if err = setMemberAuthorization(
+			ctx, *controller, networkID, memberAddress, authorization, s.ztc,
+		); err != nil {
+			return err
+		}
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
+			"/networks/%s#device-%s", networkID, memberAddress,
+		))
+	}, nil
 }
 
 // Naming
@@ -115,55 +148,10 @@ func unsetMemberName(
 	return nil
 }
 
-func postDeviceAuthorization(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
-	zc := app.Clients.Zerotier
+func (s *Service) postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
-			return err
-		}
-
-		// Extract context
-		ctx := c.Request().Context()
-
-		// Parse params
-		networkID := c.Param("id")
-		controllerAddress := ztc.GetControllerAddress(networkID)
-		memberAddress := c.Param("address")
-		authorization := strings.ToLower(c.FormValue("authorization")) == "true"
-
-		// Run queries
-		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
-		if err != nil {
-			return err
-		}
-		if err = setMemberAuthorization(
-			ctx, *controller, networkID, memberAddress, authorization, zc,
-		); err != nil {
-			return err
-		}
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
-			"/networks/%s#device-%s", networkID, memberAddress,
-		))
-	}, nil
-}
-
-func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
-	zc := app.Clients.Zerotier
-	dc := app.Clients.Desec
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
@@ -177,7 +165,7 @@ func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 		setName := c.FormValue("set-name")
 
 		// Run queries
-		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
+		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
 		}
@@ -185,14 +173,14 @@ func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 		switch setName {
 		default:
 			if err = setMemberName(
-				ctx, *controller, networkID, memberAddress, setName, zc, dc,
+				ctx, *controller, networkID, memberAddress, setName, s.ztc, s.dc,
 			); err != nil {
 				return err
 			}
 		case "":
 			nameToUnset := c.FormValue("unset-name")
 			if err = unsetMemberName(
-				ctx, *controller, networkID, memberAddress, nameToUnset, zc, dc,
+				ctx, *controller, networkID, memberAddress, nameToUnset, s.ztc, s.dc,
 			); err != nil {
 				return err
 			}
@@ -204,14 +192,10 @@ func postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (ech
 	}, nil
 }
 
-func postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+func (s *Service) postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
@@ -224,12 +208,12 @@ func postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 		memberAddress := c.FormValue("address")
 
 		// Run queries
-		controller, err := app.Clients.ZTControllers.FindControllerByAddress(ctx, controllerAddress)
+		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
 		}
 		if err = setMemberAuthorization(
-			ctx, *controller, networkID, memberAddress, true, app.Clients.Zerotier,
+			ctx, *controller, networkID, memberAddress, true, s.ztc,
 		); err != nil {
 			return err
 		}

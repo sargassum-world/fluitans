@@ -7,18 +7,13 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
-func postRRset(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+func (s *Service) postRRset(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
@@ -38,7 +33,7 @@ func postRRset(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.Han
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid RRset state %s", state))
 		case "deleted":
-			if err := app.Clients.Desec.DeleteRRset(ctx, subname, recordType); err != nil {
+			if err := s.dc.DeleteRRset(ctx, subname, recordType); err != nil {
 				return err
 			}
 

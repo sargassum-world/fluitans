@@ -74,7 +74,3 @@ func NewGlobals(l log.Logger) (*Globals, error) {
 		},
 	}, nil
 }
-
-func NewUnexpectedGlobalsTypeError(g interface{}) error {
-	return errors.Errorf("globals are of unexpected type %T", g)
-}

@@ -61,34 +61,18 @@ func WriteTemplatedResponse(
 	return werr
 }
 
-type EtagData struct {
-	Data interface{}
-	Auth interface{}
-}
-
-func ProcessEtagData(
-	w http.ResponseWriter, r *http.Request,
-	templateName string, templateData interface{}, authData interface{}, te TemplateEtagSegments,
-) (noContent bool, err error) {
-	templateEtagSegment, err := te.GetSegment(templateName)
-	if err != nil {
-		return
-	}
-	etagData := EtagData{
-		Data: templateData,
-		Auth: authData,
-	}
-	noContent, err = ProcessEtag(w, r, templateEtagSegment, etagData)
-	return
-}
-
 func Render(
 	c echo.Context, templateName string, templateData interface{}, authData interface{},
 	te TemplateEtagSegments, g TemplateGlobals,
 ) error {
-	if noContent, err := ProcessEtagData(
-		c.Response(), c.Request(), templateName, templateData, authData, te,
-	); noContent || (err != nil) {
+	type EtagInputs struct {
+		Data interface{}
+		Auth interface{}
+	}
+	if noContent, err := te.SetAndCheckEtag(c.Response(), c.Request(), templateName, EtagInputs{
+		Data: templateData,
+		Auth: authData,
+	}); noContent || (err != nil) {
 		return err
 	}
 	return c.Render(

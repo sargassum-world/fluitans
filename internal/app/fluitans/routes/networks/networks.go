@@ -8,7 +8,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/framework/route"
@@ -46,20 +45,12 @@ func getNetworksData(
 	return networksData, nil
 }
 
-func getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
 	t := "networks/networks.page.tmpl"
-	err := te.RequireSegments("networks.getNetwork", t)
-	if err != nil {
-		return nil, err
-	}
-
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
+	te.Require(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, app.Clients.Sessions)
+		a, _, err := auth.GetWithSession(c, s.sc)
 		if err != nil {
 			return err
 		}
@@ -68,7 +59,7 @@ func getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 		ctx := c.Request().Context()
 
 		// Run queries
-		networksData, err := getNetworksData(ctx, app.Clients.Zerotier, app.Clients.ZTControllers)
+		networksData, err := getNetworksData(ctx, s.ztc, s.ztcc)
 		if err != nil {
 			return err
 		}
@@ -78,16 +69,12 @@ func getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.H
 	}, nil
 }
 
-func postNetworks(
+func (s *Service) postNetworks(
 	g route.TemplateGlobals, te route.TemplateEtagSegments,
 ) (echo.HandlerFunc, error) {
-	app, ok := g.App.(*client.Globals)
-	if !ok {
-		return nil, client.NewUnexpectedGlobalsTypeError(g.App)
-	}
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, app.Clients.Sessions); err != nil {
+		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
@@ -103,7 +90,7 @@ func postNetworks(
 		}
 
 		// Run queries
-		controller, err := app.Clients.ZTControllers.FindController(name)
+		controller, err := s.ztcc.FindController(name)
 		if err != nil {
 			return err
 		}
@@ -113,9 +100,7 @@ func postNetworks(
 			)
 		}
 
-		createdNetwork, err := app.Clients.Zerotier.CreateNetwork(
-			ctx, *controller, app.Clients.ZTControllers,
-		)
+		createdNetwork, err := s.ztc.CreateNetwork(ctx, *controller, s.ztcc)
 		if err != nil {
 			return err
 		}

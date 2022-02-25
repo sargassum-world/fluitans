@@ -24,12 +24,22 @@ func NewInlines(css map[string]string, js map[string]string) Inlines {
 	}
 }
 
-type TemplateFingerprints struct {
-	App  string
-	Page map[string]string
+func ComputeAppFingerprint(
+	appAssets, sharedTemplates []string, templates, app fs.FS,
+) (string, error) {
+	appConcatenated, err := fsutil.ReadConcatenated(appAssets, app)
+	if err != nil {
+		return "", errors.Wrap(err, "couldn't load all app assets together for fingerprinting")
+	}
+	sharedConcatenated, err := fsutil.ReadConcatenated(sharedTemplates, templates)
+	if err != nil {
+		return "", errors.Wrap(err, "couldn't load all shared templates together for fingerprinting")
+	}
+
+	return fingerprint.Compute(append(appConcatenated, sharedConcatenated...)), nil
 }
 
-func computePageFingerprints(
+func ComputePageFingerprints(
 	moduleNonpageFiles map[string][]string, pageFiles []string, templates fs.FS,
 ) (map[string]string, error) {
 	moduleNonpages := make(map[string][]byte)
@@ -67,45 +77,19 @@ func computePageFingerprints(
 	return pageFingerprints, nil
 }
 
-func ComputeTemplateFingerprints(
-	sharedFiles []string, moduleNonpageFiles map[string][]string, pageFiles, appAssets []string,
-	templates, app fs.FS,
-) (*TemplateFingerprints, error) {
-	sharedConcatenated, err := fsutil.ReadConcatenated(sharedFiles, templates)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't load all shared templates together for fingerprinting")
-	}
-
-	pageFingerprints, err := computePageFingerprints(moduleNonpageFiles, pageFiles, templates)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't page/module templates for fingerprinting")
-	}
-
-	appConcatenated, err := fsutil.ReadConcatenated(appAssets, app)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't load all app assets together for fingerprinting")
-	}
-
-	tf := TemplateFingerprints{
-		App:  fingerprint.Compute(append(appConcatenated, sharedConcatenated...)),
-		Page: pageFingerprints,
-	}
-	return &tf, nil
-}
-
 type TemplateGlobals struct {
-	Inlines              Inlines
-	TemplateFingerprints TemplateFingerprints
-	App                  interface{}
+	Inlines          Inlines
+	AppFingerprint   string
+	PageFingerprints map[string]string
 }
 
 func (tg TemplateGlobals) GetEtagSegments(templateName string) ([]string, error) {
-	appFingerprint := tg.TemplateFingerprints.App
+	appFingerprint := tg.AppFingerprint
 	if templateName == "" {
 		return []string{appFingerprint}, nil
 	}
 
-	pageFingerprint, ok := tg.TemplateFingerprints.Page[templateName]
+	pageFingerprint, ok := tg.PageFingerprints[templateName]
 	if !ok {
 		return []string{appFingerprint}, errors.Errorf(
 			"couldn't find page fingerprint for template %s", templateName,
