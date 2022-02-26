@@ -6,22 +6,22 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
 type Service struct {
-	r  framework.TemplateRenderer
+	r  godest.TemplateRenderer
 	sc *sessions.Client
 }
 
-func NewService(r framework.TemplateRenderer, sc *sessions.Client) *Service {
+func NewService(r godest.TemplateRenderer, sc *sessions.Client) *Service {
 	return &Service{
 		r:  r,
 		sc: sc,
 	}
 }
 
-func (s *Service) Register(er framework.EchoRouter) {
+func (s *Service) Register(er godest.EchoRouter) {
 	er.GET("/", s.getHome())
 }
 

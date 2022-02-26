@@ -3,7 +3,7 @@ package zerotier
 import (
 	"fmt"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
+	"github.com/sargassum-eco/fluitans/pkg/godest/clientcache"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 

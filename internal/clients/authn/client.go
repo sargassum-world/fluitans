@@ -7,15 +7,15 @@ import (
 	"github.com/alexedwards/argon2id"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
 type Client struct {
 	Config Config
-	Logger framework.Logger
+	Logger godest.Logger
 }
 
-func NewClient(l framework.Logger) (*Client, error) {
+func NewClient(l godest.Logger) (*Client, error) {
 	config, err := GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions client config")

@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/env"
+	"github.com/sargassum-eco/fluitans/pkg/godest/env"
 )
 
 type Timeouts struct {

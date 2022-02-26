@@ -10,7 +10,7 @@ import (
 
 	"github.com/twmb/murmur3"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/fsutil"
+	"github.com/sargassum-eco/fluitans/pkg/godest/fsutil"
 )
 
 const FingerprintSize = 8

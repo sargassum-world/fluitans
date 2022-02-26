@@ -1,4 +1,4 @@
-package framework
+package godest
 
 import (
 	"github.com/labstack/echo/v4"

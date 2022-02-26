@@ -6,11 +6,11 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
 type Service struct {
-	r    framework.TemplateRenderer
+	r    godest.TemplateRenderer
 	dc   *desec.Client
 	ztc  *zerotier.Client
 	ztcc *ztcontrollers.Client
@@ -18,7 +18,7 @@ type Service struct {
 }
 
 func NewService(
-	r framework.TemplateRenderer,
+	r godest.TemplateRenderer,
 	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client, sc *sessions.Client,
 ) *Service {
 	return &Service{
@@ -30,7 +30,7 @@ func NewService(
 	}
 }
 
-func (s *Service) Register(er framework.EchoRouter) {
+func (s *Service) Register(er godest.EchoRouter) {
 	er.GET("/networks", s.getNetworks())
 	er.POST("/networks", s.postNetworks())
 	er.GET("/networks/:id", s.getNetwork())

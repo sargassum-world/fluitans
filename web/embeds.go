@@ -9,7 +9,7 @@ import (
 
 	"github.com/benbjohnson/hashfs"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
 // Embeds are embedded filesystems
@@ -46,8 +46,8 @@ var bundleEagerJS string
 //go:embed app/public/build/theme-eager.min.css
 var bundleEagerCSS string
 
-func NewEmbeds() framework.Embeds {
-	return framework.Embeds{
+func NewEmbeds() godest.Embeds {
+	return godest.Embeds{
 		StaticFS:    staticFS,
 		StaticHFS:   staticHFS,
 		TemplatesFS: templatesFS,

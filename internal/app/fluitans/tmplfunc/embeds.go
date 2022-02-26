@@ -1,7 +1,7 @@
 package tmplfunc
 
 import (
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
 type HashedNamers struct {
@@ -9,7 +9,7 @@ type HashedNamers struct {
 	StaticHashed func(filename string) string
 }
 
-func NewHashedNamers(appURLPrefix, staticURLPrefix string, embeds framework.Embeds) HashedNamers {
+func NewHashedNamers(appURLPrefix, staticURLPrefix string, embeds godest.Embeds) HashedNamers {
 	return HashedNamers{
 		AppHashed: embeds.GetAppHashedNamer(appURLPrefix),
 		StaticHashed: embeds.GetStaticHashedNamer(staticURLPrefix),

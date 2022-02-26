@@ -1,18 +1,83 @@
-// Package framework provides a reusable framework for Fluitans-style web apps
-package framework
+// Package godest provides a mildly opinionated framework for more easily writing web apps with
+// modest Javascript approaches such as Hotwire-based apps. It provides support for using templates
+// in a clear and structured way. It also makes it easy to embed all templates, static assets
+// (e.g. images) and app-related assets (e.g. JS bundles) into the compiled server binary, and it
+// takes care of the details of browser caching for assets and templated pages.
+// Finally, it provides some standalone utilities for caching data on the server, getting the values
+// of environment variables, and using cookies for form-based authentication.
+package godest
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/httpcache"
-	tp "github.com/sargassum-eco/fluitans/pkg/framework/template"
+	"github.com/sargassum-eco/fluitans/pkg/godest/fingerprint"
+	"github.com/sargassum-eco/fluitans/pkg/godest/httpcache"
+	tp "github.com/sargassum-eco/fluitans/pkg/godest/template"
 )
 
-// Template rendering data
+// Templated page fingerprinting
+
+type fingerprints struct {
+	App  string
+	Page map[string]string
+}
+
+func (f fingerprints) GetEtagSegments(templateName string) ([]string, error) {
+	if templateName == "" {
+		return []string{f.App}, nil
+	}
+
+	pageFingerprint, ok := f.Page[templateName]
+	if !ok {
+		return []string{f.App}, errors.Errorf(
+			"couldn't find page fingerprint for template %s", templateName,
+		)
+	}
+
+	return []string{f.App, pageFingerprint}, nil
+}
+
+func (f fingerprints) MustHave(templateNames ...string) {
+	for _, name := range templateNames {
+		if _, err := f.GetEtagSegments(name); err != nil {
+			panic(errors.Wrap(err, fmt.Sprintf("couldn't find template etag segments for %s", name)))
+		}
+	}
+}
+
+func (f fingerprints) SetAndCheckEtag(
+	w http.ResponseWriter, r *http.Request, templateName string, data interface{},
+) (noContent bool, err error) {
+	// Look up data-independent etag segments
+	templateEtagSegments, err := f.GetEtagSegments(templateName)
+	if err != nil {
+		return
+	}
+
+	// Encode data
+	var buf bytes.Buffer
+	// github.com/vmihailenco/msgpack has better performance, but we use the JSON encoder because
+	// the msgpack encoder can only sort the map keys of map[string]string and map[string]interface{}
+	// maps, and it's too much trouble to convert our maps into map[string]interface{}. If we can
+	// work around this limitation, we should use msgpack though.
+	if err = json.NewEncoder(&buf).Encode(data); err != nil {
+		return
+	}
+	encoded := buf.Bytes()
+
+	noContent = httpcache.SetAndCheckEtag(
+		w, r, append(templateEtagSegments, fingerprint.Compute(encoded))...,
+	)
+	return
+}
+
+// Template rendering
 
 type Meta struct {
 	Path       string
@@ -28,7 +93,7 @@ type RenderData struct {
 
 type TemplateRenderer struct {
 	inlines      interface{}
-	fingerprints Fingerprints
+	fingerprints fingerprints
 	templates    tp.Templates
 }
 

@@ -5,17 +5,17 @@ package ztcontrollers
 import (
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework"
-	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-eco/fluitans/pkg/godest/clientcache"
 )
 
 type Client struct {
 	Config Config
-	Logger framework.Logger
+	Logger godest.Logger
 	Cache  *Cache
 }
 
-func NewClient(cache clientcache.Cache, l framework.Logger) (*Client, error) {
+func NewClient(cache clientcache.Cache, l godest.Logger) (*Client, error) {
 	config, err := GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier controllers client config")

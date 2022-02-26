@@ -9,22 +9,22 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/dns"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/home"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/networks"
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
 type Service struct {
-	r       framework.TemplateRenderer
+	r       godest.TemplateRenderer
 	clients *client.Clients
 }
 
-func NewService(r framework.TemplateRenderer, clients *client.Clients) *Service {
+func NewService(r godest.TemplateRenderer, clients *client.Clients) *Service {
 	return &Service{
 		r:       r,
 		clients: clients,
 	}
 }
 
-func (s *Service) Register(er framework.EchoRouter, em framework.Embeds) {
+func (s *Service) Register(er godest.EchoRouter, em godest.Embeds) {
 	assets.RegisterStatic(er, em)
 	assets.NewTemplatedService(s.r).Register(er)
 	home.NewService(s.r, s.clients.Sessions).Register(er)

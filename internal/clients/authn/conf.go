@@ -6,7 +6,7 @@ import (
 	"github.com/alexedwards/argon2id"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/env"
+	"github.com/sargassum-eco/fluitans/pkg/godest/env"
 )
 
 type Config struct {

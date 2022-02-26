@@ -11,17 +11,18 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/framework"
-	"github.com/sargassum-eco/fluitans/pkg/framework/session"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-eco/fluitans/pkg/godest/httperr"
+	"github.com/sargassum-eco/fluitans/pkg/godest/session"
 )
 
 type ErrorData struct {
 	Code     int
-	Error    framework.HTTPError
+	Error    httperr.DescriptiveError
 	Messages []string
 }
 
-func NewHTTPErrorHandler(tr framework.TemplateRenderer, sc *sessions.Client) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.HTTPErrorHandler {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
@@ -39,7 +40,7 @@ func NewHTTPErrorHandler(tr framework.TemplateRenderer, sc *sessions.Client) ech
 		}
 		errorData := ErrorData{
 			Code:  code,
-			Error: framework.DescribeHTTPError(code),
+			Error: httperr.Describe(code),
 		}
 
 		// Consume & save session
@@ -67,7 +68,7 @@ func NewHTTPErrorHandler(tr framework.TemplateRenderer, sc *sessions.Client) ech
 }
 
 func NewCSRFErrorHandler(
-	tr framework.TemplateRenderer, l echo.Logger, sc *sessions.Client,
+	tr godest.TemplateRenderer, l echo.Logger, sc *sessions.Client,
 ) http.HandlerFunc {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -89,7 +90,7 @@ func NewCSRFErrorHandler(
 		code := http.StatusForbidden
 		errorData := ErrorData{
 			Code:  code,
-			Error: framework.DescribeHTTPError(code),
+			Error: httperr.Describe(code),
 			Messages: []string{
 				fmt.Sprintf(
 					"%s. If you disabled Javascript after signing in, "+

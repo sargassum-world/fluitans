@@ -1,15 +1,16 @@
-package framework
+// Package httperr provides utilities for writing HTTP error page templates.
+package httperr
 
 import (
 	"net/http"
 )
 
-type HTTPError struct {
+type DescriptiveError struct {
 	Name        string
 	Description string
 }
 
-var HTTPErrors = map[int]HTTPError{
+var DescriptiveErrors = map[int]DescriptiveError{
 	http.StatusBadRequest: {
 		Name:        "Bad request",
 		Description: "The server cannot process the request due to something believed to be a client error.",
@@ -51,10 +52,10 @@ var HTTPErrors = map[int]HTTPError{
 	},
 }
 
-func DescribeHTTPError(code int) HTTPError {
-	name, ok := HTTPErrors[code]
+func Describe(code int) DescriptiveError {
+	name, ok := DescriptiveErrors[code]
 	if !ok {
-		return HTTPError{
+		return DescriptiveError{
 			Name:        "Server error",
 			Description: "An unexpected problem occurred. We're working to fix it.",
 		}

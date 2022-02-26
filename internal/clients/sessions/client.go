@@ -10,13 +10,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/quasoft/memstore"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework"
-	"github.com/sargassum-eco/fluitans/pkg/framework/session"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-eco/fluitans/pkg/godest/session"
 )
 
 type Client struct {
 	Config Config
-	Logger framework.Logger
+	Logger godest.Logger
 	// TODO: allow configuration to use sqlite for a persistent session store
 	Store sessions.Store
 }
@@ -57,7 +57,7 @@ func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) echo.MiddlewareFunc {
 	return echo.WrapMiddleware(csrf.Protect(sc.Config.AuthKey, options...))
 }
 
-func NewMemStoreClient(l framework.Logger) (*Client, error) {
+func NewMemStoreClient(l godest.Logger) (*Client, error) {
 	config, err := GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions client config")

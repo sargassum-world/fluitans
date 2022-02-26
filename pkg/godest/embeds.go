@@ -1,4 +1,4 @@
-package framework
+package godest
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 	"github.com/benbjohnson/hashfs"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/fingerprint"
-	"github.com/sargassum-eco/fluitans/pkg/framework/fsutil"
-	tp "github.com/sargassum-eco/fluitans/pkg/framework/template"
+	"github.com/sargassum-eco/fluitans/pkg/godest/fingerprint"
+	"github.com/sargassum-eco/fluitans/pkg/godest/fsutil"
+	tp "github.com/sargassum-eco/fluitans/pkg/godest/template"
 )
 
 func identifyModuleNonpageFiles(templates fs.FS) (map[string][]string, error) {

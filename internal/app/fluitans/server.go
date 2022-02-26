@@ -12,7 +12,7 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/assets"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/tmplfunc"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
-	"github.com/sargassum-eco/fluitans/pkg/framework"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
 	"github.com/sargassum-eco/fluitans/web"
 )
 
@@ -26,7 +26,7 @@ func LaunchBackgroundWorkers(clients *client.Clients) {
 func PrepareServer(e *echo.Echo) error {
 	embeds := web.NewEmbeds()
 	inlines := web.NewInlines()
-	tr, err := framework.NewTemplateRenderer(
+	tr, err := godest.NewTemplateRenderer(
 		embeds, inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, embeds),
 		),

@@ -1,11 +1,11 @@
-package framework
+package godest
 
 import (
 	"io"
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/template"
+	"github.com/sargassum-eco/fluitans/pkg/godest/template"
 )
 
 // Routing

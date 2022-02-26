@@ -11,7 +11,7 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/framework/session"
+	"github.com/sargassum-eco/fluitans/pkg/godest/session"
 )
 
 type CSRFData struct {
