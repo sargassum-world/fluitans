@@ -71,16 +71,10 @@ func getServerData(
 	}, nil
 }
 
-func (h *Handlers) HandleServerGet() echo.HandlerFunc {
+func (h *Handlers) HandleServerGet() auth.AuthAwareHandler {
 	t := "dns/server.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
-		// Get auth data for template
-		a, _, err := auth.GetWithSession(c, h.sc)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
 		serverData, err := getServerData(c.Request().Context(), h.dc, h.ztc, h.ztcc)
 		if err != nil {

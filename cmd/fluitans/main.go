@@ -25,6 +25,7 @@ func main() {
 			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
 	e.Logger.SetLevel(log.WARN)
+	// TODO: move gzip level into server config, move middlewares below here into Server.Register
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Level: gzipLevel,
 	}))

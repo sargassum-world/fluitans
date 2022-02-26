@@ -2,6 +2,7 @@
 package auth
 
 import (
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/authn"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/pkg/godest"
@@ -22,7 +23,8 @@ func New(r godest.TemplateRenderer, ac *authn.Client, sc *sessions.Client) *Hand
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
+	ar := auth.NewAuthAwareRouter(er, h.sc)
 	er.GET("/csrf", h.HandleCSRFGet())
-	er.GET("/login", h.HandleLoginGet())
+	ar.GET("/login", h.HandleLoginGet())
 	er.POST("/sessions", h.HandleSessionsPost())
 }

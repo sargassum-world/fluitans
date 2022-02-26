@@ -6,16 +6,10 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 )
 
-func (h *Handlers) HandleControllersGet() echo.HandlerFunc {
+func (h *Handlers) HandleControllersGet() auth.AuthAwareHandler {
 	t := "controllers/controllers.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, h.sc)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
 		controllers, err := h.ztcc.GetControllers()
 		if err != nil {

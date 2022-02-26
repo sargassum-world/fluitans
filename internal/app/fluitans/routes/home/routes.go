@@ -22,19 +22,14 @@ func New(r godest.TemplateRenderer, sc *sessions.Client) *Handlers {
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
-	er.GET("/", h.HandleHomeGet())
+	ar := auth.NewAuthAwareRouter(er, h.sc)
+	ar.GET("/", h.HandleHomeGet())
 }
 
-func (h *Handlers) HandleHomeGet() echo.HandlerFunc {
+func (h *Handlers) HandleHomeGet() auth.AuthAwareHandler {
 	t := "home/home.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, h.sc)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth) error {
 		// Produce output
 		return h.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, a)
 	}

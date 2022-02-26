@@ -44,16 +44,10 @@ func getNetworksData(
 	return networksData, nil
 }
 
-func (h *Handlers) HandleNetworksGet() echo.HandlerFunc {
+func (h *Handlers) HandleNetworksGet() auth.AuthAwareHandler {
 	t := "networks/networks.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, h.sc)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
 		networksData, err := getNetworksData(c.Request().Context(), h.ztc, h.ztcc)
 		if err != nil {

@@ -47,12 +47,12 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (h *Handlers) HandleLoginGet() echo.HandlerFunc {
+func (h *Handlers) HandleLoginGet() auth.AuthAwareHandler {
 	t := "auth/login.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
+	return func(c echo.Context, a auth.Auth) error {
 		// Check authentication & authorization
-		a, sess, err := auth.GetWithSession(c, h.sc)
+		sess, err := h.sc.Get(c)
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,7 @@ func handleAuthenticationSuccess(
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
 	// bodies, in order to make HTML responses cacheable.
 	auth.SetCSRFBehavior(sess, !omitCSRFToken)
-	if err := sess.Save(c.Request(), c.Response()); err != nil {
+	if err = sess.Save(c.Request(), c.Response()); err != nil {
 		return err
 	}
 

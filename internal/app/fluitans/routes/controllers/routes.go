@@ -2,6 +2,7 @@
 package controllers
 
 import (
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
@@ -28,6 +29,7 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
-	er.GET("/controllers", h.HandleControllersGet())
-	er.GET("/controllers/:name", h.HandleControllerGet())
+	ar := auth.NewAuthAwareRouter(er, h.sc)
+	ar.GET("/controllers", h.HandleControllersGet())
+	ar.GET("/controllers/:name", h.HandleControllerGet())
 }

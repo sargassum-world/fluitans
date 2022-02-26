@@ -53,16 +53,10 @@ func getControllerData(
 	}, nil
 }
 
-func (h *Handlers) HandleControllerGet() echo.HandlerFunc {
+func (h *Handlers) HandleControllerGet() auth.AuthAwareHandler {
 	t := "controllers/controller.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, h.sc)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		name := c.Param("name")
 

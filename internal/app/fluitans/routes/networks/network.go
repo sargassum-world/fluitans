@@ -289,16 +289,10 @@ func getNetworkData(
 	}, nil
 }
 
-func (h *Handlers) HandleNetworkGet() echo.HandlerFunc {
+func (h *Handlers) HandleNetworkGet() auth.AuthAwareHandler {
 	t := "networks/network.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context) error {
-		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, h.sc)
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
