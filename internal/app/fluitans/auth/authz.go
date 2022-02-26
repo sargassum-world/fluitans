@@ -28,13 +28,18 @@ func (a Auth) RequireAuthorized() error {
 	return echo.NewHTTPError(http.StatusNotFound, "unauthorized")
 }
 
-func RequireAuthorized(c echo.Context, sc *sessions.Client) error {
-	a, _, err := GetWithSession(c, sc)
-	if err != nil {
-		return err
+func RequireAuthz(sc *sessions.Client) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			a, _, err := GetWithSession(c, sc)
+			if err != nil {
+				return err
+			}
+			if err = a.RequireAuthorized(); err != nil {
+				return err
+			}
+			// TODO: store the auth in the request context
+			return next(c)
+		}
 	}
-	if err = a.RequireAuthorized(); err != nil {
-		return err
-	}
-	return nil
 }

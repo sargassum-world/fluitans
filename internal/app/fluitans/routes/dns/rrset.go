@@ -5,17 +5,10 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 )
 
-func (s *Service) postRRset() echo.HandlerFunc {
+func (h *Handlers) HandleRRsetPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		subname := c.Param("subname")
 		if subname == "@" {
@@ -29,7 +22,7 @@ func (s *Service) postRRset() echo.HandlerFunc {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("invalid RRset state %s", state))
 		case "deleted":
-			if err := s.dc.DeleteRRset(c.Request().Context(), subname, recordType); err != nil {
+			if err := h.dc.DeleteRRset(c.Request().Context(), subname, recordType); err != nil {
 				return err
 			}
 

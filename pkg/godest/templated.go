@@ -117,10 +117,6 @@ func NewTemplateRenderer(
 	return
 }
 
-func (tr TemplateRenderer) GetEchoRenderer() EchoRenderer {
-	return NewEchoRenderer(tr.templates)
-}
-
 func (tr TemplateRenderer) MustHave(templateNames ...string) {
 	tr.fingerprints.MustHave(templateNames...)
 }

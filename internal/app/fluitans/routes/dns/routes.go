@@ -2,6 +2,7 @@
 package dns
 
 import (
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
@@ -9,7 +10,7 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
-type Service struct {
+type Handlers struct {
 	r    godest.TemplateRenderer
 	dc   *desec.Client
 	ztc  *zerotier.Client
@@ -17,11 +18,11 @@ type Service struct {
 	sc   *sessions.Client
 }
 
-func NewService(
+func New(
 	r godest.TemplateRenderer,
 	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client, sc *sessions.Client,
-) *Service {
-	return &Service{
+) *Handlers {
+	return &Handlers{
 		r:    r,
 		dc:   dc,
 		ztc:  ztc,
@@ -30,7 +31,7 @@ func NewService(
 	}
 }
 
-func (s *Service) Register(er godest.EchoRouter) {
-	er.GET("/dns", s.getServer())
-	er.POST("/dns/:subname/:type", s.postRRset())
+func (h *Handlers) Register(er godest.EchoRouter) {
+	er.GET("/dns", h.HandleServerGet(), auth.RequireAuthz(h.sc))
+	er.POST("/dns/:subname/:type", h.HandleRRsetPost(), auth.RequireAuthz(h.sc))
 }

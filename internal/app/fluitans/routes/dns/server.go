@@ -71,26 +71,23 @@ func getServerData(
 	}, nil
 }
 
-func (s *Service) getServer() echo.HandlerFunc {
+func (h *Handlers) HandleServerGet() echo.HandlerFunc {
 	t := "dns/server.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, s.sc)
+		// Get auth data for template
+		a, _, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
-			return err
-		}
-		if err = a.RequireAuthorized(); err != nil {
 			return err
 		}
 
 		// Run queries
-		serverData, err := getServerData(c.Request().Context(), s.dc, s.ztc, s.ztcc)
+		serverData, err := getServerData(c.Request().Context(), h.dc, h.ztc, h.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return s.r.CacheablePage(c.Response(), c.Request(), t, *serverData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *serverData, a)
 	}
 }

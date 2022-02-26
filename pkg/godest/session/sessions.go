@@ -1,11 +1,10 @@
-// Package session standardizes session management with Echo and Gorilla sessions
+// Package session standardizes session management with Gorilla sessions
 package session
 
 import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo/v4"
 )
 
 func Get(
@@ -17,10 +16,6 @@ func Get(
 	// TODO: regenerate the session upon privilege change
 	// TODO: log the session life cycle
 	return store.Get(r, cookieName)
-}
-
-func Save(s *sessions.Session, c echo.Context) error {
-	return s.Save(c.Request(), c.Response())
 }
 
 func Regenerate(

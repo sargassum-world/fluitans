@@ -7,22 +7,22 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
-type Service struct {
+type Handlers struct {
 	r  godest.TemplateRenderer
 	ac *authn.Client
 	sc *sessions.Client
 }
 
-func NewService(r godest.TemplateRenderer, ac *authn.Client, sc *sessions.Client) *Service {
-	return &Service{
+func New(r godest.TemplateRenderer, ac *authn.Client, sc *sessions.Client) *Handlers {
+	return &Handlers{
 		r:  r,
 		ac: ac,
 		sc: sc,
 	}
 }
 
-func (s *Service) Register(er godest.EchoRouter) {
-	er.GET("/csrf", s.getCSRF())
-	er.GET("/login", s.getLogin())
-	er.POST("/sessions", s.postSessions())
+func (h *Handlers) Register(er godest.EchoRouter) {
+	er.GET("/csrf", h.HandleCSRFGet())
+	er.GET("/login", h.HandleLoginGet())
+	er.POST("/sessions", h.HandleSessionsPost())
 }

@@ -9,33 +9,33 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
-type Service struct {
+type Handlers struct {
 	r  godest.TemplateRenderer
 	sc *sessions.Client
 }
 
-func NewService(r godest.TemplateRenderer, sc *sessions.Client) *Service {
-	return &Service{
+func New(r godest.TemplateRenderer, sc *sessions.Client) *Handlers {
+	return &Handlers{
 		r:  r,
 		sc: sc,
 	}
 }
 
-func (s *Service) Register(er godest.EchoRouter) {
-	er.GET("/", s.getHome())
+func (h *Handlers) Register(er godest.EchoRouter) {
+	er.GET("/", h.HandleHomeGet())
 }
 
-func (s *Service) getHome() echo.HandlerFunc {
+func (h *Handlers) HandleHomeGet() echo.HandlerFunc {
 	t := "home/home.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, s.sc)
+		a, _, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return s.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, a)
 	}
 }

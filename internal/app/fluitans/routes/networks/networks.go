@@ -44,34 +44,29 @@ func getNetworksData(
 	return networksData, nil
 }
 
-func (s *Service) getNetworks() echo.HandlerFunc {
+func (h *Handlers) HandleNetworksGet() echo.HandlerFunc {
 	t := "networks/networks.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, s.sc)
+		a, _, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
 			return err
 		}
 
 		// Run queries
-		networksData, err := getNetworksData(c.Request().Context(), s.ztc, s.ztcc)
+		networksData, err := getNetworksData(c.Request().Context(), h.ztc, h.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return s.r.CacheablePage(c.Response(), c.Request(), t, networksData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, networksData, a)
 	}
 }
 
-func (s *Service) postNetworks() echo.HandlerFunc {
+func (h *Handlers) HandleNetworksPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		name := c.FormValue("controller")
 		if name == "" {
@@ -81,7 +76,7 @@ func (s *Service) postNetworks() echo.HandlerFunc {
 		}
 
 		// Run queries
-		controller, err := s.ztcc.FindController(name)
+		controller, err := h.ztcc.FindController(name)
 		if err != nil {
 			return err
 		}
@@ -91,7 +86,7 @@ func (s *Service) postNetworks() echo.HandlerFunc {
 			)
 		}
 
-		createdNetwork, err := s.ztc.CreateNetwork(c.Request().Context(), *controller, s.ztcc)
+		createdNetwork, err := h.ztc.CreateNetwork(c.Request().Context(), *controller, h.ztcc)
 		if err != nil {
 			return err
 		}

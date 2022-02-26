@@ -53,12 +53,12 @@ func getControllerData(
 	}, nil
 }
 
-func (s *Service) getController() echo.HandlerFunc {
+func (h *Handlers) HandleControllerGet() echo.HandlerFunc {
 	t := "controllers/controller.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, s.sc)
+		a, _, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ func (s *Service) getController() echo.HandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		controllerData, err := getControllerData(c.Request().Context(), name, s.ztcc, s.ztc)
+		controllerData, err := getControllerData(c.Request().Context(), name, h.ztcc, h.ztc)
 		if err != nil {
 			return err
 		}
@@ -76,6 +76,6 @@ func (s *Service) getController() echo.HandlerFunc {
 		// Zero out clocks before computing etag for client-side caching
 		*controllerData.Status.Clock = 0
 		*controllerData.ControllerStatus.Clock = 0
-		return s.r.CacheablePage(c.Response(), c.Request(), t, *controllerData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *controllerData, a)
 	}
 }

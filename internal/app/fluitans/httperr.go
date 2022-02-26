@@ -52,7 +52,7 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.H
 				))
 			}
 			errorData.Messages = messages
-			if serr = session.Save(sess, c); serr != nil {
+			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				c.Logger().Error(errors.Wrap(serr, "couldn't save session in error handler"))
 			}
 		}

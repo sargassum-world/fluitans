@@ -8,7 +8,6 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
@@ -35,13 +34,8 @@ func setMemberAuthorization(
 	return nil
 }
 
-func (s *Service) postDeviceAuthorization() echo.HandlerFunc {
+func (h *Handlers) HandleDeviceAuthorizationPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
@@ -50,12 +44,12 @@ func (s *Service) postDeviceAuthorization() echo.HandlerFunc {
 
 		// Run queries
 		ctx := c.Request().Context()
-		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
 		}
 		if err = setMemberAuthorization(
-			ctx, *controller, networkID, memberAddress, authorization, s.ztc,
+			ctx, *controller, networkID, memberAddress, authorization, h.ztc,
 		); err != nil {
 			return err
 		}
@@ -145,13 +139,8 @@ func unsetMemberName(
 	return nil
 }
 
-func (s *Service) postDeviceName() echo.HandlerFunc {
+func (h *Handlers) HandleDeviceNamePost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
@@ -160,7 +149,7 @@ func (s *Service) postDeviceName() echo.HandlerFunc {
 
 		// Run queries
 		ctx := c.Request().Context()
-		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
 		}
@@ -168,14 +157,14 @@ func (s *Service) postDeviceName() echo.HandlerFunc {
 		switch setName {
 		default:
 			if err = setMemberName(
-				ctx, *controller, networkID, memberAddress, setName, s.ztc, s.dc,
+				ctx, *controller, networkID, memberAddress, setName, h.ztc, h.dc,
 			); err != nil {
 				return err
 			}
 		case "":
 			nameToUnset := c.FormValue("unset-name")
 			if err = unsetMemberName(
-				ctx, *controller, networkID, memberAddress, nameToUnset, s.ztc, s.dc,
+				ctx, *controller, networkID, memberAddress, nameToUnset, h.ztc, h.dc,
 			); err != nil {
 				return err
 			}
@@ -188,13 +177,8 @@ func (s *Service) postDeviceName() echo.HandlerFunc {
 	}
 }
 
-func (s *Service) postDevices() echo.HandlerFunc {
+func (h *Handlers) HandleDevicesPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
@@ -202,12 +186,12 @@ func (s *Service) postDevices() echo.HandlerFunc {
 
 		// Run queries
 		ctx := c.Request().Context()
-		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
 		}
 		if err = setMemberAuthorization(
-			ctx, *controller, networkID, memberAddress, true, s.ztc,
+			ctx, *controller, networkID, memberAddress, true, h.ztc,
 		); err != nil {
 			return err
 		}

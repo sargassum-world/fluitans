@@ -19,12 +19,12 @@ func main() {
 	e := echo.New()
 
 	// Middleware
+	e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
 		Format: "${remote_ip} ${method} ${uri} (${bytes_in}b) => " +
 			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
 	e.Logger.SetLevel(log.WARN)
-	e.Use(middleware.Recover())
 	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
 		Level: gzipLevel,
 	}))
@@ -33,11 +33,14 @@ func main() {
 	e.Pre(middleware.RemoveTrailingSlash())
 
 	// Prepare server
-	if err := fluitans.PrepareServer(e); err != nil {
+	s, err := fluitans.NewServer(e)
+	if err != nil {
 		fmt.Printf("%+v\n", err)
 		panic(err)
 	}
+	s.Register(e)
 
 	// Start server
+	s.LaunchBackgroundWorkers()
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }

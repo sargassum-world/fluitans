@@ -289,12 +289,12 @@ func getNetworkData(
 	}, nil
 }
 
-func (s *Service) getNetwork() echo.HandlerFunc {
+func (h *Handlers) HandleNetworkGet() echo.HandlerFunc {
 	t := "networks/network.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, s.sc)
+		a, _, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
 			return err
 		}
@@ -304,13 +304,13 @@ func (s *Service) getNetwork() echo.HandlerFunc {
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
-		networkData, err := getNetworkData(c.Request().Context(), address, id, s.ztc, s.ztcc, s.dc)
+		networkData, err := getNetworkData(c.Request().Context(), address, id, h.ztc, h.ztcc, h.dc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return s.r.CacheablePage(c.Response(), c.Request(), t, *networkData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *networkData, a)
 	}
 }
 
@@ -353,13 +353,8 @@ func nameNetwork(
 	)
 }
 
-func (s *Service) postNetwork() echo.HandlerFunc {
+func (h *Handlers) HandleNetworkPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
@@ -373,11 +368,11 @@ func (s *Service) postNetwork() echo.HandlerFunc {
 				"invalid network state %s", state,
 			))
 		case "deleted":
-			controller, err := s.ztcc.FindControllerByAddress(ctx, address)
+			controller, err := h.ztcc.FindControllerByAddress(ctx, address)
 			if err != nil {
 				return err
 			}
-			if err = s.ztc.DeleteNetwork(ctx, *controller, id, s.ztcc); err != nil {
+			if err = h.ztc.DeleteNetwork(ctx, *controller, id, h.ztcc); err != nil {
 				// TODO: add a tombstone to the TXT RRset?
 				return err
 			}
@@ -405,24 +400,19 @@ func setNetworkRules(
 	return nil
 }
 
-func (s *Service) postNetworkRules() echo.HandlerFunc {
+func (h *Handlers) HandleNetworkRulesPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
 		ctx := c.Request().Context()
-		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
+		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
 		if err != nil {
 			return err
 		}
-		if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), s.ztc); err != nil {
+		if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), h.ztc); err != nil {
 			return err
 		}
 
@@ -431,24 +421,19 @@ func (s *Service) postNetworkRules() echo.HandlerFunc {
 	}
 }
 
-func (s *Service) postNetworkName() echo.HandlerFunc {
+func (h *Handlers) HandleNetworkNamePost() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Check authentication & authorization
-		if err := auth.RequireAuthorized(c, s.sc); err != nil {
-			return err
-		}
-
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
 		ctx := c.Request().Context()
-		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
+		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
 		if err != nil {
 			return err
 		}
-		if err = nameNetwork(ctx, *controller, id, c.FormValue("name"), s.ztc, s.dc); err != nil {
+		if err = nameNetwork(ctx, *controller, id, c.FormValue("name"), h.ztc, h.dc); err != nil {
 			return err
 		}
 

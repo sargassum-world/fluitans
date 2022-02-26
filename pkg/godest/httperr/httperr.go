@@ -1,4 +1,4 @@
-// Package httperr provides utilities for writing HTTP error page templates.
+// Package httperr provides utilities for writing human-readable HTTP error page templates.
 package httperr
 
 import (
@@ -28,6 +28,14 @@ var DescriptiveErrors = map[int]DescriptiveError{
 		Description: "The requested resource is not available because it could not be found, " +
 			"it requires authentication, or permission has not been granted to access it.",
 	},
+	http.StatusMethodNotAllowed: {
+		Name:        "Bad request method",
+		Description: "The server does not support the request method for the requested resource.",
+	},
+	http.StatusUnsupportedMediaType: {
+		Name:        "Bad request format",
+		Description: "The server does not support the request format.",
+	},
 	http.StatusTooManyRequests: {
 		Name:        "Too busy",
 		Description: "The server has reached a temporary usage limit. Please try again later.",
@@ -37,7 +45,7 @@ var DescriptiveErrors = map[int]DescriptiveError{
 		Description: "An unexpected problem occurred. We're working to fix it.",
 	},
 	http.StatusNotImplemented: {
-		Name:        "Not implemented",
+		Name:        "Bad request method",
 		Description: "The server cannot recognize the request method.",
 	},
 	http.StatusBadGateway: {

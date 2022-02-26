@@ -20,22 +20,22 @@ type CSRFData struct {
 	Token      string `json:"token,omitempty"`
 }
 
-func (s *Service) getCSRF() echo.HandlerFunc {
+func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get session
-		sess, err := s.sc.Get(c)
+		sess, err := h.sc.Get(c)
 		if err != nil {
 			return err
 		}
-		if err = session.Save(sess, c); err != nil {
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
 			return err
 		}
 
 		// Produce output
-		s.r.SetUncacheable(c.Response().Header())
+		h.r.SetUncacheable(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
-			HeaderName: s.sc.Config.CSRFOptions.HeaderName,
-			FieldName:  s.sc.Config.CSRFOptions.FieldName,
+			HeaderName: h.sc.Config.CSRFOptions.HeaderName,
+			FieldName:  h.sc.Config.CSRFOptions.FieldName,
 			Token:      csrf.Token(c.Request()),
 		})
 	}
@@ -47,12 +47,12 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (s *Service) getLogin() echo.HandlerFunc {
+func (h *Handlers) HandleLoginGet() echo.HandlerFunc {
 	t := "auth/login.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, sess, err := auth.GetWithSession(c, s.sc)
+		a, sess, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
 			return err
 		}
@@ -63,19 +63,19 @@ func (s *Service) getLogin() echo.HandlerFunc {
 			return err
 		}
 		loginData := LoginData{
-			NoAuth:        s.ac.Config.NoAuth,
+			NoAuth:        h.ac.Config.NoAuth,
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
 		}
-		if err = session.Save(sess, c); err != nil {
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
 			return err
 		}
 
 		// Add non-persistent overrides of session data
-		a.CSRF = auth.OverrideCSRFInlining(c.Request(), a.CSRF, true)
+		a.CSRF.SetInlining(c.Request(), true)
 
 		// Produce output
-		return s.r.CacheablePage(c.Response(), c.Request(), t, loginData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, loginData, a)
 	}
 }
 
@@ -100,7 +100,7 @@ func handleAuthenticationSuccess(
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
 	// bodies, in order to make HTML responses cacheable.
 	auth.SetCSRFBehavior(sess, !omitCSRFToken)
-	if err = session.Save(sess, c); err != nil {
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return err
 	}
 
@@ -121,7 +121,7 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.
 	}
 	session.AddErrorMessage(sess, "Could not log in!")
 	auth.SetIdentity(sess, "")
-	if err := session.Save(sess, c); err != nil {
+	if err := sess.Save(c.Request(), c.Response()); err != nil {
 		return err
 	}
 
@@ -138,7 +138,7 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.
 	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
-func (s *Service) postSessions() echo.HandlerFunc {
+func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Parse params
 		state := c.FormValue("state")
@@ -159,22 +159,22 @@ func (s *Service) postSessions() echo.HandlerFunc {
 			// the OWASP Session Management Cheat Sheet
 
 			// Check authentication
-			identified, err := s.ac.CheckCredentials(username, password)
+			identified, err := h.ac.CheckCredentials(username, password)
 			if err != nil {
 				return err
 			}
 			if !identified {
-				return handleAuthenticationFailure(c, returnURL, s.sc)
+				return handleAuthenticationFailure(c, returnURL, h.sc)
 			}
-			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, s.sc)
+			return handleAuthenticationSuccess(c, username, returnURL, omitCSRFToken, h.sc)
 		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
-			sess, err := s.sc.Invalidate(c)
+			sess, err := h.sc.Invalidate(c)
 			if err != nil {
 				return err
 			}
-			if err := session.Save(sess, c); err != nil {
+			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				return err
 			}
 		}

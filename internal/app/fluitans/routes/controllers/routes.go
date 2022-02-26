@@ -8,18 +8,18 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/godest"
 )
 
-type Service struct {
+type Handlers struct {
 	r    godest.TemplateRenderer
 	ztcc *ztcontrollers.Client
 	ztc  *zerotier.Client
 	sc   *sessions.Client
 }
 
-func NewService(
+func New(
 	r godest.TemplateRenderer,
 	ztcc *ztcontrollers.Client, ztc *zerotier.Client, sc *sessions.Client,
-) *Service {
-	return &Service{
+) *Handlers {
+	return &Handlers{
 		r:    r,
 		ztcc: ztcc,
 		ztc:  ztc,
@@ -27,7 +27,7 @@ func NewService(
 	}
 }
 
-func (s *Service) Register(er godest.EchoRouter) {
-	er.GET("/controllers", s.getControllers())
-	er.GET("/controllers/:name", s.getController())
+func (h *Handlers) Register(er godest.EchoRouter) {
+	er.GET("/controllers", h.HandleControllersGet())
+	er.GET("/controllers/:name", h.HandleControllerGet())
 }

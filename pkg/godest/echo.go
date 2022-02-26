@@ -1,11 +1,7 @@
 package godest
 
 import (
-	"io"
-
 	"github.com/labstack/echo/v4"
-
-	"github.com/sargassum-eco/fluitans/pkg/godest/template"
 )
 
 // Routing
@@ -23,20 +19,4 @@ type EchoRouter interface {
 	POST(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
 	PUT(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
 	TRACE(path string, h echo.HandlerFunc, m ...echo.MiddlewareFunc) *echo.Route
-}
-
-// Templates
-
-type EchoRenderer struct {
-	t template.Templates
-}
-
-func NewEchoRenderer(t template.Templates) EchoRenderer {
-	return EchoRenderer{
-		t: t,
-	}
-}
-
-func (r EchoRenderer) Render(w io.Writer, name string, data interface{}, c echo.Context) error {
-	return r.t.Execute(w, name, data)
 }

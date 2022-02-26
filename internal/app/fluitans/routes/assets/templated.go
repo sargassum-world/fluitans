@@ -5,12 +5,12 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-func (s *TemplatedService) getWebmanifest() echo.HandlerFunc {
+func (h *TemplatedHandlers) getWebmanifest() echo.HandlerFunc {
 	t := "app/app.webmanifest.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Produce output
 		c.Response().Header().Set(echo.HeaderContentType, "application/manifest+json")
-		return s.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, struct{}{})
+		return h.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, struct{}{})
 	}
 }

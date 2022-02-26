@@ -6,23 +6,23 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 )
 
-func (s *Service) getControllers() echo.HandlerFunc {
+func (h *Handlers) HandleControllersGet() echo.HandlerFunc {
 	t := "controllers/controllers.page.tmpl"
-	s.r.MustHave(t)
+	h.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
-		a, _, err := auth.GetWithSession(c, s.sc)
+		a, _, err := auth.GetWithSession(c, h.sc)
 		if err != nil {
 			return err
 		}
 
 		// Run queries
-		controllers, err := s.ztcc.GetControllers()
+		controllers, err := h.ztcc.GetControllers()
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return s.r.CacheablePage(c.Response(), c.Request(), t, controllers, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, controllers, a)
 	}
 }

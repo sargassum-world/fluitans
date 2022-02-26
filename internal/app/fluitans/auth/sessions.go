@@ -71,14 +71,13 @@ func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 	return
 }
 
-func OverrideCSRFInlining(r *http.Request, c CSRF, inlineToken bool) CSRF {
+func (c *CSRF) SetInlining(r *http.Request, inlineToken bool) {
 	c.Behavior.InlineToken = inlineToken
 	if c.Behavior.InlineToken {
 		c.Token = csrf.Token(r)
 	} else {
 		c.Token = ""
 	}
-	return c
 }
 
 // Access
