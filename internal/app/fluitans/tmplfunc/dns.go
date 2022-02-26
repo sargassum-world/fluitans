@@ -70,7 +70,7 @@ var recordTypes = map[string]DNSRecordType{
 	},
 }
 
-func describeDNSRecordType(recordType string) string {
+func DescribeDNSRecordType(recordType string) string {
 	recordTypeInfo, ok := recordTypes[recordType]
 	if !ok {
 		return "Unknown Record Type"
@@ -79,7 +79,7 @@ func describeDNSRecordType(recordType string) string {
 	return recordTypeInfo.Description
 }
 
-func exemplifyDNSRecordType(recordType string) string {
+func ExemplifyDNSRecordType(recordType string) string {
 	recordTypeInfo, ok := recordTypes[recordType]
 	if !ok {
 		return ""

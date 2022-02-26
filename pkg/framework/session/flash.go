@@ -8,12 +8,14 @@ import (
 
 // Errors
 
+const FlashErrorsKey = "_flash_errors"
+
 func AddErrorMessage(s *sessions.Session, message string) {
-	s.AddFlash(message, "_flash_errors")
+	s.AddFlash(message, FlashErrorsKey)
 }
 
 func GetErrorMessages(s *sessions.Session) ([]string, error) {
-	rawFlashes := s.Flashes("_flash_errors")
+	rawFlashes := s.Flashes(FlashErrorsKey)
 	flashes := make([]string, 0, len(rawFlashes))
 	for _, rawFlash := range rawFlashes {
 		flash, ok := rawFlash.(string)

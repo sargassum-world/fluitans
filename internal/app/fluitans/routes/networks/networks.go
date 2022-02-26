@@ -10,7 +10,6 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -45,9 +44,9 @@ func getNetworksData(
 	return networksData, nil
 }
 
-func (s *Service) getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getNetworks() echo.HandlerFunc {
 	t := "networks/networks.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, _, err := auth.GetWithSession(c, s.sc)
@@ -55,31 +54,23 @@ func (s *Service) getNetworks(g route.TemplateGlobals, te route.TemplateEtagSegm
 			return err
 		}
 
-		// Extract context
-		ctx := c.Request().Context()
-
 		// Run queries
-		networksData, err := getNetworksData(ctx, s.ztc, s.ztcc)
+		networksData, err := getNetworksData(c.Request().Context(), s.ztc, s.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return route.Render(c, t, networksData, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, networksData, a)
+	}
 }
 
-func (s *Service) postNetworks(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) postNetworks() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
-
-		// Extract context
-		ctx := c.Request().Context()
 
 		// Parse params
 		name := c.FormValue("controller")
@@ -100,7 +91,7 @@ func (s *Service) postNetworks(
 			)
 		}
 
-		createdNetwork, err := s.ztc.CreateNetwork(ctx, *controller, s.ztcc)
+		createdNetwork, err := s.ztc.CreateNetwork(c.Request().Context(), *controller, s.ztcc)
 		if err != nil {
 			return err
 		}
@@ -108,6 +99,8 @@ func (s *Service) postNetworks(
 		if created == nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, "network status unknown")
 		}
+
+		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", *created))
-	}, nil
+	}
 }

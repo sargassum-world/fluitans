@@ -11,7 +11,6 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/framework/session"
 )
 
@@ -21,7 +20,7 @@ type CSRFData struct {
 	Token      string `json:"token,omitempty"`
 }
 
-func (s *Service) getCSRF(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getCSRF() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get session
 		sess, err := s.sc.Get(c)
@@ -33,12 +32,13 @@ func (s *Service) getCSRF(g route.TemplateGlobals, te route.TemplateEtagSegments
 		}
 
 		// Produce output
+		s.r.SetUncacheable(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
 			HeaderName: s.sc.Config.CSRFOptions.HeaderName,
 			FieldName:  s.sc.Config.CSRFOptions.FieldName,
 			Token:      csrf.Token(c.Request()),
 		})
-	}, nil
+	}
 }
 
 type LoginData struct {
@@ -47,9 +47,9 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (s *Service) getLogin(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getLogin() echo.HandlerFunc {
 	t := "auth/login.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, sess, err := auth.GetWithSession(c, s.sc)
@@ -75,8 +75,8 @@ func (s *Service) getLogin(g route.TemplateGlobals, te route.TemplateEtagSegment
 		a.CSRF = auth.OverrideCSRFInlining(c.Request(), a.CSRF, true)
 
 		// Produce output
-		return route.Render(c, t, loginData, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, loginData, a)
+	}
 }
 
 func sanitizeReturnURL(returnURL string) (*url.URL, error) {
@@ -138,9 +138,7 @@ func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.
 	return c.Redirect(http.StatusSeeOther, r.String())
 }
 
-func (s *Service) postSessions(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) postSessions() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Parse params
 		state := c.FormValue("state")
@@ -181,6 +179,7 @@ func (s *Service) postSessions(
 			}
 		}
 
+		// Redirect user
 		return c.Redirect(http.StatusSeeOther, "/")
-	}, nil
+	}
 }

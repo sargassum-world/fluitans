@@ -2,6 +2,7 @@
 package fluitans
 
 import (
+	"github.com/Masterminds/sprig/v3"
 	"github.com/gorilla/csrf"
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -12,55 +13,43 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/tmplfunc"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
 	"github.com/sargassum-eco/fluitans/pkg/framework"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/web"
 )
 
-func LaunchBackgroundWorkers(ag *client.Globals) {
-	go workers.PrescanZerotierControllers(ag.Clients.ZTControllers)
-	go workers.PrefetchZerotierNetworks(ag.Clients.Zerotier, ag.Clients.ZTControllers)
-	go workers.PrefetchDNSRecords(ag.Clients.Desec)
-	// go workers.TestWriteLimiter(ag.Clients.Desec)
+func LaunchBackgroundWorkers(clients *client.Clients) {
+	go workers.PrescanZerotierControllers(clients.ZTControllers)
+	go workers.PrefetchZerotierNetworks(clients.Zerotier, clients.ZTControllers)
+	go workers.PrefetchDNSRecords(clients.Desec)
+	// go workers.TestWriteLimiter(clients.Desec)
 }
 
 func PrepareServer(e *echo.Echo) error {
 	embeds := web.NewEmbeds()
-	r := embeds.NewTemplateRenderer(tmplfunc.FuncMap)
-	e.Renderer = r
+	inlines := web.NewInlines()
+	tr, err := framework.NewTemplateRenderer(
+		embeds, inlines, sprig.FuncMap(), tmplfunc.FuncMap(
+			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, embeds),
+		),
+	)
+	if err != nil {
+		return errors.Wrap(err, "couldn't make template renderer")
+	}
+	e.Renderer = tr.GetEchoRenderer()
 
 	// Globals
-	ag, err := client.NewGlobals(e.Logger)
+	g, err := client.NewGlobals(e.Logger)
 	if err != nil {
 		return errors.Wrap(err, "couldn't make app globals")
 	}
-	g, err := framework.NewGlobals(embeds)
-	if err != nil {
-		return errors.Wrap(err, "couldn't make server globals")
-	}
 
-	// CSRF Defense
-	e.Use(ag.Clients.Sessions.NewCSRFMiddleware(
-		csrf.ErrorHandler(NewCSRFErrorHandler(g.Template, r, e.Logger, ag.Clients.Sessions)),
+	// Middlewares & Route Handlers
+	e.Use(g.Clients.Sessions.NewCSRFMiddleware(
+		csrf.ErrorHandler(NewCSRFErrorHandler(tr, e.Logger, g.Clients.Sessions)),
 	))
 
-	// Routes
-	assets.RegisterStatic(e, embeds)
-	if err := route.RegisterTemplated(
-		e, assets.NewTemplatedService().Routes(), g.Template,
-	); err != nil {
-		return errors.Wrap(err, "couldn't register templated assets")
-	}
-	if err := route.RegisterTemplated(
-		e, routes.NewService(ag.Clients).Routes(), g.Template,
-	); err != nil {
-		return errors.Wrap(err, "couldn't register templated routes")
-	}
+	e.HTTPErrorHandler = NewHTTPErrorHandler(tr, g.Clients.Sessions)
+	routes.NewService(tr, g.Clients).Register(e, embeds)
 
-	// Error Handling
-	e.HTTPErrorHandler = NewHTTPErrorHandler(g.Template, ag.Clients.Sessions)
-
-	// Background Workers
-	LaunchBackgroundWorkers(ag)
-
+	LaunchBackgroundWorkers(g.Clients)
 	return nil
 }

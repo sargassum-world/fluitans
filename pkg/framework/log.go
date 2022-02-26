@@ -1,5 +1,4 @@
-// Package log provides an adapter around the echo logger
-package log
+package framework
 
 import (
 	"github.com/labstack/echo/v4"

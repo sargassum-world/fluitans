@@ -1,18 +1,15 @@
-// Package httperr standardizes presentation of HTTP errors to end-users
-package httperr
+package framework
 
 import (
 	"net/http"
 )
 
-// HTTP error codes
-
-type Error struct {
+type HTTPError struct {
 	Name        string
 	Description string
 }
 
-var Errors = map[int]Error{
+var HTTPErrors = map[int]HTTPError{
 	http.StatusBadRequest: {
 		Name:        "Bad request",
 		Description: "The server cannot process the request due to something believed to be a client error.",
@@ -54,10 +51,10 @@ var Errors = map[int]Error{
 	},
 }
 
-func DescribeError(code int) Error {
-	name, ok := Errors[code]
+func DescribeHTTPError(code int) HTTPError {
+	name, ok := HTTPErrors[code]
 	if !ok {
-		return Error{
+		return HTTPError{
 			Name:        "Server error",
 			Description: "An unexpected problem occurred. We're working to fix it.",
 		}

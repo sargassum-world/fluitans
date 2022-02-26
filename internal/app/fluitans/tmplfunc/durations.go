@@ -4,6 +4,6 @@ import (
 	"time"
 )
 
-func durationToSec(i time.Duration) float64 {
+func DurationToSec(i time.Duration) float64 {
 	return i.Seconds()
 }

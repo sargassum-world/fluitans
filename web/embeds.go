@@ -4,13 +4,15 @@ package web
 
 import (
 	"embed"
+	"html/template"
 	"io/fs"
 
 	"github.com/benbjohnson/hashfs"
 
-	"github.com/sargassum-eco/fluitans/pkg/framework/embeds"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 )
+
+// Embeds are embedded filesystems
 
 var (
 	//go:embed static/*
@@ -44,21 +46,32 @@ var bundleEagerJS string
 //go:embed app/public/build/theme-eager.min.css
 var bundleEagerCSS string
 
-func NewEmbeds() embeds.Embeds {
-	return embeds.Embeds{
+func NewEmbeds() framework.Embeds {
+	return framework.Embeds{
 		StaticFS:    staticFS,
 		StaticHFS:   staticHFS,
 		TemplatesFS: templatesFS,
 		AppFS:       appFS,
 		AppHFS:      appHFS,
 		FontsFS:     fontsFS,
-		Inlines: route.NewInlines(
-			map[string]string{
-				"BundleEager": bundleEagerCSS,
-			},
-			map[string]string{
-				"BundleEager": bundleEagerJS,
-			},
-		),
+	}
+}
+
+// Inlines are strings to include in-line in templates
+
+type Inlines struct {
+	CSS map[string]template.CSS
+	JS  map[string]template.JS
+}
+
+func NewInlines() Inlines {
+	return Inlines{
+		CSS: map[string]template.CSS{
+			"BundleEager": template.CSS(bundleEagerCSS),
+		},
+		JS: map[string]template.JS{
+			//nolint:gosec // This is generated from code in web/app/src, so we know it's well-formed
+			"BundleEager": template.JS(bundleEagerJS),
+		},
 	}
 }

@@ -1,10 +1,10 @@
 package tmplfunc
 
-func derefBool(b *bool) bool {
+func DerefBool(b *bool) bool {
 	return b != nil && *b
 }
 
-func derefInt(i *int, nilValue int) int {
+func DerefInt(i *int, nilValue int) int {
 	if i == nil {
 		return nilValue
 	}
@@ -12,7 +12,7 @@ func derefInt(i *int, nilValue int) int {
 	return *i
 }
 
-func derefFloat32(i *float32, nilValue float32) float32 {
+func DerefFloat32(i *float32, nilValue float32) float32 {
 	if i == nil {
 		return nilValue
 	}
@@ -20,7 +20,7 @@ func derefFloat32(i *float32, nilValue float32) float32 {
 	return *i
 }
 
-func derefString(s *string, nilValue string) string {
+func DerefString(s *string, nilValue string) string {
 	if s == nil {
 		return nilValue
 	}

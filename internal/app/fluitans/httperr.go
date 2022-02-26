@@ -11,21 +11,18 @@ import (
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/framework/httperr"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 	"github.com/sargassum-eco/fluitans/pkg/framework/session"
-	"github.com/sargassum-eco/fluitans/pkg/framework/template"
 )
 
 type ErrorData struct {
 	Code     int
-	Error    httperr.Error
+	Error    framework.HTTPError
 	Messages []string
 }
 
-func NewHTTPErrorHandler(
-	tg route.TemplateGlobals, sc *sessions.Client,
-) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(tr framework.TemplateRenderer, sc *sessions.Client) echo.HTTPErrorHandler {
+	tr.MustHave("app/httperr.page.tmpl")
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
 
@@ -42,7 +39,7 @@ func NewHTTPErrorHandler(
 		}
 		errorData := ErrorData{
 			Code:  code,
-			Error: httperr.DescribeError(code),
+			Error: framework.DescribeHTTPError(code),
 		}
 
 		// Consume & save session
@@ -59,9 +56,10 @@ func NewHTTPErrorHandler(
 			}
 		}
 
-		// Render error page
-		if perr := c.Render(
-			code, "app/httperr.page.tmpl", route.NewRenderData(c.Request(), tg, errorData, a),
+		// Produce output
+		tr.SetUncacheable(c.Response().Header())
+		if perr := tr.Page(
+			c.Response(), c.Request(), code, "app/httperr.page.tmpl", errorData, a,
 		); perr != nil {
 			c.Logger().Error(errors.Wrap(perr, "couldn't render error page in error handler"))
 		}
@@ -69,8 +67,9 @@ func NewHTTPErrorHandler(
 }
 
 func NewCSRFErrorHandler(
-	tg route.TemplateGlobals, renderer *template.TemplateRenderer, l echo.Logger, sc *sessions.Client,
+	tr framework.TemplateRenderer, l echo.Logger, sc *sessions.Client,
 ) http.HandlerFunc {
+	tr.MustHave("app/httperr.page.tmpl")
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Error(csrf.FailureReason(r))
 		// Check authentication & authorization
@@ -78,7 +77,6 @@ func NewCSRFErrorHandler(
 		if serr != nil {
 			l.Error(errors.Wrap(serr, "couldn't get session in error handler"))
 		}
-
 		var a auth.Auth
 		if sess != nil {
 			a, serr = auth.GetFromRequest(r, *sess, sc)
@@ -91,7 +89,7 @@ func NewCSRFErrorHandler(
 		code := http.StatusForbidden
 		errorData := ErrorData{
 			Code:  code,
-			Error: httperr.DescribeError(code),
+			Error: framework.DescribeHTTPError(code),
 			Messages: []string{
 				fmt.Sprintf(
 					"%s. If you disabled Javascript after signing in, "+
@@ -101,9 +99,9 @@ func NewCSRFErrorHandler(
 			},
 		}
 
-		if rerr := route.WriteTemplatedResponse(
-			w, r, renderer, "app/httperr.page.tmpl", code, errorData, a, tg,
-		); rerr != nil {
+		// Produce output
+		tr.SetUncacheable(w.Header())
+		if rerr := tr.Page(w, r, code, "app/httperr.page.tmpl", errorData, a); rerr != nil {
 			l.Error(errors.Wrap(rerr, "couldn't render error page in error handler"))
 		}
 	}

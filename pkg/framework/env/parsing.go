@@ -35,8 +35,10 @@ func GetUint64(varName string, defaultValue uint64) (uint64, error) {
 		return defaultValue, nil
 	}
 
-	base := 10
-	width := 64 // bits
+	const (
+		base  = 10
+		width = 32 // bits
+	)
 	parsed, err := strconv.ParseUint(value, base, width)
 	if err != nil {
 		return 0, errors.Wrap(err, fmt.Sprintf(
@@ -53,8 +55,10 @@ func GetInt64(varName string, defaultValue int64) (int64, error) {
 		return defaultValue, nil
 	}
 
-	base := 10
-	width := 64 // bits
+	const (
+		base  = 10
+		width = 64 // bits
+	)
 	parsed, err := strconv.ParseInt(value, base, width)
 	if err != nil {
 		return 0, errors.Wrap(err, fmt.Sprintf(
@@ -71,7 +75,7 @@ func GetFloat32(varName string, defaultValue float32) (float32, error) {
 		return defaultValue, nil
 	}
 
-	width := 32 // bits
+	const width = 32 // bits
 	parsed, err := strconv.ParseFloat(value, width)
 	if err != nil {
 		return 0, errors.Wrap(err, fmt.Sprintf(

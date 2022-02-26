@@ -13,7 +13,6 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/internal/models"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 )
 
@@ -72,11 +71,9 @@ func getServerData(
 	}, nil
 }
 
-func (s *Service) getServer(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) getServer() echo.HandlerFunc {
 	t := "dns/server.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, _, err := auth.GetWithSession(c, s.sc)
@@ -87,18 +84,13 @@ func (s *Service) getServer(
 			return err
 		}
 
-		// Extract context
-		ctx := c.Request().Context()
-
 		// Run queries
-		serverData, err := getServerData(
-			ctx, s.dc, s.ztc, s.ztcc,
-		)
+		serverData, err := getServerData(c.Request().Context(), s.dc, s.ztc, s.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return route.Render(c, t, *serverData, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, *serverData, a)
+	}
 }

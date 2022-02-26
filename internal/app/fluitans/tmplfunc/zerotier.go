@@ -6,17 +6,17 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
-func identifyNetwork(network zerotier.ControllerNetwork) string {
+func IdentifyNetwork(network zerotier.ControllerNetwork) string {
 	if strings.TrimSpace(*network.Name) != "" {
 		return *network.Name
 	}
 	return *network.Id
 }
 
-func getNetworkHostAddress(id string) string {
+func GetNetworkHostAddress(id string) string {
 	return id[:10]
 }
 
-func getNetworkNumber(id string) string {
+func GetNetworkNumber(id string) string {
 	return id[10:]
 }

@@ -2,16 +2,15 @@
 package dns
 
 import (
-	"net/http"
-
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 )
 
 type Service struct {
+	r    framework.TemplateRenderer
 	dc   *desec.Client
 	ztc  *zerotier.Client
 	ztcc *ztcontrollers.Client
@@ -19,9 +18,11 @@ type Service struct {
 }
 
 func NewService(
+	r framework.TemplateRenderer,
 	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client, sc *sessions.Client,
 ) *Service {
 	return &Service{
+		r:    r,
 		dc:   dc,
 		ztc:  ztc,
 		ztcc: ztcc,
@@ -29,18 +30,7 @@ func NewService(
 	}
 }
 
-func (s *Service) Routes() []route.Templated {
-	return []route.Templated{
-		{
-			Path:         "/dns",
-			Method:       http.MethodGet,
-			HandlerMaker: s.getServer,
-			Templates:    []string{"dns/server.page.tmpl"},
-		},
-		{
-			Path:         "/dns/:subname/:type",
-			Method:       http.MethodPost,
-			HandlerMaker: s.postRRset,
-		},
-	}
+func (s *Service) Register(er framework.EchoRouter) {
+	er.GET("/dns", s.getServer())
+	er.POST("/dns/:subname/:type", s.postRRset())
 }

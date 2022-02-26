@@ -18,7 +18,6 @@ import (
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -290,9 +289,9 @@ func getNetworkData(
 	}, nil
 }
 
-func (s *Service) getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getNetwork() echo.HandlerFunc {
 	t := "networks/network.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, _, err := auth.GetWithSession(c, s.sc)
@@ -300,22 +299,19 @@ func (s *Service) getNetwork(g route.TemplateGlobals, te route.TemplateEtagSegme
 			return err
 		}
 
-		// Extract context
-		ctx := c.Request().Context()
-
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
-		networkData, err := getNetworkData(ctx, address, id, s.ztc, s.ztcc, s.dc)
+		networkData, err := getNetworkData(c.Request().Context(), address, id, s.ztc, s.ztcc, s.dc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return route.Render(c, t, *networkData, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, *networkData, a)
+	}
 }
 
 func nameNetwork(
@@ -357,15 +353,12 @@ func nameNetwork(
 	)
 }
 
-func (s *Service) postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) postNetwork() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
-
-		// Extract context
-		ctx := c.Request().Context()
 
 		// Parse params
 		id := c.Param("id")
@@ -373,24 +366,26 @@ func (s *Service) postNetwork(g route.TemplateGlobals, te route.TemplateEtagSegm
 		state := c.FormValue("state")
 
 		// Run queries
-		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
-		if err != nil {
-			return err
-		}
-
+		ctx := c.Request().Context()
 		switch state {
 		default:
 			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
 				"invalid network state %s", state,
 			))
 		case "deleted":
+			controller, err := s.ztcc.FindControllerByAddress(ctx, address)
+			if err != nil {
+				return err
+			}
 			if err = s.ztc.DeleteNetwork(ctx, *controller, id, s.ztcc); err != nil {
 				// TODO: add a tombstone to the TXT RRset?
 				return err
 			}
+
+			// Redirect user
 			return c.Redirect(http.StatusSeeOther, "/networks")
 		}
-	}, nil
+	}
 }
 
 func setNetworkRules(
@@ -410,23 +405,19 @@ func setNetworkRules(
 	return nil
 }
 
-func (s *Service) postNetworkRules(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) postNetworkRules() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
-		// Extract context
-		ctx := c.Request().Context()
-
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
+		ctx := c.Request().Context()
 		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
 		if err != nil {
 			return err
@@ -435,37 +426,33 @@ func (s *Service) postNetworkRules(
 			return err
 		}
 
+		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
-	}, nil
+	}
 }
 
-func (s *Service) postNetworkName(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) postNetworkName() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
 
-		// Extract context
-		ctx := c.Request().Context()
-
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
+		ctx := c.Request().Context()
 		controller, err := s.ztcc.FindControllerByAddress(ctx, address)
 		if err != nil {
 			return err
 		}
-		if err = nameNetwork(
-			ctx, *controller, id, c.FormValue("name"), s.ztc, s.dc,
-		); err != nil {
+		if err = nameNetwork(ctx, *controller, id, c.FormValue("name"), s.ztc, s.dc); err != nil {
 			return err
 		}
 
+		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
-	}, nil
+	}
 }

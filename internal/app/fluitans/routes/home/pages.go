@@ -2,39 +2,32 @@
 package home
 
 import (
-	"net/http"
-
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 )
 
 type Service struct {
+	r  framework.TemplateRenderer
 	sc *sessions.Client
 }
 
-func NewService(sc *sessions.Client) *Service {
+func NewService(r framework.TemplateRenderer, sc *sessions.Client) *Service {
 	return &Service{
+		r:  r,
 		sc: sc,
 	}
 }
 
-func (s *Service) Routes() []route.Templated {
-	return []route.Templated{
-		{
-			Path:         "/",
-			Method:       http.MethodGet,
-			HandlerMaker: s.getHome,
-			Templates:    []string{"home/home.page.tmpl"},
-		},
-	}
+func (s *Service) Register(er framework.EchoRouter) {
+	er.GET("/", s.getHome())
 }
 
-func (s *Service) getHome(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) getHome() echo.HandlerFunc {
 	t := "home/home.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, _, err := auth.GetWithSession(c, s.sc)
@@ -43,6 +36,6 @@ func (s *Service) getHome(g route.TemplateGlobals, te route.TemplateEtagSegments
 		}
 
 		// Produce output
-		return route.Render(c, t, struct{}{}, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, a)
+	}
 }

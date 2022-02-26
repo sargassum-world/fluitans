@@ -4,14 +4,11 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
-func (s *Service) getControllers(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) getControllers() echo.HandlerFunc {
 	t := "controllers/controllers.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, _, err := auth.GetWithSession(c, s.sc)
@@ -26,6 +23,6 @@ func (s *Service) getControllers(
 		}
 
 		// Produce output
-		return route.Render(c, t, controllers, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, controllers, a)
+	}
 }

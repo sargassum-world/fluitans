@@ -3,18 +3,14 @@ package assets
 
 import (
 	"github.com/labstack/echo/v4"
-
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 )
 
-func getWebmanifest(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *TemplatedService) getWebmanifest() echo.HandlerFunc {
 	t := "app/app.webmanifest.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
-		// Render template
+		// Produce output
 		c.Response().Header().Set(echo.HeaderContentType, "application/manifest+json")
-		return route.Render(c, t, struct{}{}, struct{}{}, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, struct{}{}, struct{}{})
+	}
 }

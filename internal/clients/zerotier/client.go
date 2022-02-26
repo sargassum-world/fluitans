@@ -4,17 +4,17 @@ package zerotier
 import (
 	"github.com/pkg/errors"
 
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
-	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
 type Client struct {
 	Config Config
-	Logger log.Logger
+	Logger framework.Logger
 	Cache  *Cache
 }
 
-func NewClient(cache clientcache.Cache, l log.Logger) (*Client, error) {
+func NewClient(cache clientcache.Cache, l framework.Logger) (*Client, error) {
 	config, err := GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier client config")

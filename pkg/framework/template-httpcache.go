@@ -1,51 +1,50 @@
-package route
+package framework
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/pkg/framework/fingerprint"
 	"github.com/sargassum-eco/fluitans/pkg/framework/httpcache"
 )
 
-type TemplateEtagSegments map[string][]string
-
-func (te TemplateEtagSegments) newNotFoundError(t string) error {
-	templates := make([]string, 0, len(te))
-	for template := range te {
-		templates = append(templates, template)
-	}
-	return fmt.Errorf(
-		"couldn't find template etag segment for %s, as segments were only computed for [%s]",
-		t, strings.Join(templates, ", "),
-	)
+type Fingerprints struct {
+	App  string
+	Page map[string]string
 }
 
-func (te TemplateEtagSegments) Get(name string) ([]string, error) {
-	tte, ok := te[name]
+func (f Fingerprints) GetEtagSegments(templateName string) ([]string, error) {
+	if templateName == "" {
+		return []string{f.App}, nil
+	}
+
+	pageFingerprint, ok := f.Page[templateName]
 	if !ok {
-		return nil, te.newNotFoundError(name)
+		return []string{f.App}, errors.Errorf(
+			"couldn't find page fingerprint for template %s", templateName,
+		)
 	}
-	return tte, nil
+
+	return []string{f.App, pageFingerprint}, nil
 }
 
-func (te TemplateEtagSegments) Require(names ...string) {
-	for _, name := range names {
-		_, ok := te[name]
-		if !ok {
-			panic(te.newNotFoundError(name))
+func (f Fingerprints) MustHave(templateNames ...string) {
+	for _, name := range templateNames {
+		if _, err := f.GetEtagSegments(name); err != nil {
+			panic(errors.Wrap(err, fmt.Sprintf("couldn't find template etag segments for %s", name)))
 		}
 	}
 }
 
-func (te TemplateEtagSegments) SetAndCheckEtag(
+func (f Fingerprints) SetAndCheckEtag(
 	w http.ResponseWriter, r *http.Request, templateName string, data interface{},
 ) (noContent bool, err error) {
 	// Look up data-independent etag segments
-	templateEtagSegments, err := te.Get(templateName)
+	templateEtagSegments, err := f.GetEtagSegments(templateName)
 	if err != nil {
 		return
 	}

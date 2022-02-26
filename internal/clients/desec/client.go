@@ -11,14 +11,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
-	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
 )
 
 type Client struct {
 	Config       Config
-	Logger       log.Logger
+	Logger       framework.Logger
 	Cache        *Cache
 	ReadLimiter  *slidingwindows.MultiLimiter
 	WriteLimiter *slidingwindows.MultiLimiter
@@ -48,7 +48,7 @@ func (c *Client) handleDesecMissingRRsetError(
 	return nil
 }
 
-func (c *Client) handleDesecClientError(res http.Response, l log.Logger) error {
+func (c *Client) handleDesecClientError(res http.Response, l framework.Logger) error {
 	switch res.StatusCode {
 	case http.StatusTooManyRequests:
 		retryWaitSec := getRetryWait(res.Header, l)
@@ -75,7 +75,7 @@ func (c *Client) tryAddLimitedRead() error {
 	return nil
 }
 
-func NewClient(domainName string, cache clientcache.Cache, l log.Logger) (*Client, error) {
+func NewClient(domainName string, cache clientcache.Cache, l framework.Logger) (*Client, error) {
 	config, err := GetConfig(domainName)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up desec client config")
@@ -128,7 +128,7 @@ func newReadRateLimitError(retryWaitSec float64) error {
 	)
 }
 
-func getRetryWait(header http.Header, l log.Logger) float64 {
+func getRetryWait(header http.Header, l framework.Logger) float64 {
 	retryWait := header.Get("Retry-After")
 	floatWidth := 64
 	retryWaitSec, err := strconv.ParseFloat(retryWait, floatWidth)

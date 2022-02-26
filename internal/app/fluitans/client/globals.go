@@ -10,8 +10,8 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 	"github.com/sargassum-eco/fluitans/pkg/framework/clientcache"
-	"github.com/sargassum-eco/fluitans/pkg/framework/log"
 )
 
 type Clients struct {
@@ -27,7 +27,7 @@ type Globals struct {
 	Clients *Clients
 }
 
-func NewGlobals(l log.Logger) (*Globals, error) {
+func NewGlobals(l framework.Logger) (*Globals, error) {
 	config, err := conf.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")

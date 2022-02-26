@@ -12,7 +12,6 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -36,17 +35,12 @@ func setMemberAuthorization(
 	return nil
 }
 
-func (s *Service) postDeviceAuthorization(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) postDeviceAuthorization() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
-
-		// Extract context
-		ctx := c.Request().Context()
 
 		// Parse params
 		networkID := c.Param("id")
@@ -55,6 +49,7 @@ func (s *Service) postDeviceAuthorization(
 		authorization := strings.ToLower(c.FormValue("authorization")) == "true"
 
 		// Run queries
+		ctx := c.Request().Context()
 		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
@@ -64,10 +59,12 @@ func (s *Service) postDeviceAuthorization(
 		); err != nil {
 			return err
 		}
+
+		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
 			"/networks/%s#device-%s", networkID, memberAddress,
 		))
-	}, nil
+	}
 }
 
 // Naming
@@ -148,15 +145,12 @@ func unsetMemberName(
 	return nil
 }
 
-func (s *Service) postDeviceName(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) postDeviceName() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
-
-		// Extract context
-		ctx := c.Request().Context()
 
 		// Parse params
 		networkID := c.Param("id")
@@ -165,6 +159,7 @@ func (s *Service) postDeviceName(g route.TemplateGlobals, te route.TemplateEtagS
 		setName := c.FormValue("set-name")
 
 		// Run queries
+		ctx := c.Request().Context()
 		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
@@ -186,21 +181,19 @@ func (s *Service) postDeviceName(g route.TemplateGlobals, te route.TemplateEtagS
 			}
 		}
 
+		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
 			"/networks/%s#device-%s", networkID, memberAddress,
 		))
-	}, nil
+	}
 }
 
-func (s *Service) postDevices(g route.TemplateGlobals, te route.TemplateEtagSegments) (echo.HandlerFunc, error) {
+func (s *Service) postDevices() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		if err := auth.RequireAuthorized(c, s.sc); err != nil {
 			return err
 		}
-
-		// Extract context
-		ctx := c.Request().Context()
 
 		// Parse params
 		networkID := c.Param("id")
@@ -208,6 +201,7 @@ func (s *Service) postDevices(g route.TemplateGlobals, te route.TemplateEtagSegm
 		memberAddress := c.FormValue("address")
 
 		// Run queries
+		ctx := c.Request().Context()
 		controller, err := s.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
 			return err
@@ -217,8 +211,10 @@ func (s *Service) postDevices(g route.TemplateGlobals, te route.TemplateEtagSegm
 		); err != nil {
 			return err
 		}
+
+		// Redirect user
 		return c.Redirect(
 			http.StatusSeeOther, fmt.Sprintf("/networks/%s#device-%s", networkID, memberAddress),
 		)
-	}, nil
+	}
 }

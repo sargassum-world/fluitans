@@ -11,9 +11,7 @@ import (
 
 // parseFiles is a direct copy of the parseFiles helper function in text/template.
 func parseFiles(
-	t *template.Template,
-	readFile func(string) (string, []byte, error),
-	filenames ...string,
+	t *template.Template, readFile func(string) (string, []byte, error), filenames ...string,
 ) (*template.Template, error) {
 	if len(filenames) == 0 {
 		return nil, errors.Errorf("template: no files named in call to ParseFiles")
@@ -66,7 +64,7 @@ func ParseFS(
 			return nil, err
 		}
 		if len(list) == 0 {
-			return nil, fmt.Errorf("template: pattern matches no files: %#q", pattern)
+			return nil, errors.Errorf("template: pattern matches no files: %#q", pattern)
 		}
 		filenames = append(filenames, list...)
 	}

@@ -6,20 +6,27 @@ import (
 
 // Template Files
 
+const (
+	FileExt        = ".tmpl"
+	PartialFileExt = ".partial" + FileExt
+	LayoutFileExt  = ".layout" + FileExt
+	SharedModule   = "shared"
+)
+
 func Filter(path string) bool {
-	return strings.HasSuffix(path, ".tmpl")
+	return strings.HasSuffix(path, FileExt)
 }
 
 func FilterShared(path string) bool {
-	return Filter(path) && strings.HasPrefix(path, "shared/")
+	return Filter(path) && strings.HasPrefix(path, SharedModule+"/")
 }
 
 func FilterPartial(path string) bool {
-	return strings.HasSuffix(path, ".partial.tmpl")
+	return strings.HasSuffix(path, PartialFileExt)
 }
 
 func FilterLayout(path string) bool {
-	return strings.HasSuffix(path, ".layout.tmpl")
+	return strings.HasSuffix(path, LayoutFileExt)
 }
 
 func FilterNonpage(path string) bool {
@@ -33,10 +40,10 @@ func FilterPage(path string) bool {
 }
 
 func FilterModule(path string) bool {
-	return path != "shared"
+	return path != SharedModule
 }
 
-// Built asset Files
+// Built Asset Files
 
 func FilterAsset(path string) bool {
 	return strings.HasSuffix(path, ".min.css") || strings.HasSuffix(path, ".js")

@@ -10,7 +10,6 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
 	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
 	"github.com/sargassum-eco/fluitans/pkg/zerotier"
 )
 
@@ -54,11 +53,9 @@ func getControllerData(
 	}, nil
 }
 
-func (s *Service) getController(
-	g route.TemplateGlobals, te route.TemplateEtagSegments,
-) (echo.HandlerFunc, error) {
+func (s *Service) getController() echo.HandlerFunc {
 	t := "controllers/controller.page.tmpl"
-	te.Require(t)
+	s.r.MustHave(t)
 	return func(c echo.Context) error {
 		// Check authentication & authorization
 		a, _, err := auth.GetWithSession(c, s.sc)
@@ -66,22 +63,19 @@ func (s *Service) getController(
 			return err
 		}
 
-		// Extract context
-		ctx := c.Request().Context()
-
 		// Parse params
 		name := c.Param("name")
 
 		// Run queries
-		controllerData, err := getControllerData(ctx, name, s.ztcc, s.ztc)
+		controllerData, err := getControllerData(c.Request().Context(), name, s.ztcc, s.ztc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		// Zero out clocks, since they will always change the Etag
+		// Zero out clocks before computing etag for client-side caching
 		*controllerData.Status.Clock = 0
 		*controllerData.ControllerStatus.Clock = 0
-		return route.Render(c, t, *controllerData, a, te, g)
-	}, nil
+		return s.r.CacheablePage(c.Response(), c.Request(), t, *controllerData, a)
+	}
 }

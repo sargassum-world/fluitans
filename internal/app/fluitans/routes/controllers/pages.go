@@ -2,43 +2,32 @@
 package controllers
 
 import (
-	"net/http"
-
 	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
 	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/framework/route"
+	"github.com/sargassum-eco/fluitans/pkg/framework"
 )
 
 type Service struct {
+	r    framework.TemplateRenderer
 	ztcc *ztcontrollers.Client
 	ztc  *zerotier.Client
 	sc   *sessions.Client
 }
 
 func NewService(
+	r framework.TemplateRenderer,
 	ztcc *ztcontrollers.Client, ztc *zerotier.Client, sc *sessions.Client,
 ) *Service {
 	return &Service{
+		r:    r,
 		ztcc: ztcc,
 		ztc:  ztc,
 		sc:   sc,
 	}
 }
 
-func (s *Service) Routes() []route.Templated {
-	return []route.Templated{
-		{
-			Path:         "/controllers",
-			Method:       http.MethodGet,
-			HandlerMaker: s.getControllers,
-			Templates:    []string{"controllers/controllers.page.tmpl"},
-		},
-		{
-			Path:         "/controllers/:name",
-			Method:       http.MethodGet,
-			HandlerMaker: s.getController,
-			Templates:    []string{"controllers/controller.page.tmpl"},
-		},
-	}
+func (s *Service) Register(er framework.EchoRouter) {
+	er.GET("/controllers", s.getControllers())
+	er.GET("/controllers/:name", s.getController())
 }

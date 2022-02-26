@@ -13,10 +13,11 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/framework/fsutil"
 )
 
+const FingerprintSize = 8
+
 func Compute(data []byte) string {
 	hash := murmur3.Sum64(data)
-	size := 8
-	hashBytes := make([]byte, size)
+	hashBytes := make([]byte, FingerprintSize)
 	binary.LittleEndian.PutUint64(hashBytes, hash)
 	return fmt.Sprintf("%x:%s", len(data), base64.StdEncoding.EncodeToString(hashBytes))
 }
