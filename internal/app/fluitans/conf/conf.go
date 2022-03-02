@@ -9,16 +9,23 @@ import (
 type Config struct {
 	Cache      ristretto.Config
 	DomainName string
+	HTTP       HTTPConfig
 }
 
-func GetConfig() (*Config, error) {
-	cacheConfig, err := getCacheConfig()
+func GetConfig() (c Config, err error) {
+	c.Cache, err = getCacheConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make cache config")
+		err = errors.Wrap(err, "couldn't make cache config")
+		return
 	}
 
-	return &Config{
-		Cache:      *cacheConfig,
-		DomainName: getDomainName(),
-	}, nil
+	c.DomainName = getDomainName()
+
+	c.HTTP, err = getHTTPConfig()
+	if err != nil {
+		err = errors.Wrap(err, "couldn't make http config")
+		return
+	}
+
+	return
 }

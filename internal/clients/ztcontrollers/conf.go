@@ -9,47 +9,49 @@ import (
 )
 
 type Config struct {
-	Controller *Controller
+	Controller Controller
 }
 
-func GetConfig() (*Config, error) {
-	controller, err := GetController()
+func GetConfig() (c Config, err error) {
+	c.Controller, err = GetController()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make Zerotier controller config")
+		err = errors.Wrap(err, "couldn't make Zerotier controller config")
+		return
 	}
 
-	return &Config{
-		Controller: controller,
-	}, nil
+	return
 }
 
-func GetController() (*Controller, error) {
+func GetController() (c Controller, err error) {
 	url, err := env.GetURLOrigin("FLUITANS_ZT_CONTROLLER_SERVER", "", "http")
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make server url config")
+		err = errors.Wrap(err, "couldn't make server url config")
+		return
+	}
+	c.Server = url.String()
+	if len(c.Server) == 0 {
+		c = Controller{}
+		return
 	}
 
-	var defaultNetworkCost float32 = 1.0
-	networkCostWeight, err := env.GetFloat32("FLUITANS_ZT_CONTROLLER_NETWORKCOST", defaultNetworkCost)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make network cost config")
+	c.Authtoken = os.Getenv("FLUITANS_ZT_CONTROLLER_AUTHTOKEN")
+	if len(c.Authtoken) == 0 {
+		c = Controller{}
+		return
 	}
 
-	authtoken := os.Getenv("FLUITANS_ZT_CONTROLLER_AUTHTOKEN")
-	name := env.GetString("FLUITANS_ZT_CONTROLLER_NAME", url.Host)
-	desc := env.GetString(
+	c.Name = env.GetString("FLUITANS_ZT_CONTROLLER_NAME", url.Host)
+	c.Description = env.GetString(
 		"FLUITANS_ZT_CONTROLLER_DESC",
 		"The default ZeroTier network controller specified in the environment variables.",
 	)
-	if len(url.String()) == 0 || len(authtoken) == 0 {
-		return nil, nil
+
+	const defaultNetworkCost = 1.0
+	c.NetworkCostWeight, err = env.GetFloat32("FLUITANS_ZT_CONTROLLER_NETWORKCOST", defaultNetworkCost)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't make network cost config")
+		return
 	}
 
-	return &Controller{
-		Server:            url.String(),
-		Name:              name,
-		Description:       desc,
-		Authtoken:         authtoken,
-		NetworkCostWeight: networkCostWeight,
-	}, nil
+	return
 }

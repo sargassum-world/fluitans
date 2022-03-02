@@ -64,7 +64,7 @@ func NewGlobals(l godest.Logger) (*Globals, error) {
 	}
 
 	return &Globals{
-		Config: *config,
+		Config: config,
 		Clients: &Clients{
 			Authn:         authnClient,
 			Desec:         desecClient,

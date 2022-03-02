@@ -22,7 +22,7 @@ func NewClient(cache clientcache.Cache, l godest.Logger) (*Client, error) {
 	}
 
 	return &Client{
-		Config: *config,
+		Config: config,
 		Logger: l,
 		Cache: &Cache{
 			Cache: cache,

@@ -45,6 +45,14 @@ func FilterModule(path string) bool {
 
 // Built Asset Files
 
+func FilterCSSAsset(path string) bool {
+	return strings.HasSuffix(path, ".css")
+}
+
+func FilterJSAsset(path string) bool {
+	return strings.HasSuffix(path, ".js")
+}
+
 func FilterAsset(path string) bool {
-	return strings.HasSuffix(path, ".min.css") || strings.HasSuffix(path, ".js")
+	return FilterCSSAsset(path) || FilterJSAsset(path)
 }

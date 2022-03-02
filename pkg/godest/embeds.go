@@ -1,6 +1,8 @@
 package godest
 
 import (
+	"crypto/sha512"
+	"encoding/base64"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -13,6 +15,12 @@ import (
 	"github.com/sargassum-eco/fluitans/pkg/godest/fsutil"
 	tp "github.com/sargassum-eco/fluitans/pkg/godest/template"
 )
+
+func ComputeCSPHash(resource []byte) string {
+	rawHash := sha512.Sum512(resource)
+	encodedHash := base64.StdEncoding.EncodeToString(rawHash[:])
+	return fmt.Sprintf("'sha512-%s'", encodedHash)
+}
 
 func identifyModuleNonpageFiles(templates fs.FS) (map[string][]string, error) {
 	modules, err := fsutil.ListDirectories(templates, tp.FilterModule)
@@ -171,4 +179,31 @@ func (e Embeds) GetStaticHashedNamer(urlPrefix string) func(string) string {
 	return func(unhashedFilename string) string {
 		return fmt.Sprintf(urlPrefix + e.StaticHFS.HashName(unhashedFilename))
 	}
+}
+
+// Inline snippet support
+
+type Inlines struct {
+	CSS      map[string]template.CSS
+	JS       map[string]template.JS
+	JSStr    map[string]template.JSStr
+	HTML     map[string]template.HTML
+	HTMLAttr map[string]template.HTMLAttr
+	SrcSet   map[string]template.Srcset
+}
+
+func (i Inlines) ComputeCSSHashesForCSP() (hashes []string) {
+	hashes = make([]string, 0, len(i.CSS))
+	for _, inline := range i.CSS {
+		hashes = append(hashes, ComputeCSPHash([]byte(inline)))
+	}
+	return
+}
+
+func (i Inlines) ComputeJSHashesForCSP() (hashes []string) {
+	hashes = make([]string, 0, len(i.CSS))
+	for _, inline := range i.JS {
+		hashes = append(hashes, ComputeCSPHash([]byte(inline)))
+	}
+	return
 }

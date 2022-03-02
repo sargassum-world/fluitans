@@ -17,8 +17,8 @@ func (c *Client) GetControllers() ([]Controller, error) {
 	controllers := make([]Controller, 0)
 	envController := c.Config.Controller
 
-	if envController != nil {
-		controllers = append(controllers, *envController)
+	if envController != (Controller{}) {
+		controllers = append(controllers, envController)
 	}
 	return controllers, nil
 }

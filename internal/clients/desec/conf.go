@@ -18,56 +18,60 @@ type Config struct {
 	RecordTypes []string
 }
 
-func GetConfig(domainName string) (*Config, error) {
-	dnsServer, err := getDNSServer()
+func GetConfig(domainName string) (c Config, err error) {
+	c.DomainName = domainName
+	c.DNSServer, err = getDNSServer()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make DNS server config")
+		err = errors.Wrap(err, "couldn't make DNS server config")
+		return
 	}
 
-	apiSettings, err := GetAPISettings()
+	c.APISettings, err = GetAPISettings()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make deSEC API settings")
+		err = errors.Wrap(err, "couldn't make deSEC API settings")
+		return
 	}
 
-	return &Config{
-		DomainName:  domainName,
-		DNSServer:   *dnsServer,
-		APISettings: *apiSettings,
-		RecordTypes: getRecordTypes(),
-	}, nil
+	c.RecordTypes = getRecordTypes()
+	return
 }
 
-func getDNSServer() (*models.DNSServer, error) {
+func getDNSServer() (s models.DNSServer, err error) {
 	url, err := env.GetURLOrigin("FLUITANS_DNS_SERVER", "", "https")
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make server url config")
+		err = errors.Wrap(err, "couldn't make server url config")
+		return
+	}
+	s.Server = url.String()
+	if len(s.Server) == 0 {
+		s = models.DNSServer{}
+		return
+	}
+	s.API = strings.ToLower(env.GetString("FLUITANS_DNS_API", "desec"))
+	if len(s.API) == 0 {
+		s = models.DNSServer{}
+		return
 	}
 
-	var defaultNetworkCost float32 = 2.0
-	networkCostWeight, err := env.GetFloat32("FLUITANS_DNS_NETWORKCOST", defaultNetworkCost)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make network cost config")
+	s.Authtoken = os.Getenv("FLUITANS_DNS_AUTHTOKEN")
+	if len(s.Authtoken) == 0 {
+		s = models.DNSServer{}
+		return
 	}
 
-	api := strings.ToLower(env.GetString("FLUITANS_DNS_API", "desec"))
-	authtoken := os.Getenv("FLUITANS_DNS_AUTHTOKEN")
-	name := env.GetString("FLUITANS_DNS_NAME", url.Host)
-	desc := env.GetString(
+	s.Name = env.GetString("FLUITANS_DNS_NAME", url.Host)
+	s.Description = env.GetString(
 		"FLUITANS_DNS_DESC",
 		"The default deSEC DNS server account specified in the environment variables.",
 	)
-	if len(url.String()) == 0 || len(authtoken) == 0 {
-		return nil, nil
-	}
 
-	return &models.DNSServer{
-		Server:            url.String(),
-		API:               api,
-		Name:              name,
-		Description:       desc,
-		Authtoken:         authtoken,
-		NetworkCostWeight: networkCostWeight,
-	}, nil
+	const defaultNetworkCost = 2.0
+	s.NetworkCostWeight, err = env.GetFloat32("FLUITANS_DNS_NETWORKCOST", defaultNetworkCost)
+	if err != nil {
+		err = errors.Wrap(err, "couldn't make network cost config")
+		return
+	}
+	return
 }
 
 func getReadCacheTTL() (time.Duration, error) {
@@ -89,31 +93,29 @@ func getReadCacheTTL() (time.Duration, error) {
 	return ttl, nil
 }
 
-func GetAPISettings() (*DesecAPISettings, error) {
-	readCacheTTL, err := getReadCacheTTL()
+func GetAPISettings() (s DesecAPISettings, err error) {
+	s.ReadCacheTTL, err = getReadCacheTTL()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make readCacheTTL config")
+		err = errors.Wrap(err, "couldn't make readCacheTTL config")
+		return
 	}
 
 	// The write limiter fill ratio above which RRset writes, rather than being executed immediately,
 	// will first be batched into groups based on the nearest rate limit
-	var defaultWriteSoftQuota float32 = 0.34
-	writeSoftQuota, err := env.GetFloat32("FLUITANS_DESEC_WRITE_SOFT_QUOTA", defaultWriteSoftQuota)
+	const defaultWriteSoftQuota = 0.34
+	s.WriteSoftQuota, err = env.GetFloat32("FLUITANS_DESEC_WRITE_SOFT_QUOTA", defaultWriteSoftQuota)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make writeSoftQuota config")
+		err = errors.Wrap(err, "couldn't make writeSoftQuota config")
+		return
+	}
+	if s.WriteSoftQuota < 0 {
+		s.WriteSoftQuota = 0
+	}
+	if s.WriteSoftQuota > 1 {
+		s.WriteSoftQuota = 1
 	}
 
-	if writeSoftQuota < 0 {
-		writeSoftQuota = 0
-	}
-	if writeSoftQuota > 1 {
-		writeSoftQuota = 1
-	}
-
-	return &DesecAPISettings{
-		ReadCacheTTL:   readCacheTTL,
-		WriteSoftQuota: writeSoftQuota,
-	}, nil
+	return
 }
 
 func getRecordTypes() []string {

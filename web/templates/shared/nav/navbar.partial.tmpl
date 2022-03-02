@@ -1,10 +1,10 @@
 {{define "nav/navbar.assets"}}
-  <link rel="preload" as="image" type="image/svg+xml" href={{staticHashed "logo.svg"}} data-turbo-track="reload">
-  <link rel="preload" as="image" type="image/svg+xml" href={{staticHashed "icons/white-balance-sunny.svg"}} data-turbo-track="reload">
+  <link rel="preload" as="image" type="image/svg+xml" href="{{staticHashed "logo.svg"}}" data-turbo-track="reload">
+  <link rel="preload" as="image" type="image/svg+xml" href="{{staticHashed "icons/white-balance-sunny.svg"}}" data-turbo-track="reload">
 {{end}}
 
 {{define "nav/navbar.brand"}}
-  <img class="navbar-brand-logo" src={{staticHashed "logo.svg"}} alt="Fluitans logo" />
+  <img class="navbar-brand-logo" src="{{staticHashed "logo.svg"}}" alt="Fluitans logo" />
   Fluitans
 {{end}}
 
@@ -119,7 +119,7 @@
               aria-label="Toggle theme"
             >
               <span class="icon is-small">
-                <img src={{staticHashed "icons/white-balance-sunny.svg"}} alt="Toggle theme">
+                <img src="{{staticHashed "icons/white-balance-sunny.svg"}}" alt="Toggle theme">
               </span>
             </button>
           </div>

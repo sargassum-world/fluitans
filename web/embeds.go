@@ -59,13 +59,8 @@ func NewEmbeds() godest.Embeds {
 
 // Inlines are strings to include in-line in templates
 
-type Inlines struct {
-	CSS map[string]template.CSS
-	JS  map[string]template.JS
-}
-
-func NewInlines() Inlines {
-	return Inlines{
+func NewInlines() godest.Inlines {
+	return godest.Inlines{
 		CSS: map[string]template.CSS{
 			"BundleEager": template.CSS(bundleEagerCSS),
 		},

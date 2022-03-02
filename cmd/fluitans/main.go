@@ -10,10 +10,7 @@ import (
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans"
 )
 
-const (
-	gzipLevel = 6
-	port      = 3000
-)
+const port = 3000
 
 func main() {
 	e := echo.New()
@@ -25,13 +22,6 @@ func main() {
 			"(${bytes_out}b after ${latency_human}) ${status} ${error}\n",
 	}))
 	e.Logger.SetLevel(log.WARN)
-	// TODO: move gzip level into server config, move middlewares below here into Server.Register
-	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
-		Level: gzipLevel,
-	}))
-	e.Use(middleware.Decompress())
-	// TODO: enable Prometheus, rate-limiting, and security
-	e.Pre(middleware.RemoveTrailingSlash())
 
 	// Prepare server
 	s, err := fluitans.NewServer(e)

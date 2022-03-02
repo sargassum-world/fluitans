@@ -89,7 +89,7 @@ func NewClient(domainName string, cache clientcache.Cache, l godest.Logger) (*Cl
 	}
 	readLimiter := desec.NewReadLimiter(0)
 	return &Client{
-		Config:       *config,
+		Config:       config,
 		Logger:       l,
 		Cache:        &clientCache,
 		ReadLimiter:  readLimiter,

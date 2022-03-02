@@ -11,9 +11,11 @@ import (
 )
 
 func PrefetchDNSRecords(c *desec.Client) {
+	const retryInterval = 5000
 	for {
 		if _, err := c.GetRRsets(context.Background()); err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't prefetch DNS records for cache"))
+			time.Sleep(retryInterval * time.Millisecond)
 			continue
 		}
 
@@ -22,7 +24,7 @@ func PrefetchDNSRecords(c *desec.Client) {
 }
 
 func TestWriteLimiter(c *desec.Client) {
-	var writeInterval time.Duration = 5000
+	const writeInterval = 5000
 	writeLimiter := c.WriteLimiter
 	for {
 		if writeLimiter.TryAdd(time.Now(), 1) {

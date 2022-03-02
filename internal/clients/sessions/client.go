@@ -67,7 +67,7 @@ func NewMemStoreClient(l godest.Logger) (*Client, error) {
 	store.Options = &config.CookieOptions
 
 	return &Client{
-		Config: *config,
+		Config: config,
 		Logger: l,
 		Store:  store,
 	}, nil
