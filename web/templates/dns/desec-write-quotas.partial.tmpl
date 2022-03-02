@@ -1,0 +1,33 @@
+{{$settings := (get . "DesecAPISettings")}}
+{{$stats := (get . "APILimiterStats")}}
+
+<div class="card section-card">
+  <div class="card-content">
+    <h3>API Write Quotas</h3>
+    {{$writeSoftQuota := $settings.WriteSoftQuota}}
+    {{if lt $writeSoftQuota 1.0}}
+      <p>
+        When any of the following write rates is greater than
+        {{round (mulf 100 $writeSoftQuota) 1}}% of its corresponding rate limit
+        (as indicated by a blue progress bar),
+        Fluitans will group writes into batches before executing them,
+        instead of executing each write instantly and individually.
+      </p>
+      {{$writeBatchWait := $stats.WriteBatchWaitSec}}
+      {{if gt $writeBatchWait 0.0}}
+        <p>
+          Writes are currently being batched into groups which will be executed
+          at an interval of at least {{round $writeBatchWait 1}} sec between groups.
+        </p>
+      {{end}}
+    {{end}}
+    {{range $pair := $stats.WriteLimiterFillRatios}}
+      <h4 class="is-size-6">Writes/{{lower (trimPrefix "Per" $pair.Key)}}</h4>
+      <progress
+        class="progress {{if gt $pair.FillRatio $writeSoftQuota}}is-info{{else}}is-success{{end}} is-body-background"
+        value="{{$pair.FillRatio}}"
+        max="1"
+      ></progress>
+    {{end}}
+  </div>
+</div>

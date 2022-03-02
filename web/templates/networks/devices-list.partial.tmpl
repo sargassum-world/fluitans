@@ -1,0 +1,50 @@
+{{$members := (get . "Members")}}
+{{$network := (get . "Network")}}
+{{$networkDNS := (get . "NetworkDNS")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="network-{{$network.Id}}-devices">
+  {{range $member := $members}}
+    {{
+      template "networks/device.partial.tmpl" dict
+      "Member" $member
+      "Network" $network
+      "NetworkDNS" $networkDNS
+      "Auth" $auth
+    }}
+  {{else}}
+    <p>This network does not yet have any devices!</p>
+  {{end}}
+  {{if $auth.Identity.Authenticated}}
+    <div class="card section-card is-block">
+      <div class="card-content">
+        <h3>Manually Add Device</h3>
+        <form
+          action="/networks/{{$network.Id}}/devices"
+          method="POST"
+          data-controller="form-submission csrf"
+          data-action="submit->form-submission#submit submit->csrf#addToken"
+          data-form-submission-target="submitter"
+        >
+          {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+          <label class="label" for="address">ZeroTier Address</label>
+          <div class="field is-grouped">
+            <div class="control">
+              <input class="input" type="text" name="address" placeholder="8bdf00d13">
+            </div>
+            <div class="control">
+              <input
+                class="button"
+                type="submit"
+                value="Add device"
+                data-form-submission-target="submit"
+                data-csrf-target="submit"
+              >
+            </div>
+          </div>
+          <p class="help">Add a device to the network before it attempts to join.</p>
+        </form>
+      </div>
+    </div>
+  {{end}}
+</turbo-frame>

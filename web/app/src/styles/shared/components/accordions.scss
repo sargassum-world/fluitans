@@ -7,13 +7,15 @@ ul[data-accordion] {
 ul[data-accordion] li[data-accordion-item] + li[data-accordion-item] {
   margin-top: 0;
 }
-li[data-accordion-item] {
+li[data-accordion-item], details[data-accordion-item] {
   display: block;
   padding: 0;
   margin: 0;
 }
-.panel.entity-panel li[data-accordion-item].panel-block {
-  padding: 0;
+.panel.entity-panel {
+  li[data-accordion-item].panel-block, details[data-accordion-item].panel-block {
+    padding: 0;
+  }
 }
 li[data-accordion-item]>button {
   @include reset;
@@ -36,6 +38,7 @@ li[data-accordion-item]>button {
 }
 .accordion-header.level {
   display: flex;
+  margin-bottom: 0;
 }
 button[aria-expanded="true"] .accordion-header .icon {
   transform: rotate(0.5turn);
@@ -44,7 +47,7 @@ li[data-accordion-item]>div {
   display: unset;
 }
 .accordion-content {
-  width: 100%;
+  width: calc(100% - 2 * #{$gap});
   padding-left: $gap;
   padding-right: $gap;
   padding-top: 0.5 * $gap;

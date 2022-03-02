@@ -1,0 +1,59 @@
+{{$domain := get . "Domain"}}
+{{$apexRRsets := get . "ApexRRsets"}}
+{{$auth := get . "Auth"}}
+
+<turbo-frame id="dns-domain-{{$domain.Name}}">
+  <article class="panel entity-panel">
+    <header class="panel-heading">
+      <h3 class="entity-name"><span class="tag domain-name">{{$domain.Name}}</span></h3>
+    </header>
+    <details data-accordion-item class="panel-block accordion-item">
+      <summary class="accordion-header level">
+        <h4>Basic Details</h4>
+        {{template "shared/accordion-icon.partial.tmpl"}}
+      </summary>
+      <div class="accordion-content">
+        <p>Created: {{dateInZone  "2006-01-02 15:04:05 UTC" $domain.Created "UTC"}}</p>
+        <p>Modified: {{dateInZone  "2006-01-02 15:04:05 UTC" $domain.Published "UTC"}}</p>
+        <p>Minimum Record TTL: {{$domain.MinimumTtl}} sec</p>
+      </div>
+    </details>
+    {{range $rrset := $apexRRsets}}
+      <details data-accordion-item class="panel-block accordion-item">
+        <summary class="accordion-header level">
+          <h4>{{describeDNSRecordType $rrset.Type}} ({{$rrset.Type}})</h4>
+          {{template "shared/accordion-icon.partial.tmpl"}}
+        </summary>
+        <turbo-frame id="dns-domain-{{$domain.Name}}-rrset-{{$rrset.Type}}">
+          <div class="accordion-content">
+            {{
+              template "shared/dns/rrset.partial.tmpl" dict
+              "RRset" $rrset
+              "Auth" $auth
+              "TurboFrameTarget" (print "dns-domain-" $domain.Name)
+            }}
+          </div>
+        </turbo-frame>
+      </details>
+    {{end}}
+    <details data-accordion-item class="panel-block accordion-item">
+      <summary class="accordion-header level">
+        <h4>DNSSEC Keys (DNSKEY & DS)</h4>
+        {{template "shared/accordion-icon.partial.tmpl"}}
+      </summary>
+      <div class="accordion-content">
+        {{if eq (len $domain.Keys) 1}}
+          {{range $key := $domain.Keys}}
+            {{template "dns/dnssec-key.partial.tmpl" dict "Key" $key "Auth" $auth}}
+          {{end}}
+        {{else}}
+          <ul>
+            {{range $key := $domain.Keys}}
+              <li>{{template "dns/dnssec-key.partial.tmpl" dict "Key" $key "Auth" $auth}}</li>
+            {{end}}
+          </ul>
+        {{end}}
+      </div>
+    </details>
+  </article>
+</turbo-frame>

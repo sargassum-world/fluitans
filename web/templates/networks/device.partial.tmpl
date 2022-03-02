@@ -1,0 +1,163 @@
+{{$zerotierMember := (get . "Member").ZerotierMember}}
+{{$domainNames := (get . "Member").DomainNames}}
+{{$network := (get . "Network")}}
+{{$networkDNS := (get . "NetworkDNS")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="network-{{$network.Id}}-device-{{$zerotierMember.Address}}">
+  <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
+    <header class="panel-heading">
+      <h3 class="entity-name">
+        {{if $domainNames}}
+          <span class="tag domain-name">{{index $domainNames 0}}</span>
+        {{else}}
+          <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+        {{end}}
+      </h3>
+      <div class="tags">
+        {{if (derefBool $zerotierMember.Authorized)}}
+          <span class="tag is-success">Authorized</span>
+        {{else}}
+          <span class="tag is-warning">Not authorized</span>
+        {{end}}
+        {{if (derefBool $zerotierMember.ActiveBridge)}}
+          <span class="tag is-info">Bridge</span>
+        {{end}}
+      </div>
+    </header>
+    <details data-accordion-item class="panel-block accordion-item">
+      <summary class="accordion-header level">
+        {{if $auth.Identity.Authenticated}}
+          <h4>Basic Settings</h4>
+        {{else}}
+          <h4>Basic Details</h4>
+        {{end}}
+        {{template "shared/accordion-icon.partial.tmpl"}}
+      </summary>
+      <div class="accordion-content">
+        <h5 class="is-size-6">Zerotier Address</h5>
+        <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+
+        {{if $auth.Identity.Authenticated}}
+          <h5 class="is-size-6">Network Membership</h5>
+          <form
+            action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/authorization"
+            method="POST"
+            data-controller="form-submission csrf"
+            data-action="submit->form-submission#submit submit->csrf#addToken"
+          >
+            {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+            <input
+              type="hidden"
+              name="authorization"
+              value="{{if derefBool $zerotierMember.Authorized}}false{{else}}true{{end}}"
+            >
+            <div class="control" data-form-submission-target="submitter">
+              <input
+                class="button"
+                type="submit"
+                value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
+                data-form-submission-target="submit"
+                data-csrf-target="submit"
+              >
+            </div>
+          </form>
+        {{end}}
+
+        {{if $networkDNS.Named}}
+          <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
+          {{range $domainName := $domainNames}}
+            {{if $auth.Identity.Authenticated}}
+              <form
+                id="unset-name-{{$domainName}}"
+                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+                method="POST"
+                data-controller="form-submission csrf"
+                data-action="submit->form-submission#submit submit->csrf#addToken"
+              >
+                {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+                <input type="hidden" name="unset-name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+                <input type="hidden" name="set-name" value="">
+                <div class="control" data-form-submission-target="submitter">
+                  <span class="tag domain-name">
+                    {{$domainName}}
+                    <span class="control">
+                      <button
+                        class="delete"
+                        form="unset-name-{{$domainName}}"
+                        data-form-submission-target="submit"
+                        data-csrf-target="submit"
+                      ></button>
+                    </span>
+                  </span>
+                </div>
+              </form>
+            {{else}}
+              <span class="tag domain-name">{{$domainName}}</span>
+            {{end}}
+          {{else}}
+            {{if $auth.Identity.Authenticated}}
+              <form
+                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+                method="POST"
+                data-controller="form-submission csrf"
+                data-action="submit->form-submission#submit submit->csrf#addToken"
+              >
+                {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+                <div class="field has-addons">
+                  <div class="control">
+                    <input type="text" class="input" name="set-name">
+                  </div>
+                  <div class="control">
+                    <span class="button is-static">.d.{{$network.Name}}</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <div class="control" data-form-submission-target="submitter">
+                    <input
+                      type="submit"
+                      class="button"
+                      value="Set domain name"
+                      data-form-submission-target="submit"
+                      data-csrf-target="submit"
+                    >
+                  </div>
+                </div>
+              </form>
+            {{else}}
+              <span class="tag is-warning">Unknown</span>
+            {{end}}
+          {{end}}
+        {{end}}
+      </div>
+    </details>
+    <details data-accordion-item class="panel-block accordion-item">
+      <summary class="accordion-header level">
+        <h4>Advanced Details</h4>
+        {{template "shared/accordion-icon.partial.tmpl"}}
+      </summary>
+      <div class="accordion-content">
+        <h5 class="is-size-6">IP Assignments</h5>
+        <p>
+          {{range $ipAddr := $zerotierMember.IpAssignments}}
+            <span class="tag ip-address">{{$ipAddr}}</span>
+          {{else}}
+            <span class="tag is-warning">None</span>
+          {{end}}
+        </p>
+        {{if $auth.Identity.Authenticated}}
+          <h5 class="is-size-6">Troubleshooting Information</h5>
+          <p>Configuration revision: {{$zerotierMember.Revision}}</p>
+          <p>
+            Version:
+            {{if eq -1 (derefInt $zerotierMember.VMajor -1)}}
+              <span class="tag is-warning">Unknown</span>
+            {{else}}
+              v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
+            {{end}}
+          </p>
+        {{end}}
+      </div>
+    </details>
+  </article>
+</turbo-frame>

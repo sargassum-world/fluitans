@@ -1,0 +1,77 @@
+{{$network := (get . "Network")}}
+{{$networkDNS := (get . "NetworkDNS")}}
+{{$domainName := (get . "DomainName")}}
+{{$auth := (get . "Auth")}}
+
+<turbo-frame id="network-{{$network.Id}}-basics">
+  <h1>
+    {{if eq 0 (len $network.Name)}}
+      Unnamed Network
+    {{else}}
+      {{$network.Name}}
+    {{end}}
+  </h1>
+  <p>ID: {{template "shared/networks/network-id.partial.tmpl" $network.Id}}</p>
+  {{if $networkDNS.Named}}
+    <p>
+      Domain Name:
+      <a href="#dns-domain-{{$network.Name}}" data-turbo-frame="_top">
+        <span class="tag domain-name">{{$network.Name}}</span>
+      </a>
+    </p>
+    {{if $networkDNS.Aliases}}
+      <p>Aliases:</p>
+      <ul>
+        {{range $alias := $networkDNS.Aliases}}
+        <li><a href="#dns-domain-{{$alias}}.{{$domainName}}" data-turbo-frame="_top">
+          <span class="tag domain-name">{{$alias}}.{{$domainName}}</span>
+        </a></li>
+        {{end}}
+      </ul>
+    {{end}}
+  {{else if .Auth.Identity.Authenticated}}
+    <div class="card section-card is-block" id="network-{{$network.Id}}-name">
+      <div class="card-content">
+        <h2 class="is-size-4">Name</h2>
+        <form
+          action="/networks/{{$network.Id}}/name"
+          method="POST"
+          data-turbo-frame="_top"
+          data-controller="form-submission csrf"
+          data-action="submit->form-submission#submit submit->csrf#addToken"
+        >
+          {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+          <label class="label" for="name">Domain Name</label>
+          <div class="field has-addons">
+            <div class="control">
+              {{if hasSuffix $domainName $network.Name}}
+                <input
+                  type="text"
+                  class="input"
+                  name="name"
+                  value="{{trimSuffix (print "." $domainName) $network.Name}}"
+                >
+              {{else}}
+                <input type="text" class="input" name="name" value="{{$network.Name}}">
+              {{end}}
+            </div>
+            <div class="control">
+              <span class="button is-static">.{{$domainName}}</span>
+            </div>
+          </div>
+          <div class="field">
+            <div class="control" data-form-submission-target="submitter">
+              <input
+                type="submit"
+                class="button"
+                value="Set domain name"
+                data-form-submission-target="submit"
+                data-csrf-target="submit"
+              >
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  {{end}}
+</turbo-frame>

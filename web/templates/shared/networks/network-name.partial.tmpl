@@ -1,0 +1,5 @@
+{{if ne (trim .Name) ""}}
+  {{.Name}}
+{{else}}
+  {{template "shared/networks/network-id.partial.tmpl" .Id}}
+{{end}}

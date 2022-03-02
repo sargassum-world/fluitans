@@ -1,0 +1,49 @@
+{{template "shared/base.layout.tmpl" .}}
+
+{{define "title"}}Network Controller {{.Data.Controller.Name}}{{end}}
+{{define "description"}}The ZeroTier network controller {{.Data.Controller.Name}}.{{end}}
+
+{{define "content"}}
+  <main class="main-container" tabindex="-1" data-controller="default-scrollable">
+    <nav class="breadcrumb main-breadcrumb" aria-label="breadcrumbs">
+      <ul>
+        <li><a href="/">Fluitans</a></li>
+        <li><a href="/controllers">Controllers</a></li>
+        <li class="is-active"><a href="/controllers/{{.Data.Controller.Name}}" aria-current="page">{{.Data.Controller.Name}}</a></li>
+      </ul>
+    </nav>
+
+    <section class="section content">
+      <h1>Network Controller {{.Data.Controller.Name}}</h1>
+      <turbo-frame id="controller-{{.Data.Controller.Name}}-info">
+        <div class="tags">
+          {{if .Data.Status.Online}}
+            <span class="tag is-success">Online</span>
+          {{else}}
+            <span class="tag is-danger">Offline</span>
+          {{end}}
+          {{if (not .Data.ControllerStatus.Controller)}}
+            <span class="tag is-danger">Not a Controller!</span>
+          {{end}}
+        </div>
+        <p>
+          Address: <span class="tag zerotier-address">{{.Data.Status.Address}}</span>
+        </p>
+        {{if .Auth.Identity.Authenticated}}
+          <p>
+            ZeroTier Version: {{.Data.Status.Version}}
+            <br />
+            API Version: {{.Data.ControllerStatus.ApiVersion}}
+          </p>
+        {{end}}
+      </turbo-frame>
+      <h2>Networks</h2>
+      {{
+        template "shared/networks/networks-list.partial.tmpl" dict
+        "Controller" .Data.Controller
+        "Networks" .Data.Networks
+        "Auth" .Auth
+      }}
+    </section>
+  </main>
+{{end}}

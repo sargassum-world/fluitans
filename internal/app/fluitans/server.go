@@ -2,78 +2,120 @@
 package fluitans
 
 import (
-	"io/fs"
+	"fmt"
+	"strings"
 
+	"github.com/Masterminds/sprig/v3"
+	"github.com/gorilla/csrf"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/pkg/errors"
+	"github.com/unrolled/secure"
+
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/templates"
-	"github.com/sargassum-eco/fluitans/internal/fsutil"
-	"github.com/sargassum-eco/fluitans/internal/route"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/assets"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/tmplfunc"
+	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
+	imw "github.com/sargassum-eco/fluitans/internal/middleware"
+	"github.com/sargassum-eco/fluitans/pkg/godest"
+	gmw "github.com/sargassum-eco/fluitans/pkg/godest/middleware"
 	"github.com/sargassum-eco/fluitans/web"
 )
 
-// TODO: add a flag to specify reading all files from disk into a virtual FS memory,
-// rather than using the compile-time virtual FS
-// TODO: even better is if it acts as an overlay FS, so only the files to override need to be supplied
+type Server struct {
+	Embeds   godest.Embeds
+	Inlines  godest.Inlines
+	Renderer godest.TemplateRenderer
+	Globals  *client.Globals
+	Handlers *routes.Handlers
+}
 
-func computeGlobals() (*route.TemplateGlobals, *route.StaticGlobals, error) {
-	appFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterApp)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	pageFiles, err := fsutil.ListFiles(web.TemplatesFS, templates.FilterPage)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	f, err := route.ComputeTemplateFingerprints(
-		appFiles, pageFiles, web.EmbedAssets, web.TemplatesFS, web.AppFS,
+func NewServer(e *echo.Echo) (s *Server, err error) {
+	s = &Server{}
+	s.Embeds = web.NewEmbeds()
+	s.Inlines = web.NewInlines()
+	s.Renderer, err = godest.NewTemplateRenderer(
+		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
+			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
+		),
 	)
 	if err != nil {
-		return nil, nil, err
+		s = nil
+		err = errors.Wrap(err, "couldn't make template renderer")
+		return
 	}
 
-	tg := route.TemplateGlobals{
-		Embeds:               embeds,
-		TemplateFingerprints: *f,
+	s.Globals, err = client.NewGlobals(e.Logger)
+	if err != nil {
+		s = nil
+		err = errors.Wrap(err, "couldn't make app globals")
+		return
 	}
-	sg := route.StaticGlobals{
-		FS: map[string]fs.FS{
-			"Web":   web.StaticFS,
-			"Fonts": web.FontsFS,
-		},
-		HFS: map[string]fs.FS{
-			"Static": web.StaticHFS,
-			"App":    web.AppHFS,
-		},
-	}
-	return &tg, &sg, nil
+
+	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
+	return
 }
 
-func NewRenderer() *templates.TemplateRenderer {
-	return templates.New(web.AppHFS.HashName, web.StaticHFS.HashName, web.TemplatesFS)
+func (s *Server) Register(e *echo.Echo) {
+	// HTTP Headers Middleware
+	csp := strings.Join([]string{
+		"default-src 'self'",
+		// Warning: script-src 'self' may not be safe to use if we're hosting user-uploaded content.
+		// Then we'll need to provide hashes for scripts & styles we include by URL, and we'll need to
+		// add the SRI integrity attribute to the tags including those files; however, it's unclear
+		// how well-supported they are by browsers.
+		fmt.Sprintf(
+			"script-src 'self' 'unsafe-inline' %s", strings.Join(s.Inlines.ComputeJSHashesForCSP(), " "),
+		),
+		fmt.Sprintf(
+			"style-src 'self' 'unsafe-inline' %s", strings.Join(append(
+				s.Inlines.ComputeCSSHashesForCSP(),
+				// Note: Turbo Drive tries to install a style tag for its progress bar, which leads to a CSP
+				// error. We add a hash for it here, assuming ProgressBar.animationDuration == 300:
+				"'sha512-rVca7GmrbBAUUoTnu9V9a6ZR4WAZdxFUnrsg3B+1zEsES4K6q7EW02LIXdYmE5aofGOwLySKKtOafC0hq892BA=='",
+			), " "),
+		),
+		"object-src 'none'",
+		"child-src 'self'",
+		"base-uri 'none'",
+		"form-action 'self'",
+		"frame-ancestors 'none'",
+		// TODO: add HTTPS-related settings for CSP, including upgrade-insecure-requests
+	}, "; ")
+	e.Use(echo.WrapMiddleware(secure.New(secure.Options{
+		// TODO: add HTTPS options
+		FrameDeny:               true,
+		ContentTypeNosniff:      true,
+		ContentSecurityPolicy:   csp,
+		ReferrerPolicy:          "no-referrer",
+		CrossOriginOpenerPolicy: "same-origin",
+	}).Handler))
+	e.Use(echo.WrapMiddleware(gmw.SetCORP("same-site")))
+	e.Use(echo.WrapMiddleware(gmw.SetCOEP("require-corp")))
+
+	// Compression Middleware
+	e.Use(middleware.Decompress())
+	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Level: s.Globals.Config.HTTP.GzipLevel,
+	}))
+
+	// Other Middleware
+	e.Pre(middleware.RemoveTrailingSlash())
+	e.Use(s.Globals.Clients.Sessions.NewCSRFMiddleware(
+		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Clients.Sessions)),
+	))
+	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))
+	// TODO: enable Prometheus and rate-limiting
+
+	// Handlers
+	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Clients.Sessions)
+	s.Handlers.Register(e, s.Embeds)
 }
 
-func RegisterRoutes(e route.EchoRouter) error {
-	tg, sg, err := computeGlobals()
-	if err != nil {
-		return err
-	}
-
-	err = route.RegisterTemplated(e, routes.TemplatedAssets, *tg)
-	if err != nil {
-		return err
-	}
-
-	err = route.RegisterStatic(e, routes.StaticAssets, *sg)
-	if err != nil {
-		return err
-	}
-
-	err = route.RegisterTemplated(e, routes.Pages, *tg)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (s *Server) LaunchBackgroundWorkers() {
+	go workers.PrescanZerotierControllers(s.Globals.Clients.ZTControllers)
+	go workers.PrefetchZerotierNetworks(s.Globals.Clients.Zerotier, s.Globals.Clients.ZTControllers)
+	go workers.PrefetchDNSRecords(s.Globals.Clients.Desec)
+	// go workers.TestWriteLimiter(s.Globals.Clients.Desec)
 }

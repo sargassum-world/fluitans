@@ -1,0 +1,22 @@
+{{$key := get . "Key"}}
+{{$auth := get . "Auth"}}
+
+<p>Type: {{$key.Keytype}}</p>
+<p>Flags: {{$key.Flags}}</p>
+<form>
+  {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+  <div class="field">
+    <label class="label">DNSKEY</label>
+    <div class="control">
+      <input type="text" class="input" readonly value="{{$key.Dnskey}}" />
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">DS</label>
+    {{range $ds := $key.Ds}}
+      <div class="control">
+        <input type="text" class="input" readonly value="{{$ds}}" />
+      </div>
+    {{end}}
+  </div>
+</form>

@@ -1,0 +1,64 @@
+{{$subdomain := get . "Subdomain"}}
+{{$auth := get . "Auth"}}
+
+{{$name := trimSuffix "." (index $subdomain.RRsets 0).Name}}
+
+<turbo-frame id="dns-domain-{{$name}}">
+  <article class="panel entity-panel">
+    <header class="panel-heading">
+      <h3 class="entity-name"><span class="tag domain-name">{{$name}}</span></h3>
+      <div class="tags">
+        {{if $subdomain.IsNetworkName}}
+          {{if $subdomain.Network}}
+            {{if eq (derefString $subdomain.Network.Name "") $name}}
+              <span class="tag is-info">Network Name</span>
+            {{else}}
+              <span class="tag is-info">Network Alias</span>
+            {{end}}
+          {{else}}
+            <span class="tag is-danger">Unknown Network</span>
+          {{end}}
+        {{end}}
+      </div>
+    </header>
+    {{if $subdomain.Network}}
+      <details data-accordion-item class="panel-block accordion-item">
+        <summary class="accordion-header level">
+          <h4>Network</h4>
+          {{template "shared/accordion-icon.partial.tmpl"}}
+        </summary>
+        <turbo-frame id="dns-domain-{{$name}}-network">
+          <div class="accordion-content">
+            <p>ID: <a href="/networks/{{$subdomain.Network.Id}}" data-turbo-frame="_top">
+              {{template "shared/networks/network-id.partial.tmpl" $subdomain.Network.Id}}
+            </a></p>
+            <p>Controller: <a href="/controllers/{{$subdomain.Controller.Name}}" data-turbo-frame="_top">
+              {{$subdomain.Controller.Name}}
+            </a></p>
+            {{if ne $name (derefString $subdomain.Network.Name "")}}
+              <p>Self-Declared Name: {{$subdomain.Network.Name}}</p>
+            {{end}}
+          </div>
+        </turbo-frame>
+      </details>
+    {{end}}
+    {{range $rrset := $subdomain.RRsets}}
+      <details data-accordion-item class="panel-block accordion-item">
+        <summary class="accordion-header level">
+          <h4>{{describeDNSRecordType $rrset.Type}} ({{$rrset.Type}})</h4>
+          {{template "shared/accordion-icon.partial.tmpl"}}
+        </summary>
+        <turbo-frame id="dns-domain-{{$name}}-rrset-{{$rrset.Type}}">
+          <div class="accordion-content">
+            {{
+              template "shared/dns/rrset.partial.tmpl" dict
+              "RRset" $rrset
+              "TurboFrameTarget" (print "dns-domain-" $name)
+              "Auth" $auth
+            }}
+          </div>
+        </turbo-frame>
+      </details>
+    {{end}}
+  </article>
+</turbo-frame>
