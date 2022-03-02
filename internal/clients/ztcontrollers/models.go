@@ -1,7 +1,7 @@
 package ztcontrollers
 
 import (
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 type Controller struct {

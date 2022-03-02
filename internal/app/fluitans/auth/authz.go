@@ -5,7 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
+	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 )
 
 // Authorization

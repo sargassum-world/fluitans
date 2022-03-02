@@ -3,7 +3,7 @@ package tmplfunc
 import (
 	"strings"
 
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 func IdentifyNetwork(network zerotier.ControllerNetwork) string {

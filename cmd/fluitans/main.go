@@ -7,7 +7,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/labstack/gommon/log"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans"
 )
 
 const port = 3000

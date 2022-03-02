@@ -6,14 +6,14 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
-	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/internal/models"
-	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
+	desecc "github.com/sargassum-world/fluitans/internal/clients/desec"
+	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/internal/models"
+	"github.com/sargassum-world/fluitans/pkg/desec"
+	"github.com/sargassum-world/fluitans/pkg/slidingwindows"
 )
 
 type APILimiterStats struct {

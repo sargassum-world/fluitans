@@ -5,8 +5,8 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 func (c *Client) GetControllerStatuses(

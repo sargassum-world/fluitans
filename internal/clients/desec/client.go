@@ -10,10 +10,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/godest"
-	"github.com/sargassum-eco/fluitans/pkg/godest/clientcache"
-	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
+	"github.com/sargassum-world/fluitans/pkg/desec"
+	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
+	"github.com/sargassum-world/fluitans/pkg/slidingwindows"
 )
 
 type Client struct {

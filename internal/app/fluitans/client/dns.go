@@ -5,11 +5,11 @@ import (
 	"sort"
 	"strings"
 
-	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
-	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	desecc "github.com/sargassum-world/fluitans/internal/clients/desec"
+	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/pkg/desec"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 func GetReverseDomainNameFragments(domainName string) []string {

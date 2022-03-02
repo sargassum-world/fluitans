@@ -9,7 +9,7 @@ import (
 
 	"github.com/benbjohnson/hashfs"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 // Embeds are embedded filesystems

@@ -4,8 +4,8 @@ package zerotier
 import (
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest"
-	"github.com/sargassum-eco/fluitans/pkg/godest/clientcache"
+	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 )
 
 type Client struct {

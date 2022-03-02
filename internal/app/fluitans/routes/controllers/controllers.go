@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 )
 
 func (h *Handlers) HandleControllersGet() auth.AuthAwareHandler {

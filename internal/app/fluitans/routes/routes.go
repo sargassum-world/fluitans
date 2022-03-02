@@ -2,14 +2,14 @@
 package routes
 
 import (
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/assets"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/controllers"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/dns"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/home"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/networks"
-	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/assets"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/controllers"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/dns"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/home"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/networks"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Handlers struct {

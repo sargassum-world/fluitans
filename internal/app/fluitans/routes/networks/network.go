@@ -12,13 +12,13 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	desecc "github.com/sargassum-eco/fluitans/internal/clients/desec"
-	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/desec"
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
+	desecc "github.com/sargassum-world/fluitans/internal/clients/desec"
+	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/pkg/desec"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 // Network Members & Member DNS

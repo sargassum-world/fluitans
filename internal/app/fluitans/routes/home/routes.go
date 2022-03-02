@@ -4,9 +4,9 @@ package home
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/clients/sessions"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Handlers struct {

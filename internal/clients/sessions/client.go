@@ -10,8 +10,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/quasoft/memstore"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest"
-	"github.com/sargassum-eco/fluitans/pkg/godest/session"
+	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Client struct {

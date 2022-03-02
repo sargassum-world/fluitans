@@ -16,9 +16,9 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest/fingerprint"
-	"github.com/sargassum-eco/fluitans/pkg/godest/httpcache"
-	tp "github.com/sargassum-eco/fluitans/pkg/godest/template"
+	"github.com/sargassum-world/fluitans/pkg/godest/fingerprint"
+	"github.com/sargassum-world/fluitans/pkg/godest/httpcache"
+	tp "github.com/sargassum-world/fluitans/pkg/godest/template"
 )
 
 // Templated page fingerprinting

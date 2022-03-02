@@ -12,15 +12,15 @@ import (
 	"github.com/pkg/errors"
 	"github.com/unrolled/secure"
 
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/client"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/routes/assets"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/tmplfunc"
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/workers"
-	imw "github.com/sargassum-eco/fluitans/internal/middleware"
-	"github.com/sargassum-eco/fluitans/pkg/godest"
-	gmw "github.com/sargassum-eco/fluitans/pkg/godest/middleware"
-	"github.com/sargassum-eco/fluitans/web"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/assets"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/tmplfunc"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/workers"
+	imw "github.com/sargassum-world/fluitans/internal/middleware"
+	"github.com/sargassum-world/fluitans/pkg/godest"
+	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
+	"github.com/sargassum-world/fluitans/web"
 )
 
 type Server struct {

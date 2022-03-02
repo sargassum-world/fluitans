@@ -8,10 +8,10 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-eco/fluitans/internal/clients/desec"
-	ztc "github.com/sargassum-eco/fluitans/internal/clients/zerotier"
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/desec"
+	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 // Authorization

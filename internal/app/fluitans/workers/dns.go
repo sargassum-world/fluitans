@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/clients/desec"
+	"github.com/sargassum-world/fluitans/internal/clients/desec"
 )
 
 func PrefetchDNSRecords(c *desec.Client) {

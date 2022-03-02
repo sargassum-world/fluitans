@@ -6,8 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 )
 
 func PrescanZerotierControllers(c *ztcontrollers.Client) {

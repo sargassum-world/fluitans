@@ -11,9 +11,9 @@ import (
 	"github.com/benbjohnson/hashfs"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest/fingerprint"
-	"github.com/sargassum-eco/fluitans/pkg/godest/fsutil"
-	tp "github.com/sargassum-eco/fluitans/pkg/godest/template"
+	"github.com/sargassum-world/fluitans/pkg/godest/fingerprint"
+	"github.com/sargassum-world/fluitans/pkg/godest/fsutil"
+	tp "github.com/sargassum-world/fluitans/pkg/godest/template"
 )
 
 func ComputeCSPHash(resource []byte) string {

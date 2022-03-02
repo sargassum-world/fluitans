@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 
-	sessionsc "github.com/sargassum-eco/fluitans/internal/clients/sessions"
+	sessionsc "github.com/sargassum-world/fluitans/internal/clients/sessions"
 )
 
 // Identity

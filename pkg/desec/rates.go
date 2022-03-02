@@ -3,7 +3,7 @@ package desec
 import (
 	"time"
 
-	"github.com/sargassum-eco/fluitans/pkg/slidingwindows"
+	"github.com/sargassum-world/fluitans/pkg/slidingwindows"
 )
 
 func clampRatio(ratio float64) float64 {

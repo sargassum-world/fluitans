@@ -2,12 +2,12 @@
 package dns
 
 import (
-	"github.com/sargassum-eco/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-eco/fluitans/internal/clients/desec"
-	"github.com/sargassum-eco/fluitans/internal/clients/sessions"
-	"github.com/sargassum-eco/fluitans/internal/clients/zerotier"
-	"github.com/sargassum-eco/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/clients/desec"
+	"github.com/sargassum-world/fluitans/internal/clients/sessions"
+	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
+	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Handlers struct {

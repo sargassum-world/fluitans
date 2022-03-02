@@ -7,7 +7,7 @@ import (
 	"github.com/alexedwards/argon2id"
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Client struct {

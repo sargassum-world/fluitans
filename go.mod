@@ -1,4 +1,4 @@
-module github.com/sargassum-eco/fluitans
+module github.com/sargassum-world/fluitans
 
 go 1.16
 

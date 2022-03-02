@@ -2,7 +2,7 @@
 package models
 
 import (
-	"github.com/sargassum-eco/fluitans/pkg/desec"
+	"github.com/sargassum-world/fluitans/pkg/desec"
 )
 
 type DNSServer struct {

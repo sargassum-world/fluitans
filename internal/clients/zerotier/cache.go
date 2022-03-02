@@ -3,8 +3,8 @@ package zerotier
 import (
 	"fmt"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest/clientcache"
-	"github.com/sargassum-eco/fluitans/pkg/zerotier"
+	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
+	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
 type Cache struct {

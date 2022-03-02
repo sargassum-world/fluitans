@@ -7,8 +7,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-eco/fluitans/internal/models"
-	"github.com/sargassum-eco/fluitans/pkg/godest/env"
+	"github.com/sargassum-world/fluitans/internal/models"
+	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
 type Config struct {

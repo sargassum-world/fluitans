@@ -7,7 +7,7 @@ import (
 
 	"github.com/benbjohnson/hashfs"
 
-	"github.com/sargassum-eco/fluitans/pkg/godest/httpcache"
+	"github.com/sargassum-world/fluitans/pkg/godest/httpcache"
 )
 
 func HandleFS(routePrefix string, fsys fs.FS, age time.Duration) http.Handler {
