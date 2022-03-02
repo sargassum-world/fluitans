@@ -35,18 +35,35 @@ FLUITANS_AUTHN_ADMIN_PW='mypassword' make run
 ```
 which will print a message like:
 ```
-Record this admin password hash for future use as FLUITANS_AUTHN_ADMIN_PW_HASH (use single-quotes from shell to avoid string substitution with dollar-signs): $argon2id$v=19$m=65536,t=1,p=2$EIV/HJ0DILHeNf2IC+qsGQ$BvBCCEsKUCKuAPI+pzM+sbCy/pdQdOF/FmHwx/yIusU
-Record this key for future use as FLUITANS_SESSIONS_AUTH_KEY: QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=
+Record this admin password hash for future use as FLUITANS_AUTHN_ADMIN_PW_HASH
+(use single-quotes from shell to avoid string substitution with dollar-signs):
+$argon2id$v=19$m=65536,t=1,p=2$EIV/HJ0DILHeNf2IC+qsGQ$BvBCCEsKUCKuAPI+pzM+sbCy/pdQdOF/FmHwx/yIusU
+Record this key for future use as FLUITANS_SESSIONS_AUTH_KEY:
+QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=
 ```
 
 And then you could run the server in development mode (which you can log into with username `admin` and password `mypassword`) using:
 ```
-FLUITANS_DOMAIN_NAME='fluitans.org' FLUITANS_ZT_CONTROLLER_SERVER='http://localhost:9993' FLUITANS_ZT_CONTROLLER_AUTHTOKEN='0123456789abcdefghijklmn' FLUITANS_DNS_SERVER='https://desec.io' FLUITANS_DNS_AUTHTOKEN='abcdefghijklmn0123456789' FLUITANS_SESSION_AUTH_KEY='QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=' FLUITANS_AUTHN_ADMIN_PW_HASH='$argon2id$v=19$m=65536,t=1,p=2$EIV/HJ0DILHeNf2IC+qsGQ$BvBCCEsKUCKuAPI+pzM+sbCy/pdQdOF/FmHwx/yIusU' make run
+FLUITANS_DOMAIN_NAME='fluitans.org' \
+FLUITANS_ZT_CONTROLLER_SERVER='http://localhost:9993' \
+FLUITANS_ZT_CONTROLLER_AUTHTOKEN='0123456789abcdefghijklmn' \
+FLUITANS_DNS_SERVER='https://desec.io' \
+FLUITANS_DNS_AUTHTOKEN='abcdefghijklmn0123456789' \
+FLUITANS_SESSION_AUTH_KEY='QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=' \
+FLUITANS_AUTHN_ADMIN_PW_HASH='$argon2id$v=19$m=65536,t=1,p=2$EIV/HJ0DILHeNf2IC+qsGQ$BvBCCEsKUCKuAPI+pzM+sbCy/pdQdOF/FmHwx/yIusU' \
+make run
 ```
 
 Or you could run the built binary using:
 ```
-FLUITANS_DOMAIN_NAME='fluitans.org' FLUITANS_ZT_CONTROLLER_SERVER='http://localhost:9993' FLUITANS_ZT_CONTROLLER_AUTHTOKEN='0123456789abcdefghijklmn' FLUITANS_DNS_SERVER='https://desec.io' FLUITANS_DNS_AUTHTOKEN='abcdefghijklmn0123456789' FLUITANS_SESSION_AUTH_KEY='QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=' FLUITANS_AUTHN_ADMIN_PW_HASH='$argon2id$v=19$m=65536,t=1,p=2$EIV/HJ0DILHeNf2IC+qsGQ$BvBCCEsKUCKuAPI+pzM+sbCy/pdQdOF/FmHwx/yIusU' ./fluitans
+FLUITANS_DOMAIN_NAME='fluitans.org' \
+FLUITANS_ZT_CONTROLLER_SERVER='http://localhost:9993' \
+FLUITANS_ZT_CONTROLLER_AUTHTOKEN='0123456789abcdefghijklmn' \
+FLUITANS_DNS_SERVER='https://desec.io' \
+FLUITANS_DNS_AUTHTOKEN='abcdefghijklmn0123456789' \
+FLUITANS_SESSION_AUTH_KEY='QVG4y5EPPoDZjAzYc6j7I09iJum3w+hXNrB3O4HQvSc=' \
+FLUITANS_AUTHN_ADMIN_PW_HASH='$argon2id$v=19$m=65536,t=1,p=2$EIV/HJ0DILHeNf2IC+qsGQ$BvBCCEsKUCKuAPI+pzM+sbCy/pdQdOF/FmHwx/yIusU' \
+./fluitans
 ```
 
 ## License
