@@ -19,6 +19,7 @@ $green: hsl(153, 53%, 30%);
 $turquoise: hsl(175, 100%, 30%);
 $red: hsl(348, 86%, 50%);
 $red-light: change-color($red, $lightness: 90%);
+$blue: hsl(217, 71%, 65%);
 
 $danger-light: $red-light;
 
@@ -29,6 +30,7 @@ $background: $scheme-main-ter;
 $focus-color: change-color($cyan, $lightness: 40%);
 $scrollbar-color: $scheme-main-grey-bis;
 $scrollbar-hover-color: $scheme-main-grey-ter;
+$link: $blue;
 
 // Component Colors
 

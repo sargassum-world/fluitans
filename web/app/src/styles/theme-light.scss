@@ -20,13 +20,14 @@
 // Shared
 @import 'styles/shared/theme.vars.scss';
 
-// Application-specific Bulma imports
-@import 'styles/app/bulma.scss';
+// Bulma imports
+@import 'node_modules/bulma/bulma.sass';
 
 // Anti-FOUC mechanism
 @import 'styles/app/fouc-post.scss';
 
 // Overrides & components
-@import 'styles/app/theme-overrides.scss';
-@import 'styles/app/components.scss';
+@import 'styles/shared/theme-overrides/_all.scss';
+@import 'styles/shared/components/_all.scss';
+@import 'styles/app/components/_all.scss';
 @import 'styles/app/sprinkles.scss';

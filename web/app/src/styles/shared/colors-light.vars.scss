@@ -18,6 +18,7 @@ $scheme-invert: $black;
 $green: hsl(153, 53%, 40%);
 $turquoise: hsl(175, 100%, 35%);
 $red: hsl(348, 86%, 61%);
+$blue: hsl(217, 71%, 53%);
 
 // Element Colors
 
@@ -26,6 +27,7 @@ $background: $scheme-main;
 $focus-color: change-color($cyan, $lightness: 65%);
 $scrollbar-color: $scheme-main-grey-ter;
 $scrollbar-hover-color: $scheme-invert-grey-ter;
+$link: $blue;
 
 // Component Colors
 
