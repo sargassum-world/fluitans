@@ -17,8 +17,7 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer,
-	ztcc *ztcontrollers.Client, ztc *zerotier.Client, sc *sessions.Client,
+	r godest.TemplateRenderer, ztcc *ztcontrollers.Client, ztc *zerotier.Client, sc *sessions.Client,
 ) *Handlers {
 	return &Handlers{
 		r:    r,

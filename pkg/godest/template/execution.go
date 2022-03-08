@@ -10,8 +10,8 @@ import (
 )
 
 type Templates struct {
-	allTemplates  *template.Template
-	pageTemplates map[string]*template.Template
+	allTemplates  template.Template
+	pageTemplates map[string]template.Template
 	templatesFS   fs.FS
 }
 
@@ -20,11 +20,11 @@ func NewTemplates(fsys fs.FS, pageFiles []string, functions ...template.FuncMap)
 	for _, f := range functions {
 		tmpl = tmpl.Funcs(f)
 	}
-	allTemplates := template.Must(ParseFS(tmpl, fsys, "**/*"+FileExt))
-	pageTemplates := make(map[string]*template.Template)
+	allTemplates := *template.Must(ParseFS(tmpl, fsys, "**/*"+FileExt))
+	pageTemplates := make(map[string]template.Template)
 	for _, name := range pageFiles {
 		all := template.Must(allTemplates.Clone())
-		pageTemplates[name] = template.Must(ParseFS(all, fsys, name))
+		pageTemplates[name] = *template.Must(ParseFS(all, fsys, name))
 	}
 	return Templates{
 		allTemplates:  allTemplates,

@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	"github.com/pkg/errors"
 	"github.com/quasoft/memstore"
 
 	"github.com/sargassum-world/fluitans/pkg/godest"
@@ -19,6 +18,17 @@ type Client struct {
 	Logger godest.Logger
 	// TODO: allow configuration to use sqlite for a persistent session store
 	Store sessions.Store
+}
+
+func NewMemStoreClient(c Config, l godest.Logger) *Client {
+	store := memstore.NewMemStore(c.AuthKey)
+	store.Options = &c.CookieOptions
+
+	return &Client{
+		Config: c,
+		Logger: l,
+		Store:  store,
+	}
 }
 
 func (sc *Client) Get(c echo.Context) (*sessions.Session, error) {
@@ -55,20 +65,4 @@ func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) echo.MiddlewareFunc {
 	}
 	options = append(options, opts...)
 	return echo.WrapMiddleware(csrf.Protect(sc.Config.AuthKey, options...))
-}
-
-func NewMemStoreClient(l godest.Logger) (*Client, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up sessions client config")
-	}
-
-	store := memstore.NewMemStore(config.AuthKey)
-	store.Options = &config.CookieOptions
-
-	return &Client{
-		Config: config,
-		Logger: l,
-		Store:  store,
-	}, nil
 }

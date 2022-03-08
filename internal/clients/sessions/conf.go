@@ -13,6 +13,8 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
+const envPrefix = "SESSIONS_"
+
 type Timeouts struct {
 	Absolute time.Duration
 	// TODO: add idle timeout
@@ -64,7 +66,7 @@ func GetConfig() (c Config, err error) {
 }
 
 func getAuthKey() (authKey []byte, err error) {
-	authKey, err = env.GetBase64("FLUITANS_SESSIONS_AUTH_KEY")
+	authKey, err = env.GetBase64(envPrefix + "AUTH_KEY")
 	if err != nil {
 		return
 	}
@@ -74,8 +76,8 @@ func getAuthKey() (authKey []byte, err error) {
 		authKey = securecookie.GenerateRandomKey(authKeySize)
 		// TODO: print to the logger instead?
 		fmt.Printf(
-			"Record this key for future use as FLUITANS_SESSIONS_AUTH_KEY: %s\n",
-			base64.StdEncoding.EncodeToString(authKey),
+			"Record this key for future use as %sAUTH_KEY: %s\n",
+			envPrefix, base64.StdEncoding.EncodeToString(authKey),
 		)
 	}
 	return
@@ -83,7 +85,7 @@ func getAuthKey() (authKey []byte, err error) {
 
 func getTimeouts() (t Timeouts, err error) {
 	const defaultAbsolute = 12 * 60 // default: 12 hours
-	rawAbsolute, err := env.GetInt64("FLUITANS_SESSIONS_TIMEOUTS_ABSOLUTE", defaultAbsolute)
+	rawAbsolute, err := env.GetInt64(envPrefix + "TIMEOUTS_ABSOLUTE", defaultAbsolute)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make absolute timeout config")
 		return
@@ -93,7 +95,7 @@ func getTimeouts() (t Timeouts, err error) {
 }
 
 func getCookieOptions(absoluteTimeout time.Duration) (o sessions.Options, err error) {
-	noHTTPSOnly, err := env.GetBool("FLUITANS_SESSIONS_COOKIE_NOHTTPSONLY")
+	noHTTPSOnly, err := env.GetBool(envPrefix + "COOKIE_NOHTTPSONLY")
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make HTTPS-only config")
 		return
@@ -111,7 +113,7 @@ func getCookieOptions(absoluteTimeout time.Duration) (o sessions.Options, err er
 }
 
 func getCSRFOptions() (o CSRFOptions) {
-	o.HeaderName = env.GetString("FLUITANS_SESSIONS_CSRF_HEADERNAME", "X-CSRF-Token")
-	o.FieldName = env.GetString("FLUITANS_SESSIONS_CSRF_FIELDNAME", "csrf-token")
+	o.HeaderName = env.GetString(envPrefix + "CSRF_HEADERNAME", "X-CSRF-Token")
+	o.FieldName = env.GetString(envPrefix + "CSRF_FIELDNAME", "csrf-token")
 	return
 }

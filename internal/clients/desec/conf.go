@@ -11,6 +11,8 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
+const envPrefix = "DNS_"
+
 type Config struct {
 	DomainName  string
 	DNSServer   models.DNSServer
@@ -37,7 +39,7 @@ func GetConfig(domainName string) (c Config, err error) {
 }
 
 func getDNSServer() (s models.DNSServer, err error) {
-	url, err := env.GetURLOrigin("FLUITANS_DNS_SERVER", "", "https")
+	url, err := env.GetURLOrigin(envPrefix + "SERVER", "", "https")
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make server url config")
 		return
@@ -47,26 +49,26 @@ func getDNSServer() (s models.DNSServer, err error) {
 		s = models.DNSServer{}
 		return
 	}
-	s.API = strings.ToLower(env.GetString("FLUITANS_DNS_API", "desec"))
+	s.API = strings.ToLower(env.GetString(envPrefix + "API", "desec"))
 	if len(s.API) == 0 {
 		s = models.DNSServer{}
 		return
 	}
 
-	s.Authtoken = os.Getenv("FLUITANS_DNS_AUTHTOKEN")
+	s.Authtoken = os.Getenv(envPrefix + "AUTHTOKEN")
 	if len(s.Authtoken) == 0 {
 		s = models.DNSServer{}
 		return
 	}
 
-	s.Name = env.GetString("FLUITANS_DNS_NAME", url.Host)
+	s.Name = env.GetString(envPrefix + "NAME", url.Host)
 	s.Description = env.GetString(
-		"FLUITANS_DNS_DESC",
+		envPrefix + "DESC",
 		"The default deSEC DNS server account specified in the environment variables.",
 	)
 
 	const defaultNetworkCost = 2.0
-	s.NetworkCostWeight, err = env.GetFloat32("FLUITANS_DNS_NETWORKCOST", defaultNetworkCost)
+	s.NetworkCostWeight, err = env.GetFloat32(envPrefix + "NETWORKCOST", defaultNetworkCost)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make network cost config")
 		return
@@ -80,7 +82,7 @@ func getReadCacheTTL() (time.Duration, error) {
 	// API read requests. The cache will be consistent with the API at an infinite TTL (the default
 	// TTL) if we promise to only modify DNS records through Fluitans, and not independently through
 	// the deSEC server.
-	rawTTL, err := env.GetFloat32("FLUITANS_DESEC_READ_CACHE_TTL", -1)
+	rawTTL, err := env.GetFloat32(envPrefix + "READ_CACHE_TTL", -1)
 	var ttl time.Duration = -1
 	if rawTTL >= 0 {
 		durationReadCacheTTL := time.Duration(rawTTL) * time.Second
@@ -103,7 +105,7 @@ func GetAPISettings() (s DesecAPISettings, err error) {
 	// The write limiter fill ratio above which RRset writes, rather than being executed immediately,
 	// will first be batched into groups based on the nearest rate limit
 	const defaultWriteSoftQuota = 0.34
-	s.WriteSoftQuota, err = env.GetFloat32("FLUITANS_DESEC_WRITE_SOFT_QUOTA", defaultWriteSoftQuota)
+	s.WriteSoftQuota, err = env.GetFloat32(envPrefix + "WRITE_SOFT_QUOTA", defaultWriteSoftQuota)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make writeSoftQuota config")
 		return

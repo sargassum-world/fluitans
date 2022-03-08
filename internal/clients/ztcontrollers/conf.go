@@ -8,6 +8,8 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
+const envPrefix = "ZTCONTROLLER_"
+
 type Config struct {
 	Controller Controller
 }
@@ -23,7 +25,7 @@ func GetConfig() (c Config, err error) {
 }
 
 func GetController() (c Controller, err error) {
-	url, err := env.GetURLOrigin("FLUITANS_ZT_CONTROLLER_SERVER", "", "http")
+	url, err := env.GetURLOrigin(envPrefix + "SERVER", "", "http")
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make server url config")
 		return
@@ -34,20 +36,20 @@ func GetController() (c Controller, err error) {
 		return
 	}
 
-	c.Authtoken = os.Getenv("FLUITANS_ZT_CONTROLLER_AUTHTOKEN")
+	c.Authtoken = os.Getenv(envPrefix + "AUTHTOKEN")
 	if len(c.Authtoken) == 0 {
 		c = Controller{}
 		return
 	}
 
-	c.Name = env.GetString("FLUITANS_ZT_CONTROLLER_NAME", url.Host)
+	c.Name = env.GetString(envPrefix + "NAME", url.Host)
 	c.Description = env.GetString(
-		"FLUITANS_ZT_CONTROLLER_DESC",
+		envPrefix + "DESC",
 		"The default ZeroTier network controller specified in the environment variables.",
 	)
 
 	const defaultNetworkCost = 1.0
-	c.NetworkCostWeight, err = env.GetFloat32("FLUITANS_ZT_CONTROLLER_NETWORKCOST", defaultNetworkCost)
+	c.NetworkCostWeight, err = env.GetFloat32(envPrefix + "NETWORKCOST", defaultNetworkCost)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make network cost config")
 		return

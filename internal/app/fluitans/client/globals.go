@@ -24,53 +24,56 @@ type Clients struct {
 
 type Globals struct {
 	Config  conf.Config
+	Cache   clientcache.Cache
 	Clients *Clients
 }
 
-func NewGlobals(l godest.Logger) (*Globals, error) {
-	config, err := conf.GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up application config")
+func NewGlobals(l godest.Logger) (g *Globals, err error) {
+	g = &Globals{}
+	if g.Config, err = conf.GetConfig(); err != nil {
+		err = errors.Wrap(err, "couldn't set up application config")
+		return
 	}
-
-	cache, err := clientcache.NewRistrettoCache(config.Cache)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up client cache")
+	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
+		err = errors.Wrap(err, "couldn't set up client cache")
+		return
 	}
+	g.Clients = &Clients{}
 
-	authnClient, err := authn.NewClient(l)
+	authnConfig, err := authn.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up authn client")
+		err = errors.Wrap(err, "couldn't set up authn config")
+		return
 	}
+	g.Clients.Authn = authn.NewClient(authnConfig, l)
 
-	desecClient, err := desec.NewClient(config.DomainName, cache, l)
+	desecConfig, err := desec.GetConfig(g.Config.DomainName)
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up desec client")
+		err = errors.Wrap(err, "couldn't set up desec config")
+		return
 	}
+	g.Clients.Desec = desec.NewClient(desecConfig, g.Cache, l)
 
-	sessionsClient, err := sessions.NewMemStoreClient(l)
+	sessionsConfig, err := sessions.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up sessions client")
+		err = errors.Wrap(err, "couldn't set up sessions config")
+		return
 	}
+	g.Clients.Sessions = sessions.NewMemStoreClient(sessionsConfig, l)
 
-	ztClient, err := zerotier.NewClient(cache, l)
+	ztConfig, err := zerotier.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up zerotier client")
+		err = errors.Wrap(err, "couldn't set up zerotier config")
+		return
 	}
+	g.Clients.Zerotier = zerotier.NewClient(ztConfig, g.Cache, l)
 
-	ztcClient, err := ztcontrollers.NewClient(cache, l)
+	ztcConfig, err := ztcontrollers.GetConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up zerotier controllers client")
+		err = errors.Wrap(err, "couldn't set up zerotier controllers config")
+		return
 	}
+	g.Clients.ZTControllers = ztcontrollers.NewClient(ztcConfig, g.Cache, l)
 
-	return &Globals{
-		Config: config,
-		Clients: &Clients{
-			Authn:         authnClient,
-			Desec:         desecClient,
-			Sessions:      sessionsClient,
-			Zerotier:      ztClient,
-			ZTControllers: ztcClient,
-		},
-	}, nil
+	return
 }

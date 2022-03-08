@@ -24,6 +24,23 @@ type Client struct {
 	WriteLimiter *slidingwindows.MultiLimiter
 }
 
+func NewClient(c Config, cache clientcache.Cache, l godest.Logger) *Client {
+	clientCache := Cache{
+		Cache:       cache,
+		CostWeight:  c.DNSServer.NetworkCostWeight,
+		TTL:         c.APISettings.ReadCacheTTL,
+		RecordTypes: c.RecordTypes,
+	}
+	readLimiter := desec.NewReadLimiter(0)
+	return &Client{
+		Config:       c,
+		Logger:       l,
+		Cache:        &clientCache,
+		ReadLimiter:  readLimiter,
+		WriteLimiter: desec.NewRRSetWriteLimiter(0),
+	}
+}
+
 func (c *Client) handleDesecMissingDomainError(res http.Response) error {
 	if res.StatusCode == http.StatusNotFound {
 		c.Cache.SetNonexistentDomainByName(c.Config.DomainName)
@@ -73,28 +90,6 @@ func (c *Client) tryAddLimitedRead() error {
 	}
 
 	return nil
-}
-
-func NewClient(domainName string, cache clientcache.Cache, l godest.Logger) (*Client, error) {
-	config, err := GetConfig(domainName)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up desec client config")
-	}
-
-	clientCache := Cache{
-		Cache:       cache,
-		CostWeight:  config.DNSServer.NetworkCostWeight,
-		TTL:         config.APISettings.ReadCacheTTL,
-		RecordTypes: config.RecordTypes,
-	}
-	readLimiter := desec.NewReadLimiter(0)
-	return &Client{
-		Config:       config,
-		Logger:       l,
-		Cache:        &clientCache,
-		ReadLimiter:  readLimiter,
-		WriteLimiter: desec.NewRRSetWriteLimiter(0),
-	}, nil
 }
 
 // Rate-Limiting
