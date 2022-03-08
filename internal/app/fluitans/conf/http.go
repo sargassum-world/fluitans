@@ -14,7 +14,7 @@ type HTTPConfig struct {
 
 func getHTTPConfig() (c HTTPConfig, err error) {
 	const defaultGzipLevel = 1
-	rawGzipLevel, err := env.GetInt64(httpEnvPrefix + "GZIPLEVEL", defaultGzipLevel)
+	rawGzipLevel, err := env.GetInt64(httpEnvPrefix+"GZIPLEVEL", defaultGzipLevel)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make gzip level config")
 		return

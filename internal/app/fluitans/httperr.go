@@ -10,7 +10,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/httperr"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
@@ -22,7 +21,7 @@ type ErrorData struct {
 	Messages []string
 }
 
-func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.HTTPErrorHandler {
+func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HTTPErrorHandler {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(err error, c echo.Context) {
 		c.Logger().Error(err)
@@ -68,13 +67,13 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *sessions.Client) echo.H
 }
 
 func NewCSRFErrorHandler(
-	tr godest.TemplateRenderer, l echo.Logger, sc *sessions.Client,
+	tr godest.TemplateRenderer, l echo.Logger, sc *session.Client,
 ) http.HandlerFunc {
 	tr.MustHave("app/httperr.page.tmpl")
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Error(csrf.FailureReason(r))
 		// Check authentication & authorization
-		sess, serr := session.Get(r, sc.Config.CookieName, sc.Store)
+		sess, serr := sc.Get(r)
 		if serr != nil {
 			l.Error(errors.Wrap(serr, "couldn't get session in error handler"))
 		}

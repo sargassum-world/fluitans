@@ -10,7 +10,6 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
@@ -23,7 +22,7 @@ type CSRFData struct {
 func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Get session
-		sess, err := h.sc.Get(c)
+		sess, err := h.sc.Get(c.Request())
 		if err != nil {
 			return err
 		}
@@ -52,7 +51,7 @@ func (h *Handlers) HandleLoginGet() auth.AuthAwareHandler {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Check authentication & authorization
-		sess, err := h.sc.Get(c)
+		sess, err := h.sc.Get(c.Request())
 		if err != nil {
 			return err
 		}
@@ -88,13 +87,14 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, username, returnURL string, omitCSRFToken bool, sc *sessions.Client,
+	c echo.Context, username, returnURL string, omitCSRFToken bool, sc *session.Client,
 ) error {
 	// Update session
-	sess, err := sc.Regenerate(c)
+	sess, err := sc.Get(c.Request())
 	if err != nil {
 		return err
 	}
+	session.Regenerate(sess)
 	auth.SetIdentity(sess, username)
 	// This allows client-side Javascript to specify for server-side session data that we only need
 	// to provide CSRF tokens through the /csrf route and we can omit them from HTML response
@@ -113,9 +113,9 @@ func handleAuthenticationSuccess(
 	return c.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(c echo.Context, returnURL string, sc *sessions.Client) error {
+func handleAuthenticationFailure(c echo.Context, returnURL string, sc *session.Client) error {
 	// Update session
-	sess, serr := sc.Get(c)
+	sess, serr := sc.Get(c.Request())
 	if serr != nil {
 		return serr
 	}
@@ -170,10 +170,11 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 		case "unauthenticated":
 			// TODO: add a client-side controller to automatically submit a logout request after the
 			// idle timeout expires, and display an inactivity logout message
-			sess, err := h.sc.Invalidate(c)
+			sess, err := h.sc.Get(c.Request())
 			if err != nil {
 				return err
 			}
+			session.Invalidate(sess)
 			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				return err
 			}

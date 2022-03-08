@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 
-	sessionsc "github.com/sargassum-world/fluitans/internal/clients/sessions"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 // Identity
@@ -82,11 +82,11 @@ func (c *CSRF) SetInlining(r *http.Request, inlineToken bool) {
 
 // Access
 
-func Get(c echo.Context, s sessions.Session, sc *sessionsc.Client) (a Auth, err error) {
+func Get(c echo.Context, s sessions.Session, sc *session.Client) (a Auth, err error) {
 	return GetFromRequest(c.Request(), s, sc)
 }
 
-func GetFromRequest(r *http.Request, s sessions.Session, sc *sessionsc.Client) (a Auth, err error) {
+func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
 		return
@@ -103,8 +103,8 @@ func GetFromRequest(r *http.Request, s sessions.Session, sc *sessionsc.Client) (
 	return
 }
 
-func GetWithSession(c echo.Context, sc *sessionsc.Client) (a Auth, s *sessions.Session, err error) {
-	s, err = sc.Get(c)
+func GetWithSession(c echo.Context, sc *session.Client) (a Auth, s *sessions.Session, err error) {
+	s, err = sc.Get(c.Request())
 	if err != nil {
 		return Auth{}, nil, err
 	}

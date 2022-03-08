@@ -5,7 +5,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 // Authorization
@@ -28,7 +28,7 @@ func (a Auth) RequireAuthorized() error {
 	return echo.NewHTTPError(http.StatusNotFound, "unauthorized")
 }
 
-func RequireAuthz(sc *sessions.Client) echo.MiddlewareFunc {
+func RequireAuthz(sc *session.Client) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			a, _, err := GetWithSession(c, sc)

@@ -5,19 +5,19 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/conf"
-	"github.com/sargassum-world/fluitans/internal/clients/authn"
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/authn"
 	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Clients struct {
 	Authn         *authn.Client
 	Desec         *desec.Client
-	Sessions      *sessions.Client
+	Sessions      *session.Client
 	Zerotier      *zerotier.Client
 	ZTControllers *ztcontrollers.Client
 }
@@ -45,7 +45,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 		err = errors.Wrap(err, "couldn't set up authn config")
 		return
 	}
-	g.Clients.Authn = authn.NewClient(authnConfig, l)
+	g.Clients.Authn = authn.NewClient(authnConfig)
 
 	desecConfig, err := desec.GetConfig(g.Config.DomainName)
 	if err != nil {
@@ -54,12 +54,12 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	}
 	g.Clients.Desec = desec.NewClient(desecConfig, g.Cache, l)
 
-	sessionsConfig, err := sessions.GetConfig()
+	sessionsConfig, err := session.GetConfig()
 	if err != nil {
 		err = errors.Wrap(err, "couldn't set up sessions config")
 		return
 	}
-	g.Clients.Sessions = sessions.NewMemStoreClient(sessionsConfig, l)
+	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
 
 	ztConfig, err := zerotier.GetConfig()
 	if err != nil {

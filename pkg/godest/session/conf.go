@@ -1,4 +1,4 @@
-package sessions
+package session
 
 import (
 	"encoding/base64"
@@ -85,7 +85,7 @@ func getAuthKey() (authKey []byte, err error) {
 
 func getTimeouts() (t Timeouts, err error) {
 	const defaultAbsolute = 12 * 60 // default: 12 hours
-	rawAbsolute, err := env.GetInt64(envPrefix + "TIMEOUTS_ABSOLUTE", defaultAbsolute)
+	rawAbsolute, err := env.GetInt64(envPrefix+"TIMEOUTS_ABSOLUTE", defaultAbsolute)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make absolute timeout config")
 		return
@@ -113,7 +113,7 @@ func getCookieOptions(absoluteTimeout time.Duration) (o sessions.Options, err er
 }
 
 func getCSRFOptions() (o CSRFOptions) {
-	o.HeaderName = env.GetString(envPrefix + "CSRF_HEADERNAME", "X-CSRF-Token")
-	o.FieldName = env.GetString(envPrefix + "CSRF_FIELDNAME", "csrf-token")
+	o.HeaderName = env.GetString(envPrefix+"CSRF_HEADERNAME", "X-CSRF-Token")
+	o.FieldName = env.GetString(envPrefix+"CSRF_FIELDNAME", "csrf-token")
 	return
 }

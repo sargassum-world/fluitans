@@ -25,7 +25,7 @@ func GetConfig() (c Config, err error) {
 }
 
 func GetController() (c Controller, err error) {
-	url, err := env.GetURLOrigin(envPrefix + "SERVER", "", "http")
+	url, err := env.GetURLOrigin(envPrefix+"SERVER", "", "http")
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make server url config")
 		return
@@ -42,14 +42,14 @@ func GetController() (c Controller, err error) {
 		return
 	}
 
-	c.Name = env.GetString(envPrefix + "NAME", url.Host)
+	c.Name = env.GetString(envPrefix+"NAME", url.Host)
 	c.Description = env.GetString(
-		envPrefix + "DESC",
+		envPrefix+"DESC",
 		"The default ZeroTier network controller specified in the environment variables.",
 	)
 
 	const defaultNetworkCost = 1.0
-	c.NetworkCostWeight, err = env.GetFloat32(envPrefix + "NETWORKCOST", defaultNetworkCost)
+	c.NetworkCostWeight, err = env.GetFloat32(envPrefix+"NETWORKCOST", defaultNetworkCost)
 	if err != nil {
 		err = errors.Wrap(err, "couldn't make network cost config")
 		return

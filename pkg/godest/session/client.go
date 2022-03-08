@@ -1,49 +1,35 @@
-// Package sessions provides a high-level client for session management
-package sessions
+// Package session standardizes session management with Gorilla sessions
+package session
 
 import (
 	"net/http"
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo/v4"
 	"github.com/quasoft/memstore"
-
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Client struct {
 	Config Config
-	Logger godest.Logger
 	// TODO: allow configuration to use sqlite for a persistent session store
 	Store sessions.Store
 }
 
-func NewMemStoreClient(c Config, l godest.Logger) *Client {
+func NewMemStoreClient(c Config) *Client {
 	store := memstore.NewMemStore(c.AuthKey)
 	store.Options = &c.CookieOptions
 
 	return &Client{
 		Config: c,
-		Logger: l,
 		Store:  store,
 	}
 }
 
-func (sc *Client) Get(c echo.Context) (*sessions.Session, error) {
-	return session.Get(c.Request(), sc.Config.CookieName, sc.Store)
+func (sc *Client) Get(r *http.Request) (*sessions.Session, error) {
+	return sc.Store.Get(r, sc.Config.CookieName)
 }
 
-func (sc *Client) Regenerate(c echo.Context) (*sessions.Session, error) {
-	return session.Regenerate(c.Request(), sc.Config.CookieName, sc.Store)
-}
-
-func (sc *Client) Invalidate(c echo.Context) (*sessions.Session, error) {
-	return session.Invalidate(c.Request(), sc.Config.CookieName, sc.Store)
-}
-
-func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) echo.MiddlewareFunc {
+func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) func(http.Handler) http.Handler {
 	sameSite := csrf.SameSiteDefaultMode
 	switch sc.Config.CookieOptions.SameSite {
 	case http.SameSiteLaxMode:
@@ -64,5 +50,5 @@ func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) echo.MiddlewareFunc {
 		csrf.FieldName(sc.Config.CSRFOptions.FieldName),
 	}
 	options = append(options, opts...)
-	return echo.WrapMiddleware(csrf.Protect(sc.Config.AuthKey, options...))
+	return csrf.Protect(sc.Config.AuthKey, options...)
 }

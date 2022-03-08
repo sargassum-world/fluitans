@@ -102,9 +102,9 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Other Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(s.Globals.Clients.Sessions.NewCSRFMiddleware(
+	e.Use(echo.WrapMiddleware(s.Globals.Clients.Sessions.NewCSRFMiddleware(
 		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Clients.Sessions)),
-	))
+	)))
 	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 

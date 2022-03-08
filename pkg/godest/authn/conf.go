@@ -48,20 +48,20 @@ func getNoAuth() (bool, error) {
 
 func getArgon2idParams() (argon2id.Params, error) {
 	var defaultMemorySize uint64 = 64 // default: 64 MiB
-	memorySize, err := env.GetUint64(envPrefix + "ARGON2ID_M", defaultMemorySize)
+	memorySize, err := env.GetUint64(envPrefix+"ARGON2ID_M", defaultMemorySize)
 	if err != nil {
 		return argon2id.Params{}, errors.Wrap(err, "couldn't make memorySize config")
 	}
 	memorySize *= 1024
 
 	var defaultIterations uint64 = 1 // default: 1 iteration over the memory
-	iterations, err := env.GetUint64(envPrefix + "ARGON2ID_T", defaultIterations)
+	iterations, err := env.GetUint64(envPrefix+"ARGON2ID_T", defaultIterations)
 	if err != nil {
 		return argon2id.Params{}, errors.Wrap(err, "couldn't make iterations config")
 	}
 
 	var defaultParallelism uint64 = 2 // default: 2 threads/lanes
-	parallelism, err := env.GetUint64(envPrefix + "ARGON2ID_P", defaultParallelism)
+	parallelism, err := env.GetUint64(envPrefix+"ARGON2ID_P", defaultParallelism)
 	if err != nil {
 		return argon2id.Params{}, errors.Wrap(err, "couldn't make parallelism config")
 	}
@@ -78,13 +78,13 @@ func getArgon2idParams() (argon2id.Params, error) {
 }
 
 func getAdminUsername() string {
-	return env.GetString(envPrefix + "ADMIN_USERNAME", "admin")
+	return env.GetString(envPrefix+"ADMIN_USERNAME", "admin")
 }
 
 func getAdminPasswordHash(argon2idParams argon2id.Params, noAuth bool) (hash string, err error) {
-	hash = env.GetString(envPrefix + "ADMIN_PW_HASH", "")
+	hash = env.GetString(envPrefix+"ADMIN_PW_HASH", "")
 	if len(hash) == 0 && !noAuth {
-		password := env.GetString(envPrefix + "ADMIN_PW", "")
+		password := env.GetString(envPrefix+"ADMIN_PW", "")
 		if len(password) == 0 {
 			return "", fmt.Errorf(
 				"must provide a password for the admin account with %sADMIN_PW", envPrefix,

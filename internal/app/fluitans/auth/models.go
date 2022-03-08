@@ -4,8 +4,8 @@ package auth
 import (
 	"github.com/labstack/echo/v4"
 
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Identity struct {
@@ -18,7 +18,7 @@ type CSRFBehavior struct {
 }
 
 type CSRF struct {
-	Config   sessions.CSRFOptions
+	Config   session.CSRFOptions
 	Behavior CSRFBehavior
 	Token    string
 }
@@ -32,7 +32,7 @@ type Auth struct {
 
 type AuthAwareHandler func(c echo.Context, a Auth) error
 
-func HandleWithAuth(h AuthAwareHandler, sc *sessions.Client) echo.HandlerFunc {
+func HandleWithAuth(h AuthAwareHandler, sc *session.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		a, _, err := GetWithSession(c, sc)
 		if err != nil {
@@ -46,10 +46,10 @@ func HandleWithAuth(h AuthAwareHandler, sc *sessions.Client) echo.HandlerFunc {
 // extracting auth data from the session of the request.
 type AuthAwareRouter struct {
 	er godest.EchoRouter
-	sc *sessions.Client
+	sc *session.Client
 }
 
-func NewAuthAwareRouter(er godest.EchoRouter, sc *sessions.Client) AuthAwareRouter {
+func NewAuthAwareRouter(er godest.EchoRouter, sc *session.Client) AuthAwareRouter {
 	return AuthAwareRouter{
 		er: er,
 		sc: sc,

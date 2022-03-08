@@ -5,19 +5,15 @@ import (
 	"crypto/subtle"
 
 	"github.com/alexedwards/argon2id"
-
-	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Client struct {
 	Config Config
-	Logger godest.Logger
 }
 
-func NewClient(c Config, l godest.Logger) *Client {
+func NewClient(c Config) *Client {
 	return &Client{
 		Config: c,
-		Logger: l,
 	}
 }
 

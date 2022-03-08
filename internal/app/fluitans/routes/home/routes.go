@@ -5,16 +5,16 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Handlers struct {
 	r  godest.TemplateRenderer
-	sc *sessions.Client
+	sc *session.Client
 }
 
-func New(r godest.TemplateRenderer, sc *sessions.Client) *Handlers {
+func New(r godest.TemplateRenderer, sc *session.Client) *Handlers {
 	return &Handlers{
 		r:  r,
 		sc: sc,

@@ -4,10 +4,10 @@ package dns
 import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
-	"github.com/sargassum-world/fluitans/internal/clients/sessions"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Handlers struct {
@@ -15,12 +15,12 @@ type Handlers struct {
 	dc   *desec.Client
 	ztc  *zerotier.Client
 	ztcc *ztcontrollers.Client
-	sc   *sessions.Client
+	sc   *session.Client
 }
 
 func New(
 	r godest.TemplateRenderer,
-	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client, sc *sessions.Client,
+	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client, sc *session.Client,
 ) *Handlers {
 	return &Handlers{
 		r:    r,
