@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
@@ -31,7 +32,7 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 		}
 
 		// Produce output
-		h.r.SetUncacheable(c.Response().Header())
+		godest.SetUncacheable(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
 			HeaderName: h.sc.Config.CSRFOptions.HeaderName,
 			FieldName:  h.sc.Config.CSRFOptions.FieldName,

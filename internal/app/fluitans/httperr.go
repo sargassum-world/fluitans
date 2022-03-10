@@ -57,7 +57,7 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HT
 		}
 
 		// Produce output
-		tr.SetUncacheable(c.Response().Header())
+		godest.SetUncacheable(c.Response().Header())
 		if perr := tr.Page(
 			c.Response(), c.Request(), code, "app/httperr.page.tmpl", errorData, a,
 		); perr != nil {
@@ -100,7 +100,7 @@ func NewCSRFErrorHandler(
 		}
 
 		// Produce output
-		tr.SetUncacheable(w.Header())
+		godest.SetUncacheable(w.Header())
 		if rerr := tr.Page(w, r, code, "app/httperr.page.tmpl", errorData, a); rerr != nil {
 			l.Error(errors.Wrap(rerr, "couldn't render error page in error handler"))
 		}
