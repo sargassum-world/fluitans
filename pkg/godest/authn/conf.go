@@ -21,25 +21,22 @@ type Config struct {
 func GetConfig() (c Config, err error) {
 	c.NoAuth, err = getNoAuth()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make authentication config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make authentication config")
 	}
 
 	c.Argon2idParams, err = getArgon2idParams()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make password hashing config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make password hashing config")
 	}
 
 	c.AdminUsername = getAdminUsername()
 
 	c.AdminPasswordHash, err = getAdminPasswordHash(c.Argon2idParams, c.NoAuth)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make admin password hash config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make admin password hash config")
 	}
 
-	return
+	return c, nil
 }
 
 func getNoAuth() (bool, error) {

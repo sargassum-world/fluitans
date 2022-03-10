@@ -15,10 +15,9 @@ type Config struct {
 func GetConfig() (c Config, err error) {
 	c.DNS, err = GetDNSSettings()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make Zerotier DNS settings")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make Zerotier DNS settings")
 	}
-	return
+	return c, nil
 }
 
 func getNetworkTTL() (int64, error) {
@@ -34,15 +33,13 @@ func getDeviceTTL() (int64, error) {
 func GetDNSSettings() (s ZTDNSSettings, err error) {
 	s.NetworkTTL, err = getNetworkTTL()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make network record TTL config")
-		return
+		return ZTDNSSettings{}, errors.Wrap(err, "couldn't make network record TTL config")
 	}
 
 	s.DeviceTTL, err = getDeviceTTL()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make device record TTL config")
-		return
+		return ZTDNSSettings{}, errors.Wrap(err, "couldn't make device record TTL config")
 	}
 
-	return
+	return s, nil
 }

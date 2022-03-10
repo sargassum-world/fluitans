@@ -31,49 +31,42 @@ type Globals struct {
 func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	g = &Globals{}
 	if g.Config, err = conf.GetConfig(); err != nil {
-		err = errors.Wrap(err, "couldn't set up application config")
-		return
+		return nil, errors.Wrap(err, "couldn't set up application config")
 	}
 	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
-		err = errors.Wrap(err, "couldn't set up client cache")
-		return
+		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
 	g.Clients = &Clients{}
 
 	authnConfig, err := authn.GetConfig()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't set up authn config")
-		return
+		return nil, errors.Wrap(err, "couldn't set up authn config")
 	}
 	g.Clients.Authn = authn.NewClient(authnConfig)
 
 	desecConfig, err := desec.GetConfig(g.Config.DomainName)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't set up desec config")
-		return
+		return nil, errors.Wrap(err, "couldn't set up desec config")
 	}
 	g.Clients.Desec = desec.NewClient(desecConfig, g.Cache, l)
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't set up sessions config")
-		return
+		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
 	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
 
 	ztConfig, err := zerotier.GetConfig()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't set up zerotier config")
-		return
+		return nil, errors.Wrap(err, "couldn't set up zerotier config")
 	}
 	g.Clients.Zerotier = zerotier.NewClient(ztConfig, g.Cache, l)
 
 	ztcConfig, err := ztcontrollers.GetConfig()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't set up zerotier controllers config")
-		return
+		return nil, errors.Wrap(err, "couldn't set up zerotier controllers config")
 	}
 	g.Clients.ZTControllers = ztcontrollers.NewClient(ztcConfig, g.Cache, l)
 
-	return
+	return g, nil
 }

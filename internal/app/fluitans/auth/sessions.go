@@ -25,20 +25,19 @@ func SetIdentity(s *sessions.Session, username string) {
 
 func GetIdentity(s sessions.Session) (identity Identity, err error) {
 	if s.IsNew {
-		return
+		return Identity{}, nil
 	}
 
 	rawIdentity, ok := s.Values["identity"]
 	if !ok {
 		// A zero value for Identity indicates that the session has no identity associated with it
-		return
+		return Identity{}, nil
 	}
 	identity, ok = rawIdentity.(Identity)
 	if !ok {
-		err = errors.Errorf("unexpected type for field identity in session")
-		return
+		return Identity{}, errors.Errorf("unexpected type for field identity in session")
 	}
-	return
+	return identity, nil
 }
 
 // CSRF
@@ -53,7 +52,7 @@ func SetCSRFBehavior(s *sessions.Session, inlineToken bool) {
 
 func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 	if s.IsNew {
-		return
+		return CSRFBehavior{}, nil
 	}
 
 	rawBehavior, ok := s.Values["csrfBehavior"]
@@ -61,14 +60,13 @@ func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 		// By default, HTML responses won't inline the CSRF input fields (so responses can be cached),
 		// because the app only allows POST requests after user authentication. This default behavior
 		// can be overridden, e.g. on the login form for user authentication, with OverrideCSRFInlining.
-		return
+		return CSRFBehavior{}, nil
 	}
 	behavior, ok = rawBehavior.(CSRFBehavior)
 	if !ok {
-		err = errors.Errorf("unexpected type for field csrfBehavior in session")
-		return
+		return CSRFBehavior{}, errors.Errorf("unexpected type for field csrfBehavior in session")
 	}
-	return
+	return behavior, nil
 }
 
 func (c *CSRF) SetInlining(r *http.Request, inlineToken bool) {
@@ -89,18 +87,18 @@ func Get(c echo.Context, s sessions.Session, sc *session.Client) (a Auth, err er
 func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
-		return
+		return Auth{}, err
 	}
 
 	a.CSRF.Config = sc.Config.CSRFOptions
 	a.CSRF.Behavior, err = GetCSRFBehavior(s)
 	if err != nil {
-		return
+		return Auth{}, err
 	}
 	if a.CSRF.Behavior.InlineToken {
 		a.CSRF.Token = csrf.Token(r)
 	}
-	return
+	return a, nil
 }
 
 func GetWithSession(c echo.Context, sc *session.Client) (a Auth, s *sessions.Session, err error) {
@@ -112,6 +110,5 @@ func GetWithSession(c echo.Context, sc *session.Client) (a Auth, s *sessions.Ses
 	if err != nil {
 		return Auth{}, s, err
 	}
-
-	return
+	return a, s, nil
 }

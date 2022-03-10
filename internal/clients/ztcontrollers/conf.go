@@ -17,29 +17,24 @@ type Config struct {
 func GetConfig() (c Config, err error) {
 	c.Controller, err = GetController()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make Zerotier controller config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make Zerotier controller config")
 	}
-
-	return
+	return c, nil
 }
 
 func GetController() (c Controller, err error) {
 	url, err := env.GetURLOrigin(envPrefix+"SERVER", "", "http")
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make server url config")
-		return
+		return Controller{}, errors.Wrap(err, "couldn't make server url config")
 	}
 	c.Server = url.String()
 	if len(c.Server) == 0 {
-		c = Controller{}
-		return
+		return Controller{}, nil
 	}
 
 	c.Authtoken = os.Getenv(envPrefix + "AUTHTOKEN")
 	if len(c.Authtoken) == 0 {
-		c = Controller{}
-		return
+		return Controller{}, nil
 	}
 
 	c.Name = env.GetString(envPrefix+"NAME", url.Host)
@@ -51,9 +46,7 @@ func GetController() (c Controller, err error) {
 	const defaultNetworkCost = 1.0
 	c.NetworkCostWeight, err = env.GetFloat32(envPrefix+"NETWORKCOST", defaultNetworkCost)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make network cost config")
-		return
+		return Controller{}, errors.Wrap(err, "couldn't make network cost config")
 	}
-
-	return
+	return c, nil
 }

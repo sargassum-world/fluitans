@@ -41,20 +41,16 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 		),
 	)
 	if err != nil {
-		s = nil
-		err = errors.Wrap(err, "couldn't make template renderer")
-		return
+		return nil, errors.Wrap(err, "couldn't make template renderer")
 	}
 
 	s.Globals, err = client.NewGlobals(e.Logger)
 	if err != nil {
-		s = nil
-		err = errors.Wrap(err, "couldn't make app globals")
-		return
+		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
 
 	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
-	return
+	return s, nil
 }
 
 func (s *Server) Register(e *echo.Echo) {

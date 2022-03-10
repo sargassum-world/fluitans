@@ -118,40 +118,34 @@ type Embeds struct {
 func (e Embeds) computeAppFingerprint() (fingerprint string, err error) {
 	appAssetFiles, err := listFiles(e.AppFS, filterAsset)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't list app assets")
-		return
+		return "", errors.Wrap(err, "couldn't list app assets")
 	}
 	sharedFiles, err := listFiles(e.TemplatesFS, filterSharedTemplate)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't list shared templates")
-		return
+		return "", errors.Wrap(err, "couldn't list shared templates")
 	}
 	fingerprint, err = computeAppFingerprint(appAssetFiles, sharedFiles, e.TemplatesFS, e.AppFS)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't compute fingerprint for app")
-		return
+		return "", errors.Wrap(err, "couldn't compute fingerprint for app")
 	}
-	return
+	return fingerprint, nil
 }
 
 func (e Embeds) computePageFingerprints() (fingerprints map[string]string, err error) {
 	moduleNonpageFiles, err := identifyModuleNonpageFiles(e.TemplatesFS)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't list template module non-page template files")
-		return
+		return nil, errors.Wrap(err, "couldn't list template module non-page template files")
 	}
 	pageFiles, err := listFiles(e.TemplatesFS, filterPageTemplate)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't list template pages")
-		return
+		return nil, errors.Wrap(err, "couldn't list template pages")
 	}
 
 	fingerprints, err = computePageFingerprints(moduleNonpageFiles, pageFiles, e.TemplatesFS)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't compute fingerprint for page/module templates")
-		return
+		return nil, errors.Wrap(err, "couldn't compute fingerprint for page/module templates")
 	}
-	return
+	return fingerprints, nil
 }
 
 func (e Embeds) GetAppHashedNamer(urlPrefix string) func(string) string {
@@ -182,7 +176,7 @@ func (i Inlines) ComputeCSSHashesForCSP() (hashes []string) {
 	for _, inline := range i.CSS {
 		hashes = append(hashes, computeCSPHash([]byte(inline)))
 	}
-	return
+	return hashes
 }
 
 func (i Inlines) ComputeJSHashesForCSP() (hashes []string) {
@@ -190,5 +184,5 @@ func (i Inlines) ComputeJSHashesForCSP() (hashes []string) {
 	for _, inline := range i.JS {
 		hashes = append(hashes, computeCSPHash([]byte(inline)))
 	}
-	return
+	return hashes
 }

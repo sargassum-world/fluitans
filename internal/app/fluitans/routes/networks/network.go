@@ -178,13 +178,13 @@ func getNetworkDNSRecords(
 ) (networkDNS NetworkDNS, err error) {
 	namedByDNS, err := checkNamedByDNS(ctx, networkName, networkID, dc)
 	if err != nil || !namedByDNS {
-		return
+		return NetworkDNS{}, err
 	}
 	networkDNS.Named = true
 
 	txtRecords, err := getRecordsOfType(subnameRRsets, "TXT")
 	if err != nil {
-		return
+		return NetworkDNS{}, err
 	}
 	confirmedSubname := strings.TrimSuffix(networkName, "."+dc.Config.DomainName)
 	networkDNS.Aliases = identifyNetworkAliases(networkID, confirmedSubname, txtRecords)
@@ -195,7 +195,7 @@ func getNetworkDNSRecords(
 
 	subdomains, err := client.GetSubdomains(ctx, subnameRRsets, dc, c, cc)
 	if err != nil {
-		return
+		return NetworkDNS{}, err
 	}
 	networkSubname := strings.TrimSuffix(networkName, "."+dc.Config.DomainName)
 	networkDNS.DeviceSubdomains = make(map[string]client.Subdomain)
@@ -215,8 +215,7 @@ func getNetworkDNSRecords(
 
 		networkDNS.OtherSubdomains = append(networkDNS.OtherSubdomains, subdomain)
 	}
-
-	return
+	return networkDNS, nil
 }
 
 type NetworkData struct {
@@ -243,11 +242,11 @@ func getNetworkData(
 	var subnameRRsets map[string][]desec.RRset
 	eg.Go(func() (err error) {
 		network, memberAddresses, err = c.GetNetworkInfo(ctx, *controller, id)
-		return
+		return err
 	})
 	eg.Go(func() (err error) {
 		subnameRRsets, err = dc.GetRRsets(ctx)
-		return
+		return err
 	})
 	if err = eg.Wait(); err != nil {
 		return nil, err
@@ -266,14 +265,14 @@ func getNetworkData(
 		members, err = getMemberRecords(
 			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
 		)
-		return
+		return err
 	})
 	var networkDNS NetworkDNS
 	eg.Go(func() (err error) {
 		networkDNS, err = getNetworkDNSRecords(
 			egctx, *network.Id, *network.Name, subnameRRsets, c, cc, dc,
 		)
-		return
+		return err
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, err

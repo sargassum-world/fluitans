@@ -110,9 +110,8 @@ func parseFiles(
 // template file's basename.
 func readFileFS(fsys fs.FS) func(string) (string, []byte, error) {
 	return func(file string) (name string, b []byte, err error) {
-		name = file
 		b, err = fs.ReadFile(fsys, file)
-		return
+		return file, b, err
 	}
 }
 

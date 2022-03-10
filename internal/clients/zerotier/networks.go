@@ -84,7 +84,7 @@ func (c *Client) GetAllNetworkIDs(
 		eg.Go(func(i int, controller ztcontrollers.Controller) func() error {
 			return func() (err error) {
 				allNetworkIDs[i], err = c.GetNetworkIDs(ctx, controller, cc)
-				return
+				return err
 			}
 		}(i, controller))
 	}
@@ -103,7 +103,7 @@ func (c *Client) GetNetworks(
 		eg.Go(func(i int, id string) func() error {
 			return func() (err error) {
 				networks[i], err = c.GetNetwork(ctx, controller, id)
-				return
+				return err
 			}
 		}(i, id))
 	}
@@ -134,7 +134,7 @@ func (c *Client) GetAllNetworks(
 		eg.Go(func(i int, controller ztcontrollers.Controller, someIDs []string) func() error {
 			return func() (err error) {
 				allNetworks[i], err = c.GetNetworks(ctx, controller, someIDs)
-				return
+				return err
 			}
 		}(i, controller, ids[i]))
 	}
@@ -250,11 +250,11 @@ func (c *Client) GetNetworkInfo(
 	var addresses []string
 	eg.Go(func() (err error) {
 		network, err = c.GetNetwork(ctx, controller, id)
-		return
+		return err
 	})
 	eg.Go(func() (err error) {
 		addresses, err = c.GetNetworkMemberAddresses(ctx, controller, id)
-		return
+		return err
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, nil, err
