@@ -16,8 +16,9 @@ import (
 
 type Clients struct {
 	Authn         *authn.Client
-	Desec         *desec.Client
 	Sessions      *session.Client
+
+	Desec         *desec.Client
 	Zerotier      *zerotier.Client
 	ZTControllers *ztcontrollers.Client
 }
@@ -44,17 +45,17 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	}
 	g.Clients.Authn = authn.NewClient(authnConfig)
 
-	desecConfig, err := desec.GetConfig(g.Config.DomainName)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up desec config")
-	}
-	g.Clients.Desec = desec.NewClient(desecConfig, g.Cache, l)
-
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
 	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
+
+	desecConfig, err := desec.GetConfig(g.Config.DomainName)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up desec config")
+	}
+	g.Clients.Desec = desec.NewClient(desecConfig, g.Cache, l)
 
 	ztConfig, err := zerotier.GetConfig()
 	if err != nil {

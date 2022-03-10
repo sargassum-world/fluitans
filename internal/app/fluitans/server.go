@@ -2,6 +2,7 @@
 package fluitans
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/pkg/errors"
 	"github.com/unrolled/secure"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes"
@@ -111,9 +113,21 @@ func (s *Server) Register(e *echo.Echo) {
 	s.Handlers.Register(e, s.Embeds)
 }
 
-func (s *Server) LaunchBackgroundWorkers() {
-	go workers.PrescanZerotierControllers(s.Globals.Clients.ZTControllers)
-	go workers.PrefetchZerotierNetworks(s.Globals.Clients.Zerotier, s.Globals.Clients.ZTControllers)
-	go workers.PrefetchDNSRecords(s.Globals.Clients.Desec)
-	// go workers.TestWriteLimiter(s.Globals.Clients.Desec)
+func (s *Server) RunBackgroundWorkers() error {
+	eg, _ := errgroup.WithContext(context.Background())
+	eg.Go(func() error {
+		return workers.PrescanZerotierControllers(s.Globals.Clients.ZTControllers)
+	})
+	eg.Go(func() error {
+		return workers.PrefetchZerotierNetworks(
+			s.Globals.Clients.Zerotier, s.Globals.Clients.ZTControllers,
+		)
+	})
+	eg.Go(func() error {
+		return workers.PrefetchDNSRecords(s.Globals.Clients.Desec)
+	})
+	/*eg.Go(func() error {
+		return workers.TestWriteLimiter(s.Globals.Clients.Desec)
+	})*/
+	return eg.Wait()
 }

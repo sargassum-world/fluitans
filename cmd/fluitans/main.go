@@ -32,6 +32,6 @@ func main() {
 	s.Register(e)
 
 	// Start server
-	s.LaunchBackgroundWorkers()
+	go s.RunBackgroundWorkers()
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", port)))
 }
