@@ -70,25 +70,27 @@
           </div>
         </div>
         <!-- TODO: make a controller with a confirmation dialog -->
-        <form
-          action="/networks/{{.Data.Network.Id}}"
-          method="POST"
-          data-turbo-frame="_top"
-          data-controller="form-submission csrf"
-          data-action="submit->form-submission#submit submit->csrf#addToken"
-        >
-          {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
-          <input type="hidden" name="state" value="deleted">
-          <div class="control" data-form-submission-target="submitter">
-            <input
-              class="button is-danger"
-              type="submit"
-              value="Delete network"
-              data-form-submission-target="submit"
-              data-csrf-target="submit"
-            >
-          </div>
-        </form>
+        <div class="card-width is-block">
+          <form
+            action="/networks/{{.Data.Network.Id}}"
+            method="POST"
+            data-turbo-frame="_top"
+            data-controller="form-submission csrf"
+            data-action="submit->form-submission#submit submit->csrf#addToken"
+          >
+            {{template "shared/auth/csrf-input.partial.tmpl" .Auth.CSRF}}
+            <input type="hidden" name="state" value="deleted">
+            <div class="control" data-form-submission-target="submitter">
+              <input
+                class="button is-danger"
+                type="submit"
+                value="Delete network"
+                data-form-submission-target="submit"
+                data-csrf-target="submit"
+              >
+            </div>
+          </form>
+        </div>
       {{end}}
     </section>
   </main>

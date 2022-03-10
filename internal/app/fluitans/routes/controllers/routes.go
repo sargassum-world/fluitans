@@ -13,22 +13,20 @@ type Handlers struct {
 	r    godest.TemplateRenderer
 	ztcc *ztcontrollers.Client
 	ztc  *zerotier.Client
-	sc   *session.Client
 }
 
 func New(
-	r godest.TemplateRenderer, ztcc *ztcontrollers.Client, ztc *zerotier.Client, sc *session.Client,
+	r godest.TemplateRenderer, ztcc *ztcontrollers.Client, ztc *zerotier.Client,
 ) *Handlers {
 	return &Handlers{
 		r:    r,
 		ztcc: ztcc,
 		ztc:  ztc,
-		sc:   sc,
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewRouter(er, h.sc)
+func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
+	ar := auth.NewRouter(er, sc)
 	ar.GET("/controllers", h.HandleControllersGet())
 	ar.GET("/controllers/:name", h.HandleControllerGet())
 }

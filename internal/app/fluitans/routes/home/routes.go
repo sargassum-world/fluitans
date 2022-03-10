@@ -10,19 +10,17 @@ import (
 )
 
 type Handlers struct {
-	r  godest.TemplateRenderer
-	sc *session.Client
+	r godest.TemplateRenderer
 }
 
-func New(r godest.TemplateRenderer, sc *session.Client) *Handlers {
+func New(r godest.TemplateRenderer) *Handlers {
 	return &Handlers{
-		r:  r,
-		sc: sc,
+		r: r,
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewRouter(er, h.sc)
+func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
+	ar := auth.NewRouter(er, sc)
 	ar.GET("/", h.HandleHomeGet())
 }
 

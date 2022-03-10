@@ -15,34 +15,30 @@ type Handlers struct {
 	dc   *desec.Client
 	ztc  *zerotier.Client
 	ztcc *ztcontrollers.Client
-	sc   *session.Client
 }
 
 func New(
 	r godest.TemplateRenderer,
-	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client, sc *session.Client,
+	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client,
 ) *Handlers {
 	return &Handlers{
 		r:    r,
 		dc:   dc,
 		ztc:  ztc,
 		ztcc: ztcc,
-		sc:   sc,
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewRouter(er, h.sc)
+func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
+	ar := auth.NewRouter(er, sc)
+	az := auth.RequireAuthz(sc)
 	ar.GET("/networks", h.HandleNetworksGet())
-	er.POST("/networks", h.HandleNetworksPost(), auth.RequireAuthz(h.sc))
+	er.POST("/networks", h.HandleNetworksPost(), az)
 	ar.GET("/networks/:id", h.HandleNetworkGet())
-	er.POST("/networks/:id", h.HandleNetworkPost(), auth.RequireAuthz(h.sc))
-	er.POST("/networks/:id/name", h.HandleNetworkNamePost(), auth.RequireAuthz(h.sc))
-	er.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), auth.RequireAuthz(h.sc))
-	er.POST("/networks/:id/devices", h.HandleDevicesPost(), auth.RequireAuthz(h.sc))
-	er.POST(
-		"/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(),
-		auth.RequireAuthz(h.sc),
-	)
-	er.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), auth.RequireAuthz(h.sc))
+	er.POST("/networks/:id", h.HandleNetworkPost(), az)
+	er.POST("/networks/:id/name", h.HandleNetworkNamePost(), az)
+	er.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), az)
+	er.POST("/networks/:id/devices", h.HandleDevicesPost(), az)
+	er.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), az)
+	er.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), az)
 }
