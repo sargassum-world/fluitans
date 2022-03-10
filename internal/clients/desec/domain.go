@@ -2,7 +2,6 @@ package desec
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
 
@@ -16,9 +15,9 @@ func (c *Client) getDomainFromCache() (*desec.Domain, bool) {
 	domain, cacheHit, err := c.Cache.GetDomainByName(domainName)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the domain
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the domain with name %s", domainName,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for the domain with name %s", domainName,
+		))
 		return nil, false // treat an unparseable cache entry like a cache miss
 	}
 	return domain, cacheHit // cache hit with nil domain indicates nonexistent domain

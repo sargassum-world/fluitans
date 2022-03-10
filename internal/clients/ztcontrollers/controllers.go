@@ -119,9 +119,9 @@ func (c *Client) FindControllerByAddress(ctx context.Context, address string) (*
 	controller, err := c.checkCachedController(ctx, address)
 	if err != nil {
 		// Log the error and proceed to manually query all controllers
-		c.Logger.Error(err, errors.Wrap(err, fmt.Sprintf(
-			"couldn't handle the cache entry for the zerotier controller with address %s", address,
-		)))
+		c.Logger.Error(err, errors.Wrapf(
+			err, "couldn't handle the cache entry for the zerotier controller with address %s", address,
+		))
 	} else if controller != nil {
 		return controller, nil
 	}
@@ -155,9 +155,9 @@ func (c *Client) getAddressFromCache(controller Controller) (string, bool) {
 	address, cacheHit, err := c.Cache.GetAddressByServer(controller.Server)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the Zerotier address for %s", controller.Server,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for the Zerotier address for %s", controller.Server,
+		))
 		return "", false // treat an unparseable cache entry like a cache miss
 	}
 

@@ -1,4 +1,4 @@
-package sessions
+package session
 
 import (
 	"encoding/base64"
@@ -12,6 +12,8 @@ import (
 
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
+
+const envPrefix = "SESSIONS_"
 
 type Timeouts struct {
 	Absolute time.Duration
@@ -35,21 +37,18 @@ type Config struct {
 func GetConfig() (c Config, err error) {
 	c.AuthKey, err = getAuthKey()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make session key config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make session key config")
 	}
 
 	c.Timeouts, err = getTimeouts()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make session timeouts config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make session timeouts config")
 	}
 
 	// TODO: when we implement idle timeout, pass that instead of absolute timeout
 	c.CookieOptions, err = getCookieOptions(c.Timeouts.Absolute)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make cookie options config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make cookie options config")
 	}
 
 	if c.CookieOptions.Secure {
@@ -60,13 +59,13 @@ func GetConfig() (c Config, err error) {
 	}
 
 	c.CSRFOptions = getCSRFOptions()
-	return
+	return c, nil
 }
 
 func getAuthKey() (authKey []byte, err error) {
-	authKey, err = env.GetBase64("FLUITANS_SESSIONS_AUTH_KEY")
+	authKey, err = env.GetBase64(envPrefix + "AUTH_KEY")
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if authKey == nil {
@@ -74,44 +73,41 @@ func getAuthKey() (authKey []byte, err error) {
 		authKey = securecookie.GenerateRandomKey(authKeySize)
 		// TODO: print to the logger instead?
 		fmt.Printf(
-			"Record this key for future use as FLUITANS_SESSIONS_AUTH_KEY: %s\n",
-			base64.StdEncoding.EncodeToString(authKey),
+			"Record this key for future use as %sAUTH_KEY: %s\n",
+			envPrefix, base64.StdEncoding.EncodeToString(authKey),
 		)
 	}
-	return
+	return authKey, nil
 }
 
 func getTimeouts() (t Timeouts, err error) {
 	const defaultAbsolute = 12 * 60 // default: 12 hours
-	rawAbsolute, err := env.GetInt64("FLUITANS_SESSIONS_TIMEOUTS_ABSOLUTE", defaultAbsolute)
+	rawAbsolute, err := env.GetInt64(envPrefix+"TIMEOUTS_ABSOLUTE", defaultAbsolute)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make absolute timeout config")
-		return
+		return Timeouts{}, errors.Wrap(err, "couldn't make absolute timeout config")
 	}
 	t.Absolute = time.Duration(rawAbsolute) * time.Minute
-	return
+	return t, nil
 }
 
 func getCookieOptions(absoluteTimeout time.Duration) (o sessions.Options, err error) {
-	noHTTPSOnly, err := env.GetBool("FLUITANS_SESSIONS_COOKIE_NOHTTPSONLY")
+	noHTTPSOnly, err := env.GetBool(envPrefix + "COOKIE_NOHTTPSONLY")
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make HTTPS-only config")
-		return
+		return sessions.Options{}, errors.Wrap(err, "couldn't make HTTPS-only config")
 	}
 
-	o = sessions.Options{
+	return sessions.Options{
 		Path:     "/",
 		Domain:   "",
 		MaxAge:   int(absoluteTimeout.Seconds()),
 		Secure:   !noHTTPSOnly,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-	}
-	return
+	}, nil
 }
 
 func getCSRFOptions() (o CSRFOptions) {
-	o.HeaderName = env.GetString("FLUITANS_SESSIONS_CSRF_HEADERNAME", "X-CSRF-Token")
-	o.FieldName = env.GetString("FLUITANS_SESSIONS_CSRF_FIELDNAME", "csrf-token")
-	return
+	o.HeaderName = env.GetString(envPrefix+"CSRF_HEADERNAME", "X-CSRF-Token")
+	o.FieldName = env.GetString(envPrefix+"CSRF_FIELDNAME", "csrf-token")
+	return o
 }

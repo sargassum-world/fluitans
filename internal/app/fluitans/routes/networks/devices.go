@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
@@ -78,7 +79,7 @@ func confirmMemberNameManageable(
 		return "", err
 	}
 	if !named {
-		return "", fmt.Errorf("network does not have a valid domain name for naming members")
+		return "", errors.Errorf("network does not have a valid domain name for naming members")
 	}
 	hasMember := false
 	for _, address := range memberAddresses {
@@ -88,7 +89,7 @@ func confirmMemberNameManageable(
 		}
 	}
 	if !hasMember {
-		return "", fmt.Errorf(
+		return "", errors.Errorf(
 			"cannot set domain name for device which is not a network member",
 		)
 	}

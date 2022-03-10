@@ -2,44 +2,41 @@
 package session
 
 import (
-	"net/http"
-
 	"github.com/gorilla/sessions"
+	"github.com/pkg/errors"
 )
 
-func Get(
-	r *http.Request, cookieName string, store sessions.Store,
-) (*sessions.Session, error) {
-	// TODO: implement idle timeout, and implement automatic renewal timeout (if we can). Refer to the
-	// "Automatic Session Expiration" section of
-	// https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-	// TODO: regenerate the session upon privilege change
-	// TODO: log the session life cycle
-	return store.Get(r, cookieName)
-}
+// Session rotation
 
-func Regenerate(
-	r *http.Request, cookieName string, store sessions.Store,
-) (*sessions.Session, error) {
-	s, err := Get(r, cookieName, store)
-	if err != nil {
-		return nil, err
-	}
-
+func Regenerate(s *sessions.Session) {
 	s.ID = ""
 	s.Values = make(map[interface{}]interface{})
-	return s, nil
 }
 
-func Invalidate(
-	r *http.Request, cookieName string, store sessions.Store,
-) (*sessions.Session, error) {
-	s, err := Get(r, cookieName, store)
-	if err != nil {
-		return nil, err
-	}
-
+func Invalidate(s *sessions.Session) {
 	s.Options.MaxAge = 0
 	s.Values = make(map[interface{}]interface{})
-	return s, nil
+}
+
+// Flash messages
+
+const FlashErrorsKey = "_flash_errors"
+
+func AddErrorMessage(s *sessions.Session, message string) {
+	s.AddFlash(message, FlashErrorsKey)
+}
+
+func GetErrorMessages(s *sessions.Session) ([]string, error) {
+	rawFlashes := s.Flashes(FlashErrorsKey)
+	flashes := make([]string, 0, len(rawFlashes))
+	for _, rawFlash := range rawFlashes {
+		flash, ok := rawFlash.(string)
+		if !ok {
+			return nil, errors.Errorf(
+				"session error message is of unexpected non-string type %T", rawFlash,
+			)
+		}
+		flashes = append(flashes, flash)
+	}
+	return flashes, nil
 }

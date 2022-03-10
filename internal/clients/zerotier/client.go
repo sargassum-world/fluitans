@@ -2,8 +2,6 @@
 package zerotier
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 )
@@ -14,17 +12,12 @@ type Client struct {
 	Cache  *Cache
 }
 
-func NewClient(cache clientcache.Cache, l godest.Logger) (*Client, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up zerotier client config")
-	}
-
+func NewClient(c Config, cache clientcache.Cache, l godest.Logger) *Client {
 	return &Client{
-		Config: config,
+		Config: c,
 		Logger: l,
 		Cache: &Cache{
 			Cache: cache,
 		},
-	}, nil
+	}
 }

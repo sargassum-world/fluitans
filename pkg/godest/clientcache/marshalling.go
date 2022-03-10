@@ -3,7 +3,6 @@ package clientcache
 import (
 	"bytes"
 	"encoding/gob"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"github.com/vmihailenco/msgpack/v5"
@@ -29,7 +28,7 @@ func (m *GobMarshaller) Marshal(value interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(value); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("couldn't gob-encode value %#v", value))
+		return nil, errors.Wrapf(err, "couldn't gob-encode value %#v", value)
 	}
 	return buf.Bytes(), nil
 }
@@ -38,9 +37,7 @@ func (m *GobMarshaller) Unmarshal(marshaled []byte, result interface{}) error {
 	buf := bytes.NewBuffer(marshaled)
 	dec := gob.NewDecoder(buf)
 	if err := dec.Decode(result); err != nil {
-		return errors.Wrap(err, fmt.Sprintf(
-			"couldn't gob-decode type %T from bytes %+v", result, marshaled,
-		))
+		return errors.Wrapf(err, "couldn't gob-decode type %T from bytes %+v", result, marshaled)
 	}
 	return nil
 }
@@ -58,7 +55,7 @@ func (m *MsgPackMarshaller) Marshal(value interface{}) ([]byte, error) {
 	enc := msgpack.NewEncoder(&buf)
 	enc.SetCustomStructTag("json")
 	if err := enc.Encode(value); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("couldn't msgpack-encode value %#v", value))
+		return nil, errors.Wrapf(err, "couldn't msgpack-encode value %#v", value)
 	}
 	return buf.Bytes(), nil
 }
@@ -68,9 +65,7 @@ func (m *MsgPackMarshaller) Unmarshal(marshaled []byte, result interface{}) erro
 	dec := msgpack.NewDecoder(buf)
 	dec.SetCustomStructTag("json")
 	if err := dec.Decode(result); err != nil {
-		return errors.Wrap(err, fmt.Sprintf(
-			"couldn't msgpack-decode type %T from bytes %+v", result, marshaled,
-		))
+		return errors.Wrapf(err, "couldn't msgpack-decode type %T from bytes %+v", result, marshaled)
 	}
 	return nil
 }

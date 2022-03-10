@@ -44,7 +44,7 @@ func getNetworksData(
 	return networksData, nil
 }
 
-func (h *Handlers) HandleNetworksGet() auth.AuthAwareHandler {
+func (h *Handlers) HandleNetworksGet() auth.Handler {
 	t := "networks/networks.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {

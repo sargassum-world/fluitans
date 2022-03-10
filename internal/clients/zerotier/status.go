@@ -52,11 +52,11 @@ func (c *Client) GetControllerInfo(
 	var networkIDs []string
 	eg.Go(func() (err error) {
 		status, controllerStatus, err = c.GetControllerStatuses(ctx, controller, cc)
-		return
+		return err
 	})
 	eg.Go(func() (err error) {
 		networkIDs, err = c.GetNetworkIDs(ctx, controller, cc)
-		return
+		return err
 	})
 	if err := eg.Wait(); err != nil {
 		return nil, nil, nil, err

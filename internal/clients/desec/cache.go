@@ -98,9 +98,9 @@ func (c *Cache) SetRRsetsByName(domainName, subname string, rrsets []desec.RRset
 
 		err := c.SetRRsetByNameAndType(domainName, subname, recordType, rrset)
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf(
-				"couldn't set cache entry for the %s RRset for %s.%s", recordType, subname, domainName,
-			))
+			return errors.Wrapf(
+				err, "couldn't set cache entry for the %s RRset for %s.%s", recordType, subname, domainName,
+			)
 		}
 	}
 	return nil
@@ -113,9 +113,9 @@ func (c *Cache) GetRRsetsByName(domainName, subname string) ([]desec.RRset, erro
 		var value desec.RRset
 		keyExists, valueExists, err := c.Cache.GetEntry(key, &value)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf(
-				"couldn't get cache entry for the %s RRset for %s.%s", recordType, subname, domainName,
-			))
+			return nil, errors.Wrapf(
+				err, "couldn't get cache entry for the %s RRset for %s.%s", recordType, subname, domainName,
+			)
 		}
 
 		if !keyExists {

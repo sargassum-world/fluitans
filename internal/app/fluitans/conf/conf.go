@@ -15,17 +15,14 @@ type Config struct {
 func GetConfig() (c Config, err error) {
 	c.Cache, err = getCacheConfig()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make cache config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make cache config")
 	}
 
 	c.DomainName = getDomainName()
 
 	c.HTTP, err = getHTTPConfig()
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make http config")
-		return
+		return Config{}, errors.Wrap(err, "couldn't make http config")
 	}
-
-	return
+	return c, nil
 }

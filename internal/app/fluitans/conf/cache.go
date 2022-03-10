@@ -7,33 +7,30 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
+const cacheEnvPrefix = "CACHE_"
+
 func getCacheConfig() (c ristretto.Config, err error) {
 	const defaultNumCounters = 3e6 // default: 300k items, ~9 MB of counters
-	c.NumCounters, err = env.GetInt64("FLUITANS_CACHE_NUMCOUNTERS", defaultNumCounters)
+	c.NumCounters, err = env.GetInt64(cacheEnvPrefix+"CACHE_NUMCOUNTERS", defaultNumCounters)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make numCounters config")
-		return
+		return ristretto.Config{}, errors.Wrap(err, "couldn't make numCounters config")
 	}
 
 	const defaultMaxCost = 3e7 // default: up to 30 MB total with min cost weight of 1
-	c.MaxCost, err = env.GetInt64("FLUITANS_CACHE_MAXCOST", defaultMaxCost)
+	c.MaxCost, err = env.GetInt64(cacheEnvPrefix+"MAXCOST", defaultMaxCost)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make maxCost config")
-		return
+		return ristretto.Config{}, errors.Wrap(err, "couldn't make maxCost config")
 	}
 
 	const defaultBufferItems = 64 // default: ristretto's recommended value
-	c.BufferItems, err = env.GetInt64("FLUITANS_CACHE_BUFFERITEMS", defaultBufferItems)
+	c.BufferItems, err = env.GetInt64(cacheEnvPrefix+"BUFFERITEMS", defaultBufferItems)
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make bufferItems config")
-		return
+		return ristretto.Config{}, errors.Wrap(err, "couldn't make bufferItems config")
 	}
 
-	c.Metrics, err = env.GetBool("FLUITANS_CACHE_METRICS")
+	c.Metrics, err = env.GetBool(cacheEnvPrefix + "METRICS")
 	if err != nil {
-		err = errors.Wrap(err, "couldn't make metrics config")
-		return
+		return ristretto.Config{}, errors.Wrap(err, "couldn't make metrics config")
 	}
-
-	return
+	return c, nil
 }

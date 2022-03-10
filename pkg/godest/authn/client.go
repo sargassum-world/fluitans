@@ -5,26 +5,16 @@ import (
 	"crypto/subtle"
 
 	"github.com/alexedwards/argon2id"
-	"github.com/pkg/errors"
-
-	"github.com/sargassum-world/fluitans/pkg/godest"
 )
 
 type Client struct {
 	Config Config
-	Logger godest.Logger
 }
 
-func NewClient(l godest.Logger) (*Client, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up sessions client config")
-	}
-
+func NewClient(c Config) *Client {
 	return &Client{
-		Config: *config,
-		Logger: l,
-	}, nil
+		Config: c,
+	}
 }
 
 func (c *Client) CheckCredentials(username, password string) (bool, error) {

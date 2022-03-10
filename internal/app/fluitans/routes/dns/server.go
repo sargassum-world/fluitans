@@ -71,7 +71,7 @@ func getServerData(
 	}, nil
 }
 
-func (h *Handlers) HandleServerGet() auth.AuthAwareHandler {
+func (h *Handlers) HandleServerGet() auth.Handler {
 	t := "dns/server.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
