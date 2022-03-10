@@ -32,7 +32,7 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewAuthAwareRouter(er, h.sc)
+	ar := auth.NewRouter(er, h.sc)
 	ar.GET("/networks", h.HandleNetworksGet())
 	er.POST("/networks", h.HandleNetworksPost(), auth.RequireAuthz(h.sc))
 	ar.GET("/networks/:id", h.HandleNetworkGet())

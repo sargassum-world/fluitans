@@ -138,23 +138,23 @@ func parseFS(
 // Templated Page Fingerprinting
 
 type fingerprints struct {
-	App  string
-	Page map[string]string
+	app  string
+	page map[string]string
 }
 
 func (f fingerprints) getEtagSegments(templateName string) ([]string, error) {
 	if templateName == "" {
-		return []string{f.App}, nil
+		return []string{f.app}, nil
 	}
 
-	pageFingerprint, ok := f.Page[templateName]
+	pageFingerprint, ok := f.page[templateName]
 	if !ok {
-		return []string{f.App}, errors.Errorf(
+		return []string{f.app}, errors.Errorf(
 			"couldn't find page fingerprint for template %s", templateName,
 		)
 	}
 
-	return []string{f.App, pageFingerprint}, nil
+	return []string{f.app, pageFingerprint}, nil
 }
 
 func (f fingerprints) MustHave(templateNames ...string) {
@@ -243,10 +243,10 @@ func NewTemplateRenderer(
 	}
 
 	tr.inlines = inlines
-	if tr.fingerprints.App, err = e.computeAppFingerprint(); err != nil {
+	if tr.fingerprints.app, err = e.computeAppFingerprint(); err != nil {
 		return TemplateRenderer{}, errors.Wrap(err, "couldn't compute fingerprint for app")
 	}
-	if tr.fingerprints.Page, err = e.computePageFingerprints(); err != nil {
+	if tr.fingerprints.page, err = e.computePageFingerprints(); err != nil {
 		return TemplateRenderer{}, errors.Wrap(
 			err, "couldn't compute fingerprint for page/module templates",
 		)

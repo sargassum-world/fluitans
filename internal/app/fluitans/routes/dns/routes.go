@@ -32,7 +32,7 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewAuthAwareRouter(er, h.sc)
+	ar := auth.NewRouter(er, h.sc)
 	ar.GET("/dns", h.HandleServerGet(), auth.RequireAuthz(h.sc))
 	er.POST("/dns/:subname/:type", h.HandleRRsetPost(), auth.RequireAuthz(h.sc))
 }

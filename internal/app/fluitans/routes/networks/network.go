@@ -288,7 +288,7 @@ func getNetworkData(
 	}, nil
 }
 
-func (h *Handlers) HandleNetworkGet() auth.AuthAwareHandler {
+func (h *Handlers) HandleNetworkGet() auth.Handler {
 	t := "networks/network.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {

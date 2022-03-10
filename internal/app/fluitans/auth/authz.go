@@ -31,7 +31,7 @@ func (a Auth) RequireAuthorized() error {
 func RequireAuthz(sc *session.Client) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			a, _, err := GetWithSession(c, sc)
+			a, _, err := GetWithSession(c.Request(), sc, c.Logger())
 			if err != nil {
 				return err
 			}

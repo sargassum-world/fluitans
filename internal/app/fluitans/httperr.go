@@ -1,4 +1,3 @@
-// Package fluitans provides the Fluitans server.
 package fluitans
 
 import (
@@ -27,9 +26,9 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HT
 		c.Logger().Error(err)
 
 		// Check authentication & authorization
-		a, sess, serr := auth.GetWithSession(c, sc)
+		a, sess, serr := auth.GetWithSession(c.Request(), sc, c.Logger())
 		if serr != nil {
-			c.Logger().Error(errors.Wrap(serr, "couldn't get session+auth in error handler"))
+			c.Logger().Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}
 
 		// Process error code
@@ -43,17 +42,15 @@ func NewHTTPErrorHandler(tr godest.TemplateRenderer, sc *session.Client) echo.HT
 		}
 
 		// Consume & save session
-		if sess != nil {
-			messages, merr := session.GetErrorMessages(sess)
-			if merr != nil {
-				c.Logger().Error(errors.Wrap(
-					merr, "couldn't get error messages from session in error handler",
-				))
-			}
-			errorData.Messages = messages
-			if err := sess.Save(c.Request(), c.Response()); err != nil {
-				c.Logger().Error(errors.Wrap(serr, "couldn't save session in error handler"))
-			}
+		messages, merr := session.GetErrorMessages(sess)
+		if merr != nil {
+			c.Logger().Error(errors.Wrap(
+				merr, "couldn't get error messages from session in error handler",
+			))
+		}
+		errorData.Messages = messages
+		if err := sess.Save(c.Request(), c.Response()); err != nil {
+			c.Logger().Error(errors.Wrap(serr, "couldn't save session in error handler"))
 		}
 
 		// Produce output
@@ -73,16 +70,13 @@ func NewCSRFErrorHandler(
 	return func(w http.ResponseWriter, r *http.Request) {
 		l.Error(csrf.FailureReason(r))
 		// Check authentication & authorization
-		sess, serr := sc.Get(r)
+		a, sess, serr := auth.GetWithSession(r, sc, l)
 		if serr != nil {
-			l.Error(errors.Wrap(serr, "couldn't get session in error handler"))
+			l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
 		}
-		var a auth.Auth
-		if sess != nil {
-			a, serr = auth.GetFromRequest(r, *sess, sc)
-			if serr != nil {
-				l.Error(errors.Wrap(serr, "couldn't get auth in error handler"))
-			}
+		// Save the session in case it was freshly generated
+		if err := sess.Save(r, w); err != nil {
+			l.Error(errors.Wrap(serr, "couldn't save session in error handler"))
 		}
 
 		// Generate error code

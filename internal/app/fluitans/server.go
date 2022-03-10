@@ -20,6 +20,7 @@ import (
 	imw "github.com/sargassum-world/fluitans/internal/middleware"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
+	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/web"
 )
 
@@ -98,7 +99,8 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Other Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(echo.WrapMiddleware(s.Globals.Clients.Sessions.NewCSRFMiddleware(
+	e.Use(echo.WrapMiddleware(session.NewCSRFMiddleware(
+		s.Globals.Clients.Sessions.Config,
 		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Clients.Sessions)),
 	)))
 	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))

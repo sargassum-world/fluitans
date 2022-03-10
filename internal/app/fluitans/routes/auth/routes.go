@@ -23,8 +23,7 @@ func New(r godest.TemplateRenderer, ac *authn.Client, sc *session.Client) *Handl
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
-	ar := auth.NewAuthAwareRouter(er, h.sc)
 	er.GET("/csrf", h.HandleCSRFGet())
-	ar.GET("/login", h.HandleLoginGet())
+	er.GET("/login", auth.HandleWithSession(h.HandleLoginGet(), h.sc))
 	er.POST("/sessions", h.HandleSessionsPost())
 }

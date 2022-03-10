@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
@@ -22,15 +23,6 @@ type CSRFData struct {
 
 func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Get session
-		sess, err := h.sc.Get(c.Request())
-		if err != nil {
-			return err
-		}
-		if err := sess.Save(c.Request(), c.Response()); err != nil {
-			return err
-		}
-
 		// Produce output
 		godest.SetUncacheable(c.Response().Header())
 		return c.JSON(http.StatusOK, CSRFData{
@@ -47,16 +39,10 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (h *Handlers) HandleLoginGet() auth.AuthAwareHandler {
+func (h *Handlers) HandleLoginGet() auth.HandlerWithSession {
 	t := "auth/login.page.tmpl"
 	h.r.MustHave(t)
-	return func(c echo.Context, a auth.Auth) error {
-		// Check authentication & authorization
-		sess, err := h.sc.Get(c.Request())
-		if err != nil {
-			return err
-		}
-
+	return func(c echo.Context, a auth.Auth, sess *sessions.Session) error {
 		// Consume & save session
 		errorMessages, err := session.GetErrorMessages(sess)
 		if err != nil {

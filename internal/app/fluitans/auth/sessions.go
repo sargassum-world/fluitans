@@ -6,9 +6,9 @@ import (
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
-	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
 
+	"github.com/sargassum-world/fluitans/pkg/godest"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
@@ -80,8 +80,8 @@ func (c *CSRF) SetInlining(r *http.Request, inlineToken bool) {
 
 // Access
 
-func Get(c echo.Context, s sessions.Session, sc *session.Client) (a Auth, err error) {
-	return GetFromRequest(c.Request(), s, sc)
+func Get(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
+	return GetFromRequest(r, s, sc)
 }
 
 func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
@@ -101,12 +101,19 @@ func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a 
 	return a, nil
 }
 
-func GetWithSession(c echo.Context, sc *session.Client) (a Auth, s *sessions.Session, err error) {
-	s, err = sc.Get(c.Request())
+func GetWithSession(
+	r *http.Request, sc *session.Client, l godest.Logger,
+) (a Auth, s *sessions.Session, err error) {
+	s, err = sc.Get(r)
 	if err != nil {
-		return Auth{}, nil, err
+		// If the user doesn't have a valid session, create one
+		if s, err = sc.New(r); err != nil {
+			// When an error is returned, a new (valid) session is still created
+			l.Warnf("created new session to replace invalid session")
+		}
+		// We let the caller save the new session
 	}
-	a, err = Get(c, *s, sc)
+	a, err = Get(r, *s, sc)
 	if err != nil {
 		return Auth{}, s, err
 	}

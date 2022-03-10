@@ -1,4 +1,3 @@
-// Package session standardizes session management with Gorilla sessions
 package session
 
 import (
@@ -6,6 +5,7 @@ import (
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
+	"github.com/pkg/errors"
 	"github.com/quasoft/memstore"
 )
 
@@ -25,13 +25,19 @@ func NewMemStoreClient(c Config) *Client {
 	}
 }
 
-func (sc *Client) Get(r *http.Request) (*sessions.Session, error) {
-	return sc.Store.Get(r, sc.Config.CookieName)
+func (sc *Client) New(r *http.Request) (sess *sessions.Session, err error) {
+	sess, err = sc.Store.New(r, sc.Config.CookieName)
+	return sess, errors.Wrap(err, "couldn't make session")
 }
 
-func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) func(http.Handler) http.Handler {
+func (sc *Client) Get(r *http.Request) (sess *sessions.Session, err error) {
+	sess, err = sc.Store.Get(r, sc.Config.CookieName)
+	return sess, errors.Wrap(err, "couldn't get session")
+}
+
+func NewCSRFMiddleware(config Config, opts ...csrf.Option) func(http.Handler) http.Handler {
 	sameSite := csrf.SameSiteDefaultMode
-	switch sc.Config.CookieOptions.SameSite {
+	switch config.CookieOptions.SameSite {
 	case http.SameSiteLaxMode:
 		sameSite = csrf.SameSiteLaxMode
 	case http.SameSiteStrictMode:
@@ -40,15 +46,15 @@ func (sc *Client) NewCSRFMiddleware(opts ...csrf.Option) func(http.Handler) http
 		sameSite = csrf.SameSiteNoneMode
 	}
 	options := []csrf.Option{
-		csrf.Path(sc.Config.CookieOptions.Path),
-		csrf.Domain(sc.Config.CookieOptions.Domain),
-		csrf.MaxAge(sc.Config.CookieOptions.MaxAge),
-		csrf.Secure(sc.Config.CookieOptions.Secure),
-		csrf.HttpOnly(sc.Config.CookieOptions.HttpOnly),
+		csrf.Path(config.CookieOptions.Path),
+		csrf.Domain(config.CookieOptions.Domain),
+		csrf.MaxAge(config.CookieOptions.MaxAge),
+		csrf.Secure(config.CookieOptions.Secure),
+		csrf.HttpOnly(config.CookieOptions.HttpOnly),
 		csrf.SameSite(sameSite),
-		csrf.RequestHeader(sc.Config.CSRFOptions.HeaderName),
-		csrf.FieldName(sc.Config.CSRFOptions.FieldName),
+		csrf.RequestHeader(config.CSRFOptions.HeaderName),
+		csrf.FieldName(config.CSRFOptions.FieldName),
 	}
 	options = append(options, opts...)
-	return csrf.Protect(sc.Config.AuthKey, options...)
+	return csrf.Protect(config.AuthKey, options...)
 }
