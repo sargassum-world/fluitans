@@ -15,8 +15,8 @@ import (
 )
 
 type Clients struct {
-	Authn         *authn.Client
-	Sessions      *session.Client
+	Authn    *authn.Client
+	Sessions *session.Client
 
 	Desec         *desec.Client
 	Zerotier      *zerotier.Client

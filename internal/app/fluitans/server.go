@@ -32,6 +32,7 @@ type Server struct {
 	Renderer godest.TemplateRenderer
 	Globals  *client.Globals
 	Handlers *routes.Handlers
+	Logger   godest.Logger
 }
 
 func NewServer(e *echo.Echo) (s *Server, err error) {
@@ -53,6 +54,7 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 	}
 
 	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
+	s.Logger = e.Logger
 	return s, nil
 }
 
@@ -113,7 +115,7 @@ func (s *Server) Register(e *echo.Echo) {
 	s.Handlers.Register(e, s.Embeds)
 }
 
-func (s *Server) RunBackgroundWorkers() error {
+func (s *Server) RunBackgroundWorkers() {
 	eg, _ := errgroup.WithContext(context.Background())
 	eg.Go(func() error {
 		return workers.PrescanZerotierControllers(s.Globals.Clients.ZTControllers)
@@ -129,5 +131,7 @@ func (s *Server) RunBackgroundWorkers() error {
 	/*eg.Go(func() error {
 		return workers.TestWriteLimiter(s.Globals.Clients.Desec)
 	})*/
-	return eg.Wait()
+	if err := eg.Wait(); err != nil {
+		s.Logger.Error(err)
+	}
 }

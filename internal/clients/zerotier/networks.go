@@ -190,19 +190,6 @@ func (c *Client) GetNetwork(
 	return c.getNetworkFromZerotier(ctx, controller, id)
 }
 
-func (c *Client) getNetworkMemberAddressesFromCache(networkID string) []string {
-	addresses, err := c.Cache.GetNetworkMembersByID(networkID)
-	if err != nil {
-		// Log the error but return as a cache miss so we can manually query the member addresses
-		c.Logger.Error(errors.Wrapf(
-			err, "couldn't get the cache entry for the member addresses of network %s", networkID,
-		))
-		return nil // treat an unparseable cache entry like a cache miss
-	}
-
-	return addresses // addresses may be nil, which indicates a cache miss
-}
-
 func (c *Client) getNetworkMemberAddressesFromZerotier(
 	ctx context.Context, controller ztcontrollers.Controller, id string,
 ) ([]string, error) {
@@ -236,9 +223,8 @@ func (c *Client) getNetworkMemberAddressesFromZerotier(
 func (c *Client) GetNetworkMemberAddresses(
 	ctx context.Context, controller ztcontrollers.Controller, id string,
 ) ([]string, error) {
-	if addresses := c.getNetworkMemberAddressesFromCache(id); addresses != nil {
-		return addresses, nil
-	}
+	// We don't look up the addresses from cache, since they can change independently of the cache
+	// (especially when a device uses Zerotier to try to join the network)
 	return c.getNetworkMemberAddressesFromZerotier(ctx, controller, id)
 }
 
