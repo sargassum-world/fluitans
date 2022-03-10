@@ -86,7 +86,7 @@ func getAdminPasswordHash(argon2idParams argon2id.Params, noAuth bool) (hash str
 	if len(hash) == 0 && !noAuth {
 		password := env.GetString(envPrefix+"ADMIN_PW", "")
 		if len(password) == 0 {
-			return "", fmt.Errorf(
+			return "", errors.Errorf(
 				"must provide a password for the admin account with %sADMIN_PW", envPrefix,
 			)
 		}

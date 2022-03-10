@@ -2,7 +2,6 @@ package desec
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -45,9 +44,9 @@ func (c *Client) getRRsetsFromCache() map[string][]desec.RRset {
 	subnames, err := c.Cache.GetSubnames(domainName)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the RRsets for %s", domainName,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for the RRsets for %s", domainName,
+		))
 		return nil // treat an unparseable cache entry like a cache miss
 	}
 
@@ -129,9 +128,9 @@ func (c *Client) getSubnameRRsetsFromCache(subname string) []desec.RRset {
 	rrsets, err := c.Cache.GetRRsetsByName(domainName, subname)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for one of the RRsets for %s.%s", subname, domainName,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for one of the RRsets for %s.%s", subname, domainName,
+		))
 		return nil // treat an unparseable cache entry like a cache miss
 	}
 
@@ -187,9 +186,10 @@ func (c *Client) getRRsetFromCache(subname, recordType string) (*desec.RRset, bo
 	rrset, cacheHit, err := c.Cache.GetRRsetByNameAndType(domainName, subname, recordType)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the RRsets
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the %s RRsets for %s.%s", recordType, subname, domainName,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for the %s RRsets for %s.%s",
+			recordType, subname, domainName,
+		))
 		return nil, false // treat an unparseable cache entry like a cache miss
 	}
 

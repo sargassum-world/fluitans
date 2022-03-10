@@ -3,7 +3,6 @@ package env
 
 import (
 	"encoding/base64"
-	"fmt"
 	"net/url"
 	"os"
 	"strconv"
@@ -41,9 +40,9 @@ func GetUint64(varName string, defaultValue uint64) (uint64, error) {
 	)
 	parsed, err := strconv.ParseUint(value, base, width)
 	if err != nil {
-		return 0, errors.Wrap(err, fmt.Sprintf(
-			"unparseable value %s for uint64 environment variable %s", value, varName,
-		))
+		return 0, errors.Wrapf(
+			err, "unparseable value %s for uint64 environment variable %s", value, varName,
+		)
 	}
 
 	return parsed, nil
@@ -61,9 +60,9 @@ func GetInt64(varName string, defaultValue int64) (int64, error) {
 	)
 	parsed, err := strconv.ParseInt(value, base, width)
 	if err != nil {
-		return 0, errors.Wrap(err, fmt.Sprintf(
-			"unparseable value %s for int64 environment variable %s", value, varName,
-		))
+		return 0, errors.Wrapf(
+			err, "unparseable value %s for int64 environment variable %s", value, varName,
+		)
 	}
 
 	return parsed, nil
@@ -78,9 +77,9 @@ func GetFloat32(varName string, defaultValue float32) (float32, error) {
 	const width = 32 // bits
 	parsed, err := strconv.ParseFloat(value, width)
 	if err != nil {
-		return 0, errors.Wrap(err, fmt.Sprintf(
-			"unparseable value %s for float32 environment variable %s", value, varName,
-		))
+		return 0, errors.Wrapf(
+			err, "unparseable value %s for float32 environment variable %s", value, varName,
+		)
 	}
 
 	return float32(parsed), nil
@@ -116,9 +115,9 @@ func GetURL(varName string, defaultValue string) (*url.URL, error) {
 func GetURLOrigin(varName, defaultValue, defaultScheme string) (*url.URL, error) {
 	url, err := GetURL(varName, defaultValue)
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf(
-			"unparseable value %s for URL environment variable %s", os.Getenv(varName), varName,
-		))
+		return nil, errors.Wrapf(
+			err, "unparseable value %s for URL environment variable %s", os.Getenv(varName), varName,
+		)
 	}
 
 	if len(url.Scheme) == 0 {

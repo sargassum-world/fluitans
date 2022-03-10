@@ -1,7 +1,6 @@
 package clientcache
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/dgraph-io/ristretto"
@@ -36,7 +35,7 @@ func (c *RistrettoCache) SetEntry(
 ) error {
 	marshaled, err := c.marshaller.Marshal(value)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("couldn't marshal value for key %s", key))
+		return errors.Wrapf(err, "couldn't marshal value for key %s", key)
 	}
 
 	if ttl < 0 {
@@ -71,12 +70,12 @@ func (c *RistrettoCache) GetEntry(key string, value interface{}) (bool, bool, er
 
 	switch marshaledBytes := entryRaw.(type) {
 	default:
-		return true, false, fmt.Errorf("invalid cache entry %s has unexpected type %T", key, entryRaw)
+		return true, false, errors.Errorf("cache entry %s has unexpected type %T", key, entryRaw)
 	case nonexistentValue:
 		return true, false, nil
 	case []byte:
 		if err := c.marshaller.Unmarshal(marshaledBytes, value); err != nil {
-			return true, true, errors.Wrap(err, fmt.Sprintf("couldn't unmarshal value for key %s", key))
+			return true, true, errors.Wrapf(err, "couldn't unmarshal value for key %s", key)
 		}
 
 		return true, true, nil

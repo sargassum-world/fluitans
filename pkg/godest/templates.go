@@ -10,7 +10,6 @@ package godest
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
@@ -86,7 +85,7 @@ func parseFiles(
 	for _, filename := range filenames {
 		name, b, err := readFile(filename)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("couldn't read file %s", filename))
+			return nil, errors.Wrapf(err, "couldn't read file %s", filename)
 		}
 		s := string(b)
 		var tmpl *template.Template
@@ -100,7 +99,7 @@ func parseFiles(
 		}
 		_, err = tmpl.Parse(s)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("couldn't parse template %s", filename))
+			return nil, errors.Wrapf(err, "couldn't parse template %s", filename)
 		}
 	}
 	return t, nil
@@ -162,7 +161,7 @@ func (f fingerprints) getEtagSegments(templateName string) ([]string, error) {
 func (f fingerprints) MustHave(templateNames ...string) {
 	for _, name := range templateNames {
 		if _, err := f.getEtagSegments(name); err != nil {
-			panic(errors.Wrap(err, fmt.Sprintf("couldn't find template etag segments for %s", name)))
+			panic(errors.Wrapf(err, "couldn't find template etag segments for %s", name))
 		}
 	}
 }
@@ -284,7 +283,7 @@ func (tr TemplateRenderer) Page(
 	buf := new(bytes.Buffer)
 	tmpl, ok := tr.pageTemplates[templateName]
 	if !ok {
-		return fmt.Errorf("teplate %s not found", templateName)
+		return errors.Errorf("teplate %s not found", templateName)
 	}
 	if err := tmpl.ExecuteTemplate(
 		buf, templateName, tr.newRenderData(r, templateData, authData),

@@ -33,7 +33,7 @@ func identifyModuleNonpageFiles(templates fs.FS) (map[string][]string, error) {
 			subfs, err = fs.Sub(templates, module)
 		}
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("couldn't list template module %s", module))
+			return nil, errors.Wrapf(err, "couldn't list template module %s", module)
 		}
 		moduleSubfiles, err := listFiles(subfs, filterNonpageTemplate)
 		moduleFiles[module] = make([]string, len(moduleSubfiles))
@@ -41,11 +41,11 @@ func identifyModuleNonpageFiles(templates fs.FS) (map[string][]string, error) {
 			if module == "" {
 				moduleFiles[module][i] = subfile
 			} else {
-				moduleFiles[module][i] = fmt.Sprintf("%s/%s", module, subfile)
+				moduleFiles[module][i] = module + "/" + subfile
 			}
 		}
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf("couldn't list template files in module %s", module))
+			return nil, errors.Wrapf(err, "couldn't list template files in module %s", module)
 		}
 	}
 	return moduleFiles, nil
@@ -75,9 +75,9 @@ func computePageFingerprints(
 	for module, files := range moduleNonpageFiles {
 		loadedNonpages, err := readConcatenated(files, templates)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf(
-				"couldn't load non-page template files in template module %s for fingerprinting", module,
-			))
+			return nil, errors.Wrapf(
+				err, "couldn't load non-page template files in module %s for fingerprinting", module,
+			)
 		}
 		moduleNonpages[module] = loadedNonpages
 	}
@@ -86,9 +86,7 @@ func computePageFingerprints(
 	for _, file := range pageFiles {
 		loadedPage, err := readFile(file, templates)
 		if err != nil {
-			return nil, errors.Wrap(err, fmt.Sprintf(
-				"couldn't load page template %s for fingerprinting", file,
-			))
+			return nil, errors.Wrapf(err, "couldn't load page template %s for fingerprinting", file)
 		}
 		pages[file] = loadedPage
 	}
@@ -158,13 +156,13 @@ func (e Embeds) computePageFingerprints() (fingerprints map[string]string, err e
 
 func (e Embeds) GetAppHashedNamer(urlPrefix string) func(string) string {
 	return func(unhashedFilename string) string {
-		return fmt.Sprintf(urlPrefix + e.AppHFS.HashName(unhashedFilename))
+		return urlPrefix + e.AppHFS.HashName(unhashedFilename)
 	}
 }
 
 func (e Embeds) GetStaticHashedNamer(urlPrefix string) func(string) string {
 	return func(unhashedFilename string) string {
-		return fmt.Sprintf(urlPrefix + e.StaticHFS.HashName(unhashedFilename))
+		return urlPrefix + e.StaticHFS.HashName(unhashedFilename)
 	}
 }
 

@@ -3,7 +3,6 @@ package zerotier
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -26,9 +25,9 @@ func (c *Client) getNetworkIDsFromCache(
 	networkIDs, err := cc.Cache.GetNetworkIDsByServer(controller.Server)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the network IDs
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the network IDs controlled by %s", controller.Name,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for the network IDs controlled by %s", controller.Name,
+		))
 		return nil // treat an unparseable cache entry like a cache miss
 	}
 
@@ -126,7 +125,7 @@ func (c *Client) GetAllNetworks(
 	ctx context.Context, controllers []ztcontrollers.Controller, ids [][]string,
 ) ([]map[string]zerotier.ControllerNetwork, error) {
 	if len(controllers) != len(ids) {
-		return nil, fmt.Errorf("lists of controllers and ids must have the same length")
+		return nil, errors.Errorf("lists of controllers and ids must have the same length")
 	}
 
 	eg, ctx := errgroup.WithContext(ctx)
@@ -152,9 +151,7 @@ func (c *Client) getNetworkFromCache(id string) (*zerotier.ControllerNetwork, bo
 	network, cacheHit, err := c.Cache.GetNetworkByID(id)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the network
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the network with id %s", id,
-		)))
+		c.Logger.Error(errors.Wrapf(err, "couldn't get the cache entry for the network with id %s", id))
 		return nil, false // treat an unparseable cache entry like a cache miss
 	}
 	return network, cacheHit // cache hit with nil rrset indicates nonexistent RRset
@@ -197,9 +194,9 @@ func (c *Client) getNetworkMemberAddressesFromCache(networkID string) []string {
 	addresses, err := c.Cache.GetNetworkMembersByID(networkID)
 	if err != nil {
 		// Log the error but return as a cache miss so we can manually query the member addresses
-		c.Logger.Error(errors.Wrap(err, fmt.Sprintf(
-			"couldn't get the cache entry for the member addresses of network %s", networkID,
-		)))
+		c.Logger.Error(errors.Wrapf(
+			err, "couldn't get the cache entry for the member addresses of network %s", networkID,
+		))
 		return nil // treat an unparseable cache entry like a cache miss
 	}
 

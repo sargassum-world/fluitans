@@ -2,12 +2,12 @@ package auth
 
 import (
 	"encoding/gob"
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
@@ -35,7 +35,7 @@ func GetIdentity(s sessions.Session) (identity Identity, err error) {
 	}
 	identity, ok = rawIdentity.(Identity)
 	if !ok {
-		err = fmt.Errorf("unexpected type for field identity in session")
+		err = errors.Errorf("unexpected type for field identity in session")
 		return
 	}
 	return
@@ -65,7 +65,7 @@ func GetCSRFBehavior(s sessions.Session) (behavior CSRFBehavior, err error) {
 	}
 	behavior, ok = rawBehavior.(CSRFBehavior)
 	if !ok {
-		err = fmt.Errorf("unexpected type for field csrfBehavior in session")
+		err = errors.Errorf("unexpected type for field csrfBehavior in session")
 		return
 	}
 	return

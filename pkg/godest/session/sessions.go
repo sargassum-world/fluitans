@@ -2,9 +2,8 @@
 package session
 
 import (
-	"fmt"
-
 	"github.com/gorilla/sessions"
+	"github.com/pkg/errors"
 )
 
 // Session rotation
@@ -33,7 +32,9 @@ func GetErrorMessages(s *sessions.Session) ([]string, error) {
 	for _, rawFlash := range rawFlashes {
 		flash, ok := rawFlash.(string)
 		if !ok {
-			return nil, fmt.Errorf("session error message is of unexpected non-string type %T", rawFlash)
+			return nil, errors.Errorf(
+				"session error message is of unexpected non-string type %T", rawFlash,
+			)
 		}
 		flashes = append(flashes, flash)
 	}

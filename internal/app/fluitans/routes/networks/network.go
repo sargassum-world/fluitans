@@ -31,7 +31,7 @@ func getRecordsOfType(
 	for subname, rrsets := range subnameRRsets {
 		filtered := desecc.FilterAndSortRRsets(rrsets, []string{rrsetType})
 		if len(filtered) > 1 {
-			return nil, fmt.Errorf("unexpected number of RRsets for record")
+			return nil, errors.Errorf("unexpected number of RRsets for record")
 		}
 		if len(filtered) == 1 {
 			records[subname] = filtered[0].Records
@@ -54,7 +54,7 @@ func identifyMemberDomainNames(
 	for memberAddress, member := range zerotierMembers {
 		for _, ipAddress := range *member.IpAssignments {
 			for _, subname := range addressDomainNames[ipAddress] {
-				domainName := fmt.Sprintf("%s.%s", subname, zoneDomainName)
+				domainName := subname + "." + zoneDomainName
 				memberDomainNames[memberAddress] = append(memberDomainNames[memberAddress], domainName)
 			}
 		}
@@ -124,7 +124,7 @@ func getMemberRecords(
 func checkNamedByDNS(
 	ctx context.Context, networkName, networkID string, c *desecc.Client,
 ) (bool, error) {
-	domainSuffix := fmt.Sprintf(".%s", c.Config.DomainName)
+	domainSuffix := "." + c.Config.DomainName
 	if !strings.HasSuffix(networkName, domainSuffix) {
 		return false, nil
 	}
@@ -186,7 +186,7 @@ func getNetworkDNSRecords(
 	if err != nil {
 		return
 	}
-	confirmedSubname := strings.TrimSuffix(networkName, fmt.Sprintf(".%s", dc.Config.DomainName))
+	confirmedSubname := strings.TrimSuffix(networkName, "."+dc.Config.DomainName)
 	networkDNS.Aliases = identifyNetworkAliases(networkID, confirmedSubname, txtRecords)
 	aliases := make(map[string]bool, len(networkDNS.Aliases))
 	for _, alias := range networkDNS.Aliases {
@@ -197,17 +197,17 @@ func getNetworkDNSRecords(
 	if err != nil {
 		return
 	}
-	networkSubname := strings.TrimSuffix(networkName, fmt.Sprintf(".%s", dc.Config.DomainName))
+	networkSubname := strings.TrimSuffix(networkName, "."+dc.Config.DomainName)
 	networkDNS.DeviceSubdomains = make(map[string]client.Subdomain)
 	for _, subdomain := range subdomains {
 		if subdomain.Subname != networkSubname && !strings.HasSuffix(
-			subdomain.Subname, fmt.Sprintf(".%s", networkSubname),
+			subdomain.Subname, "."+networkSubname,
 		) && !aliases[subdomain.Subname] {
 			// Subdomain is unrelated to this network
 			continue
 		}
 
-		if strings.HasSuffix(subdomain.Subname, fmt.Sprintf(".d.%s", networkSubname)) {
+		if strings.HasSuffix(subdomain.Subname, ".d."+networkSubname) {
 			// Subdomain is for a device
 			networkDNS.DeviceSubdomains[subdomain.Subname] = subdomain
 			continue
@@ -317,12 +317,12 @@ func nameNetwork(
 	}
 
 	// Check to see if the network was already named by DNS
-	fqdn := fmt.Sprintf("%s.%s", name, dc.Config.DomainName)
+	fqdn := name + "." + dc.Config.DomainName
 	txtRRset, err := dc.GetRRset(ctx, name, "TXT")
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf(
-			"couldn't check cache for DNS TXT RRset at %s for network %s", fqdn, id,
-		))
+		return errors.Wrapf(
+			err, "couldn't check cache for DNS TXT RRset at %s for network %s", fqdn, id,
+		)
 	}
 	if txtRRset != nil {
 		if _, hasID := client.GetNetworkID(txtRRset.Records); hasID {
@@ -338,9 +338,7 @@ func nameNetwork(
 		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch to avoid
 		// data races)
 		// TODO: if the returned error code was an HTTP error, preserve the status code
-		return errors.Wrap(err, fmt.Sprintf(
-			"couldn't create a DNS TXT RRset at %s for network %s", fqdn, id,
-		))
+		return errors.Wrapf(err, "couldn't create a DNS TXT RRset at %s for network %s", fqdn, id)
 	}
 	return c.UpdateNetwork(
 		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
