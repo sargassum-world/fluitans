@@ -10,7 +10,7 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 )
 
-func PrefetchDNSRecords(c *desec.Client) {
+func PrefetchDNSRecords(c *desec.Client) error {
 	const retryInterval = 5000
 	for {
 		if _, err := c.GetRRsets(context.Background()); err != nil {
@@ -21,9 +21,10 @@ func PrefetchDNSRecords(c *desec.Client) {
 
 		break
 	}
+	return nil
 }
 
-func TestWriteLimiter(c *desec.Client) {
+func TestWriteLimiter(c *desec.Client) error {
 	const writeInterval = 5000
 	writeLimiter := c.WriteLimiter
 	for {
