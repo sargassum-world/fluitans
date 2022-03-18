@@ -4,7 +4,12 @@
 {{end}}
 
 {{define "nav/navbar.brand"}}
-  <img class="navbar-brand-logo" src="{{staticHashed "logo.svg"}}" alt="Fluitans logo" />
+  <img
+    id="navbar-brand-logo"
+    class="navbar-brand-logo"
+    src="{{staticHashed "logo.svg"}}"
+    alt="Fluitans logo"
+  />
   Fluitans
 {{end}}
 
@@ -58,7 +63,7 @@
     aria-label="Main navigation"
     data-controller="navigation-menu"
   >
-    <div class="navbar-brand left-burger">
+    <div class="navbar-brand left-burger" data-turbo-permanent>
       <a
         href="#navigation-menu"
         id="navigation-menu-toggle"
