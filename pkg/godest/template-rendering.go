@@ -192,7 +192,7 @@ func (tr TemplateRenderer) CacheablePage(
 	return tr.Page(w, r, http.StatusOK, templateName, templateData, authData, headerOptions...)
 }
 
-func (tr TemplateRenderer) Partial(
+func (tr TemplateRenderer) WritePartial(
 	w io.Writer, partialName string, partialData interface{},
 ) error {
 	tmpl, ok := tr.partialTemplates[partialName]
@@ -200,7 +200,7 @@ func (tr TemplateRenderer) Partial(
 		return errors.Errorf("partial template %s not found", partialName)
 	}
 	if err := tmpl.ExecuteTemplate(w, partialName, partialData); err != nil {
-		return errors.Wrapf(err, "couldn't execut partial template %s", partialName)
+		return errors.Wrapf(err, "couldn't execute partial template %s", partialName)
 	}
 	return nil
 }
@@ -212,11 +212,11 @@ type renderedStream struct {
 	Rendered template.HTML
 }
 
-func (tr TemplateRenderer) TurboStreams(w http.ResponseWriter, streams ...turbo.Stream) error {
+func (tr TemplateRenderer) WriteTurboStreams(w io.Writer, streams ...turbo.Stream) error {
 	renderedStreams := make([]renderedStream, len(streams))
 	for i, stream := range streams {
 		buf := new(bytes.Buffer)
-		if err := tr.Partial(buf, stream.Template, stream.Data); err != nil {
+		if err := tr.WritePartial(buf, stream.Template, stream.Data); err != nil {
 			return errors.Wrapf(err, "couldn't execute stream template %s", stream.Template)
 		}
 		renderedStreams[i] = renderedStream{
@@ -233,8 +233,12 @@ func (tr TemplateRenderer) TurboStreams(w http.ResponseWriter, streams ...turbo.
 		return errors.Wrap(err, "couldn't execute Turbo Streams template")
 	}
 
-	w.Header().Set("Content-Type", turbo.StreamContentType+"; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
 	_, werr := w.Write(buf.Bytes())
 	return werr
+}
+
+func (tr TemplateRenderer) TurboStreams(w http.ResponseWriter, streams ...turbo.Stream) error {
+	w.Header().Set("Content-Type", turbo.StreamContentType+"; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	return tr.WriteTurboStreams(w, streams...)
 }
