@@ -16,14 +16,8 @@ func makeEtag(segments ...string) string {
 
 // Headers for Etags
 
-func SetUncacheable(resh http.Header) {
-	// Don't cache cookies - see the "Web Content Caching" subsection of
-	// https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html
-	resh.Set("Cache-Control", "no-cache=\"Set-Cookie, Set-Cookie2\", no-store, max-age=0")
-}
-
 func setEtag(resh http.Header, etag string) {
-	resh.Set("Cache-Control", "private, no-cache")
+	WithAlwaysRevalidate()(resh)
 	resh.Set("Etag", etag)
 }
 

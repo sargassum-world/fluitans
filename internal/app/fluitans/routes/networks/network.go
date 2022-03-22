@@ -18,6 +18,7 @@ import (
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/desec"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
@@ -227,6 +228,14 @@ type NetworkData struct {
 	NetworkDNS       NetworkDNS
 }
 
+func printJSONRules(rawRules []map[string]interface{}) (string, error) {
+	rules, err := json.MarshalIndent(rawRules, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(rules), err
+}
+
 func getNetworkData(
 	ctx context.Context, address, id string,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
@@ -254,7 +263,7 @@ func getNetworkData(
 	if network == nil {
 		return nil, echo.NewHTTPError(http.StatusNotFound, "zerotier network not found")
 	}
-	rules, err := json.MarshalIndent(*network.Rules, "", "  ")
+	rules, err := printJSONRules(*network.Rules)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +291,7 @@ func getNetworkData(
 		Controller:       *controller,
 		Network:          *network,
 		Members:          members,
-		JSONPrintedRules: string(rules),
+		JSONPrintedRules: rules,
 		DomainName:       dc.Config.DomainName,
 		NetworkDNS:       networkDNS,
 	}, nil
@@ -310,22 +319,24 @@ func (h *Handlers) HandleNetworkGet() auth.Handler {
 func nameNetwork(
 	ctx context.Context, controller ztcontrollers.Controller, id string, name string,
 	c *ztc.Client, dc *desecc.Client,
-) error {
+) (*zerotier.ControllerNetwork, error) {
 	if len(name) == 0 {
-		return echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "cannot remove name from network")
 	}
 
 	// Check to see if the network was already named by DNS
 	fqdn := name + "." + dc.Config.DomainName
 	txtRRset, err := dc.GetRRset(ctx, name, "TXT")
 	if err != nil {
-		return errors.Wrapf(
+		return nil, errors.Wrapf(
 			err, "couldn't check cache for DNS TXT RRset at %s for network %s", fqdn, id,
 		)
 	}
 	if txtRRset != nil {
 		if _, hasID := client.GetNetworkID(txtRRset.Records); hasID {
-			return echo.NewHTTPError(http.StatusBadRequest, "name is already used by another network")
+			return nil, echo.NewHTTPError(
+				http.StatusBadRequest, "name is already used by another network",
+			)
 		}
 	}
 
@@ -337,7 +348,9 @@ func nameNetwork(
 		// zerotier-net-id=... record (but we should have a global lock on a get-and-patch to avoid
 		// data races)
 		// TODO: if the returned error code was an HTTP error, preserve the status code
-		return errors.Wrapf(err, "couldn't create a DNS TXT RRset at %s for network %s", fqdn, id)
+		return nil, errors.Wrapf(
+			err, "couldn't create a DNS TXT RRset at %s for network %s", fqdn, id,
+		)
 	}
 	return c.UpdateNetwork(
 		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Name: &fqdn},
@@ -377,22 +390,24 @@ func (h *Handlers) HandleNetworkPost() echo.HandlerFunc {
 func setNetworkRules(
 	ctx context.Context, controller ztcontrollers.Controller,
 	id string, jsonRules string, c *ztc.Client,
-) error {
+) (*zerotier.ControllerNetwork, error) {
 	rules := make([]map[string]interface{}, 0)
 	if err := json.Unmarshal([]byte(jsonRules), &rules); err != nil {
-		return err
+		return nil, err
 	}
-	err := c.UpdateNetwork(
+	network, err := c.UpdateNetwork(
 		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Rules: &rules},
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return network, nil
 }
 
-func (h *Handlers) HandleNetworkRulesPost() echo.HandlerFunc {
-	return func(c echo.Context) error {
+func (h *Handlers) HandleNetworkRulesPost() auth.Handler {
+	t := "networks/network-rules.partial.tmpl"
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
@@ -403,8 +418,29 @@ func (h *Handlers) HandleNetworkRulesPost() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		if err = setNetworkRules(ctx, *controller, id, c.FormValue("rules"), h.ztc); err != nil {
+		network, err := setNetworkRules(
+			ctx, *controller, id, c.FormValue("rules"), h.ztc,
+		)
+		if err != nil {
 			return err
+		}
+
+		// Render Turbo Stream if accepted
+		if turbo.StreamAccepted(c.Request().Header) {
+			rules, err := printJSONRules(*network.Rules)
+			if err != nil {
+				return err
+			}
+			return h.r.TurboStreams(c.Response(), turbo.Stream{
+				Action:   turbo.StreamReplace,
+				Target:   "network-" + id + "-rules",
+				Template: t,
+				Data: map[string]interface{}{
+					"Network":          network,
+					"Auth":             a,
+					"JSONPrintedRules": rules,
+				},
+			})
 		}
 
 		// Redirect user
@@ -424,7 +460,7 @@ func (h *Handlers) HandleNetworkNamePost() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		if err = nameNetwork(ctx, *controller, id, c.FormValue("name"), h.ztc, h.dc); err != nil {
+		if _, err = nameNetwork(ctx, *controller, id, c.FormValue("name"), h.ztc, h.dc); err != nil {
 			return err
 		}
 

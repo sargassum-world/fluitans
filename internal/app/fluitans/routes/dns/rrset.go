@@ -26,6 +26,10 @@ func (h *Handlers) HandleRRsetPost() echo.HandlerFunc {
 				return err
 			}
 
+			// We don't return a Turbo Stream, because an RRset deletion changes the contents of the
+			// dns/domain.partial.tmpl and subdomain.partial.tmpl templates beyond the RRset partial
+			// itself, and then we'd have to render different Turbo Streams for each
+			// possible parent of the RRset partial. For now, it's not worth the complexity.
 			// Redirect user
 			return c.Redirect(http.StatusSeeOther, "/dns")
 		}

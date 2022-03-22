@@ -327,19 +327,19 @@ func (c *Client) CreateNetwork(
 func (c *Client) UpdateNetwork(
 	ctx context.Context, controller ztcontrollers.Controller, id string,
 	network zerotier.SetControllerNetworkJSONRequestBody,
-) error {
+) (*zerotier.ControllerNetwork, error) {
 	client, err := controller.NewClient()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	res, err := client.SetControllerNetworkWithResponse(ctx, id, network)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// TODO: this should only happen on a success HTTP status code
-	return c.Cache.SetNetworkByID(id, *res.JSON200)
+	return res.JSON200, c.Cache.SetNetworkByID(id, *res.JSON200)
 }
 
 func (c *Client) DeleteNetwork(

@@ -37,8 +37,8 @@ func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
 	ar.GET("/networks/:id", h.HandleNetworkGet())
 	er.POST("/networks/:id", h.HandleNetworkPost(), az)
 	er.POST("/networks/:id/name", h.HandleNetworkNamePost(), az)
-	er.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), az)
-	er.POST("/networks/:id/devices", h.HandleDevicesPost(), az)
-	er.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), az)
-	er.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), az)
+	ar.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), az)
+	ar.POST("/networks/:id/devices", h.HandleDevicesPost(), az)
+	ar.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), az)
+	ar.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), az)
 }
