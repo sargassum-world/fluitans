@@ -17,8 +17,7 @@ require (
 	github.com/gorilla/sessions v1.2.1
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/kevinpollet/nego v0.0.0-20211010160919-a65cd48cee43
-	github.com/labstack/echo/v4 v4.7.1
+	github.com/labstack/echo/v4 v4.7.2
 	github.com/labstack/gommon v0.3.1
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
