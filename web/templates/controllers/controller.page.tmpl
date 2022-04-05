@@ -15,7 +15,7 @@
 
     <section class="section content">
       <h1>Network Controller {{.Data.Controller.Name}}</h1>
-      <turbo-frame id="controller-{{.Data.Controller.Name}}-info">
+      <turbo-frame id="/controllers/{{.Data.Controller.Name}}/info">
         <div class="tags">
           {{if .Data.Status.Online}}
             <span class="tag is-success">Online</span>

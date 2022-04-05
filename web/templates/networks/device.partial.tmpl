@@ -4,7 +4,7 @@
 {{$networkDNS := (get . "NetworkDNS")}}
 {{$auth := (get . "Auth")}}
 
-<turbo-frame id="network-{{$network.Id}}-device-{{$zerotierMember.Address}}">
+<turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}">
   <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
       <h3 class="entity-name">

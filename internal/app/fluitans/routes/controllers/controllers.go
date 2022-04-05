@@ -6,7 +6,7 @@ import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 )
 
-func (h *Handlers) HandleControllersGet() auth.Handler {
+func (h *Handlers) HandleControllersGet() auth.HTTPHandlerFunc {
 	t := "controllers/controllers.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {

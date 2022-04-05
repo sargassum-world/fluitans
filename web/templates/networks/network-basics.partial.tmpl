@@ -3,7 +3,7 @@
 {{$domainName := (get . "DomainName")}}
 {{$auth := (get . "Auth")}}
 
-<turbo-frame id="network-{{$network.Id}}-basics">
+<turbo-frame id="/networks/{{$network.Id}}/basics">
   <h1>
     {{if eq 0 (len $network.Name)}}
       Unnamed Network

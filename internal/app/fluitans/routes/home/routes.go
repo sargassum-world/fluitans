@@ -20,11 +20,11 @@ func New(r godest.TemplateRenderer) *Handlers {
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
-	ar := auth.NewRouter(er, sc)
+	ar := auth.NewHTTPRouter(er, sc)
 	ar.GET("/", h.HandleHomeGet())
 }
 
-func (h *Handlers) HandleHomeGet() auth.Handler {
+func (h *Handlers) HandleHomeGet() auth.HTTPHandlerFunc {
 	t := "home/home.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {

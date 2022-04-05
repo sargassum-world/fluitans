@@ -1,5 +1,5 @@
 {{$network := (get . "Network")}}
-<turbo-frame id="network-{{$network.Id}}-advancedmisc">
+<turbo-frame id="/networks/{{$network.Id}}/advancedmisc">
   <h3>Miscellaneous</h3>
   <h4 class="is-size-6">Access Control</h4>
   {{if derefBool $network.Private}}

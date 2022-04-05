@@ -39,7 +39,7 @@ type LoginData struct {
 	ErrorMessages []string
 }
 
-func (h *Handlers) HandleLoginGet() auth.HandlerWithSession {
+func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 	t := "auth/login.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth, sess *sessions.Session) error {
@@ -161,6 +161,7 @@ func (h *Handlers) HandleSessionsPost() echo.HandlerFunc {
 			if err != nil {
 				return err
 			}
+			h.acc.Cancel(sess.ID)
 			session.Invalidate(sess)
 			if err := sess.Save(c.Request(), c.Response()); err != nil {
 				return err

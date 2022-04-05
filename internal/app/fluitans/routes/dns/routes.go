@@ -30,8 +30,8 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
-	ar := auth.NewRouter(er, sc)
-	az := auth.RequireAuthz(sc)
+	ar := auth.NewHTTPRouter(er, sc)
+	az := auth.RequireHTTPAuthz(sc)
 	ar.GET("/dns", h.HandleServerGet(), az)
 	er.POST("/dns/:subname/:type", h.HandleRRsetPost(), az)
 }

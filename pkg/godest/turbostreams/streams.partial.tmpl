@@ -1,0 +1,14 @@
+{{range $renderedStreamMessage := .}}
+  <turbo-stream
+    action="{{$renderedStreamMessage.Action}}"
+    {{if $renderedStreamMessage.Targets}}
+      targets="{{$renderedStreamMessage.Targets}}"
+    {{else}}
+      target="{{$renderedStreamMessage.Target}}"
+    {{end}}
+  >
+    <template>
+      {{$renderedStreamMessage.Rendered}}
+    </template>
+  </turbo-stream>
+{{end}}

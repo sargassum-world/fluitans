@@ -2,7 +2,7 @@
 {{$networks := get . "Networks"}}
 {{$auth := get . "Auth"}}
 
-<turbo-frame id="networks-{{$controller.Name}}-list">
+<turbo-frame id="/networks/{{$controller.Name}}/list">
   {{if $auth.Identity.Authenticated}}
     {{
       template "shared/networks/create-network.partial.tmpl" dict

@@ -2,7 +2,7 @@
 {{$auth := get . "Auth"}}
 {{$jsonPrintedRules := (get . "JSONPrintedRules")}}
 
-<turbo-frame id="network-{{$network.Id}}-rules">
+<turbo-frame id="/networks/{{$network.Id}}/rules">
   <h3>Traffic Rules</h3>
   <ol>
     <li>Inspect the packet,</li>

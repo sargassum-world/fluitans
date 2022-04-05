@@ -26,7 +26,7 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
-	ar := auth.NewRouter(er, sc)
+	ar := auth.NewHTTPRouter(er, sc)
 	ar.GET("/controllers", h.HandleControllersGet())
 	ar.GET("/controllers/:name", h.HandleControllerGet())
 }

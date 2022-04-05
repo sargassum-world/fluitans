@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
@@ -13,7 +14,7 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
@@ -24,14 +25,14 @@ const devicesListPartial = "networks/devices-list.partial.tmpl"
 func replaceDevicesListStream(
 	ctx context.Context, controllerAddress, networkID string, a auth.Auth,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desec.Client,
-) (turbo.Stream, error) {
+) (turbostreams.Message, error) {
 	networkData, err := getNetworkData(ctx, controllerAddress, networkID, c, cc, dc)
 	if err != nil {
-		return turbo.Stream{}, err
+		return turbostreams.Message{}, err
 	}
-	return turbo.Stream{
-		Action:   turbo.StreamReplace,
-		Target:   "network-" + networkID + "-devices",
+	return turbostreams.Message{
+		Action:   turbostreams.ActionReplace,
+		Target:   "/networks/" + networkID + "/devices",
 		Template: devicesListPartial,
 		Data: map[string]interface{}{
 			"Members":    networkData.Members,
@@ -42,7 +43,63 @@ func replaceDevicesListStream(
 	}, nil
 }
 
-func (h *Handlers) HandleDevicesPost() auth.Handler {
+func (h *Handlers) HandleDevicesSub() auth.TSHandlerFunc {
+	return func(c turbostreams.Context, a auth.Auth) error {
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
+
+		// Run queries
+		ctx := c.Context()
+		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return err
+		}
+		network, err := h.ztc.GetNetwork(ctx, *controller, networkID)
+		if err != nil {
+			return err
+		}
+		if network == nil {
+			return errors.Errorf("network %s not found", networkID)
+		}
+
+		// Allow subscription
+		return nil
+	}
+}
+
+func (h *Handlers) HandleDevicesMsg() auth.TSHandlerFunc {
+	return func(c turbostreams.Context, a auth.Auth) error {
+		// TODO: render the data into the context
+		c.Write(c.Message())
+		return nil
+	}
+}
+
+func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
+	return func(c turbostreams.Context) error {
+		const pubInterval = 5 * time.Second
+		pubTicker := time.NewTicker(pubInterval)
+		for {
+			select {
+			case <-c.Context().Done():
+				return c.Context().Err()
+			case <-pubTicker.C:
+				if err := c.Context().Err(); err != nil {
+					// Context was also canceled, it should have priority
+					return err
+				}
+				const publishInterval = 5000
+				time.Sleep(publishInterval * time.Millisecond)
+				// TODO: instead broadcast the result of replaceDevicesListStream
+				message := fmt.Sprintf("hello, /networks/%s/devices!", c.Param("id"))
+				c.Broadcast(c.Topic(), message)
+			}
+		}
+	}
+}
+
+func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 	t := devicesListPartial
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -64,7 +121,7 @@ func (h *Handlers) HandleDevicesPost() auth.Handler {
 		}
 
 		// Render Turbo Stream if accepted
-		if turbo.StreamAccepted(c.Request().Header) {
+		if turbostreams.Accepted(c.Request().Header) {
 			// We send the entire devices list because the content of the devices list partial depends on
 			// whether there's at least one device in the network, and this is the simplest solution which
 			// handles all edge cases.
@@ -74,7 +131,7 @@ func (h *Handlers) HandleDevicesPost() auth.Handler {
 			if err != nil {
 				return err
 			}
-			return h.r.TurboStreams(c.Response(), replaceStream)
+			return h.r.TurboStream(c.Response(), replaceStream)
 		}
 
 		// Redirect user
@@ -102,7 +159,7 @@ func setMemberAuthorization(
 	return nil
 }
 
-func (h *Handlers) HandleDeviceAuthorizationPost() auth.Handler {
+func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 	t := devicesListPartial
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -125,7 +182,7 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.Handler {
 		}
 
 		// Render Turbo Stream if accepted
-		if turbo.StreamAccepted(c.Request().Header) {
+		if turbostreams.Accepted(c.Request().Header) {
 			// We send the entire devices list because we already have to look up roughly the same
 			// amount of data to give the device partial, and it's probably not worth the additional code
 			// complexity to try to only look up the data for this device in order to send a smaller
@@ -136,7 +193,7 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.Handler {
 			if err != nil {
 				return err
 			}
-			return h.r.TurboStreams(c.Response(), replaceStream)
+			return h.r.TurboStream(c.Response(), replaceStream)
 		}
 
 		// Redirect user
@@ -224,7 +281,7 @@ func unsetMemberName(
 	return nil
 }
 
-func (h *Handlers) HandleDeviceNamePost() auth.Handler {
+func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		networkID := c.Param("id")
@@ -256,7 +313,7 @@ func (h *Handlers) HandleDeviceNamePost() auth.Handler {
 		}
 
 		// Render Turbo Stream if accepted
-		if turbo.StreamAccepted(c.Request().Header) {
+		if turbostreams.Accepted(c.Request().Header) {
 			// We send the entire devices list because we already have to look up roughly the same
 			// amount of data to give the device partial, and it's probably not worth the additional code
 			// complexity to try to only look up the data for this device in order to send a smaller
@@ -267,7 +324,7 @@ func (h *Handlers) HandleDeviceNamePost() auth.Handler {
 			if err != nil {
 				return err
 			}
-			return h.r.TurboStreams(c.Response(), replaceStream)
+			return h.r.TurboStream(c.Response(), replaceStream)
 		}
 
 		// Redirect user

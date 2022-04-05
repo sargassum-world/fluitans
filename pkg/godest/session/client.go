@@ -1,9 +1,11 @@
 package session
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/csrf"
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
 	"github.com/quasoft/memstore"
@@ -12,7 +14,7 @@ import (
 type Client struct {
 	Config Config
 	// TODO: allow configuration to use sqlite for a persistent session store
-	Store sessions.Store
+	Store *memstore.MemStore
 }
 
 func NewMemStoreClient(c Config) *Client {
@@ -25,14 +27,28 @@ func NewMemStoreClient(c Config) *Client {
 	}
 }
 
-func (sc *Client) New(r *http.Request) (sess *sessions.Session, err error) {
-	sess, err = sc.Store.New(r, sc.Config.CookieName)
+func (sc *Client) New(r *http.Request) (*sessions.Session, error) {
+	sess, err := sc.Store.New(r, sc.Config.CookieName)
 	return sess, errors.Wrap(err, "couldn't make session")
 }
 
-func (sc *Client) Get(r *http.Request) (sess *sessions.Session, err error) {
-	sess, err = sc.Store.Get(r, sc.Config.CookieName)
-	return sess, errors.Wrap(err, "couldn't get session")
+func (sc *Client) Get(r *http.Request) (*sessions.Session, error) {
+	sess, err := sc.Store.Get(r, sc.Config.CookieName)
+	return sess, errors.Wrap(err, "couldn't get session from request")
+}
+
+func (sc *Client) Lookup(id string) (*sessions.Session, error) {
+	r, err := http.NewRequestWithContext(context.Background(), "GET", "/", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't generate HTTP request to get session")
+	}
+	encrypted, err := securecookie.EncodeMulti(sc.Config.CookieName, id, sc.Store.Codecs...)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't generate encoded HTTP cookie to get session")
+	}
+	r.AddCookie(sessions.NewCookie(sc.Config.CookieName, encrypted, &sc.Config.CookieOptions))
+	sess, err := sc.Store.Get(r, sc.Config.CookieName)
+	return sess, errors.Wrap(err, "couldn't get session without request")
 }
 
 func NewCSRFMiddleware(config Config, opts ...csrf.Option) func(http.Handler) http.Handler {

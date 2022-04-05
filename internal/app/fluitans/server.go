@@ -53,8 +53,10 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
 
-	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
 	s.Logger = e.Logger
+	s.Handlers = routes.New(
+		s.Renderer, s.Globals.ACCancellers, s.Globals.TSBroker, s.Globals.Clients, s.Logger,
+	)
 	return s, nil
 }
 
@@ -112,7 +114,7 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Clients.Sessions)
-	s.Handlers.Register(e, s.Embeds)
+	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
 }
 
 func (s *Server) RunBackgroundWorkers() {
@@ -131,6 +133,9 @@ func (s *Server) RunBackgroundWorkers() {
 	/*eg.Go(func() error {
 		return workers.TestWriteLimiter(s.Globals.Clients.Desec)
 	})*/
+	eg.Go(func() error {
+		return s.Globals.TSBroker.Serve()
+	})
 	if err := eg.Wait(); err != nil {
 		s.Logger.Error(err)
 	}

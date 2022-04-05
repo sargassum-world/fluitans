@@ -9,7 +9,6 @@ package godest
 
 import (
 	"bytes"
-	_ "embed"
 	"html/template"
 	"io"
 	"io/fs"
@@ -17,7 +16,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
 type RenderData struct {
@@ -60,9 +59,6 @@ func instantiateTemplates(
 	return templates, nil
 }
 
-//go:embed turbo-streams.tmpl
-var streamsTemplate string
-
 func instantiateTurboStreamsTemplate(
 	allTemplates *template.Template, turboStreamsTemplate string,
 ) (t *template.Template, err error) {
@@ -101,7 +97,9 @@ func NewTemplateRenderer(
 	if err != nil {
 		return TemplateRenderer{}, errors.Wrap(err, "couldn't instantiate partial templates")
 	}
-	tr.turboStreamsTemplate, err = instantiateTurboStreamsTemplate(tr.allTemplates, streamsTemplate)
+	tr.turboStreamsTemplate, err = instantiateTurboStreamsTemplate(
+		tr.allTemplates, turbostreams.Template,
+	)
 	if err != nil {
 		return TemplateRenderer{}, errors.Wrap(err, "couldn't instantiate Turbo Streams template")
 	}
@@ -205,21 +203,21 @@ func (tr TemplateRenderer) WritePartial(
 	return nil
 }
 
-type renderedStream struct {
-	Action   turbo.StreamAction
+type renderedStreamMessage struct {
+	Action   turbostreams.Action
 	Targets  string
 	Target   string
 	Rendered template.HTML
 }
 
-func (tr TemplateRenderer) WriteTurboStreams(w io.Writer, streams ...turbo.Stream) error {
-	renderedStreams := make([]renderedStream, len(streams))
-	for i, stream := range streams {
+func (tr TemplateRenderer) WriteTurboStream(w io.Writer, messages ...turbostreams.Message) error {
+	rendered := make([]renderedStreamMessage, len(messages))
+	for i, stream := range messages {
 		buf := new(bytes.Buffer)
 		if err := tr.WritePartial(buf, stream.Template, stream.Data); err != nil {
 			return errors.Wrapf(err, "couldn't execute stream template %s", stream.Template)
 		}
-		renderedStreams[i] = renderedStream{
+		rendered[i] = renderedStreamMessage{
 			Action:  stream.Action,
 			Targets: stream.Targets,
 			Target:  stream.Target,
@@ -229,7 +227,7 @@ func (tr TemplateRenderer) WriteTurboStreams(w io.Writer, streams ...turbo.Strea
 	}
 
 	buf := new(bytes.Buffer)
-	if err := tr.turboStreamsTemplate.Execute(buf, renderedStreams); err != nil {
+	if err := tr.turboStreamsTemplate.Execute(buf, rendered); err != nil {
 		return errors.Wrap(err, "couldn't execute Turbo Streams template")
 	}
 
@@ -237,8 +235,10 @@ func (tr TemplateRenderer) WriteTurboStreams(w io.Writer, streams ...turbo.Strea
 	return werr
 }
 
-func (tr TemplateRenderer) TurboStreams(w http.ResponseWriter, streams ...turbo.Stream) error {
-	w.Header().Set("Content-Type", turbo.StreamContentType+"; charset=utf-8")
+func (tr TemplateRenderer) TurboStream(
+	w http.ResponseWriter, messages ...turbostreams.Message,
+) error {
+	w.Header().Set("Content-Type", turbostreams.ContentType+"; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	return tr.WriteTurboStreams(w, streams...)
+	return tr.WriteTurboStream(w, messages...)
 }

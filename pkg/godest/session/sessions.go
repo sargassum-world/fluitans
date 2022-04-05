@@ -14,7 +14,7 @@ func Regenerate(s *sessions.Session) {
 }
 
 func Invalidate(s *sessions.Session) {
-	s.Options.MaxAge = 0
+	s.Options.MaxAge = -1
 	s.Values = make(map[interface{}]interface{})
 }
 

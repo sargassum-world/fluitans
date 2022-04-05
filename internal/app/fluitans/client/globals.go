@@ -9,9 +9,11 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
 	"github.com/sargassum-world/fluitans/pkg/godest/authn"
 	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
 type Clients struct {
@@ -24,9 +26,11 @@ type Clients struct {
 }
 
 type Globals struct {
-	Config  conf.Config
-	Cache   clientcache.Cache
-	Clients *Clients
+	Config       conf.Config
+	Cache        clientcache.Cache
+	ACCancellers *actioncable.Cancellers
+	TSBroker     *turbostreams.Broker
+	Clients      *Clients
 }
 
 func NewGlobals(l godest.Logger) (g *Globals, err error) {
@@ -37,6 +41,8 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
+	g.ACCancellers = actioncable.NewCancellers()
+	g.TSBroker = turbostreams.NewBroker(l)
 	g.Clients = &Clients{}
 
 	authnConfig, err := authn.GetConfig()
