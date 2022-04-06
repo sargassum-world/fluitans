@@ -32,10 +32,10 @@ func (a Auth) RequireHTTPAuthz() error {
 	return echo.NewHTTPError(http.StatusNotFound, "unauthorized")
 }
 
-func RequireHTTPAuthz(sc *session.Client) echo.MiddlewareFunc {
+func RequireHTTPAuthz(ss session.Store) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			a, _, err := GetWithSession(c.Request(), sc, c.Logger())
+			a, _, err := GetWithSession(c.Request(), ss, c.Logger())
 			if err != nil {
 				return err
 			}
@@ -60,17 +60,17 @@ func (a Auth) RequireTSAuthz() error {
 	return errors.Errorf("user %s not authorized", a.Identity.User)
 }
 
-func RequireTSAuthz(sc *session.Client) turbostreams.MiddlewareFunc {
+func RequireTSAuthz(ss session.Store) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
 		return func(c turbostreams.Context) error {
-			sess, err := sc.Lookup(c.SessionID())
+			sess, err := ss.Lookup(c.SessionID())
 			if err != nil {
 				return errors.Errorf("couldn't lookup session to check authz on %s", c.Topic())
 			}
 			if sess == nil {
 				return errors.Errorf("unknown user not authorized on %s", c.Topic())
 			}
-			a, err := GetWithoutRequest(*sess, sc)
+			a, err := GetWithoutRequest(*sess, ss)
 			if err != nil {
 				return errors.Wrap(err, "couldn't lookup auth info for session")
 			}

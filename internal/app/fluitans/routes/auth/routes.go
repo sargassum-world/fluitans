@@ -13,22 +13,22 @@ type Handlers struct {
 	r   godest.TemplateRenderer
 	acc *actioncable.Cancellers
 	ac  *authn.Client
-	sc  *session.Client
+	ss  session.Store
 }
 
 func New(
-	r godest.TemplateRenderer, acc *actioncable.Cancellers, ac *authn.Client, sc *session.Client,
+	r godest.TemplateRenderer, acc *actioncable.Cancellers, ac *authn.Client, ss session.Store,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		acc: acc,
 		ac:  ac,
-		sc:  sc,
+		ss:  ss,
 	}
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
 	er.GET("/csrf", h.HandleCSRFGet())
-	er.GET("/login", auth.HandleHTTPWithSession(h.HandleLoginGet(), h.sc))
+	er.GET("/login", auth.HandleHTTPWithSession(h.HandleLoginGet(), h.ss))
 	er.POST("/sessions", h.HandleSessionsPost())
 }

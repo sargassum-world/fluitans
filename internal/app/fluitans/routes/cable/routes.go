@@ -17,20 +17,20 @@ type Handlers struct {
 	r   godest.TemplateRenderer
 	acc *actioncable.Cancellers
 	tsb *turbostreams.Broker
-	sc  *session.Client
+	ss  session.Store
 	l   godest.Logger
 	wsu websocket.Upgrader
 }
 
 func New(
 	r godest.TemplateRenderer, acc *actioncable.Cancellers, tsb *turbostreams.Broker,
-	sc *session.Client, l godest.Logger,
+	ss session.Store, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		acc: acc,
 		tsb: tsb,
-		sc:  sc,
+		ss:  ss,
 		l:   l,
 		wsu: websocket.Upgrader{
 			Subprotocols: actioncable.Subprotocols(),
@@ -40,5 +40,5 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter) {
-	er.GET("/cable", auth.HandleHTTPWithSession(h.HandleCableGet(), h.sc))
+	er.GET("/cable", auth.HandleHTTPWithSession(h.HandleCableGet(), h.ss))
 }

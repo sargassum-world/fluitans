@@ -11,42 +11,34 @@ import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/home"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/networks"
 	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
 type Handlers struct {
 	r       godest.TemplateRenderer
-	acc     *actioncable.Cancellers
-	tsb     *turbostreams.Broker
-	clients *client.Clients
-	logger  godest.Logger
+	globals *client.Globals
 }
 
-func New(
-	r godest.TemplateRenderer, acc *actioncable.Cancellers, tsb *turbostreams.Broker,
-	clients *client.Clients, logger godest.Logger,
-) *Handlers {
+func New(r godest.TemplateRenderer, globals *client.Globals) *Handlers {
 	return &Handlers{
 		r:       r,
-		acc:     acc,
-		tsb:     tsb,
-		clients: clients,
-		logger:  logger,
+		globals: globals,
 	}
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em godest.Embeds) {
+	acc := h.globals.ACCancellers
+	ss := h.globals.Sessions
+	ztcc := h.globals.ZTControllers
+	ztc := h.globals.Zerotier
+	dc := h.globals.Desec
+
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
-	cable.New(h.r, h.acc, h.tsb, h.clients.Sessions, h.logger).Register(er)
-	home.New(h.r).Register(er, h.clients.Sessions)
-	auth.New(h.r, h.acc, h.clients.Authn, h.clients.Sessions).Register(er)
-	controllers.New(h.r, h.clients.ZTControllers, h.clients.Zerotier).Register(er, h.clients.Sessions)
-	networks.New(
-		h.r, h.clients.Desec, h.clients.Zerotier, h.clients.ZTControllers,
-	).Register(er, tsr, h.clients.Sessions)
-	dns.New(
-		h.r, h.clients.Desec, h.clients.Zerotier, h.clients.ZTControllers,
-	).Register(er, h.clients.Sessions)
+	cable.New(h.r, acc, h.globals.TSBroker, ss, h.globals.Logger).Register(er)
+	home.New(h.r).Register(er, ss)
+	auth.New(h.r, acc, h.globals.Authn, ss).Register(er)
+	controllers.New(h.r, ztcc, ztc).Register(er, ss)
+	networks.New(h.r, dc, ztc, ztcc).Register(er, tsr, ss)
+	dns.New(h.r, dc, ztc, ztcc).Register(er, ss)
 }

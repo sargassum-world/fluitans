@@ -22,7 +22,6 @@ import (
 	imw "github.com/sargassum-world/fluitans/internal/middleware"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/web"
 )
 
@@ -32,7 +31,6 @@ type Server struct {
 	Renderer godest.TemplateRenderer
 	Globals  *client.Globals
 	Handlers *routes.Handlers
-	Logger   godest.Logger
 }
 
 func NewServer(e *echo.Echo) (s *Server, err error) {
@@ -53,10 +51,7 @@ func NewServer(e *echo.Echo) (s *Server, err error) {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
 
-	s.Logger = e.Logger
-	s.Handlers = routes.New(
-		s.Renderer, s.Globals.ACCancellers, s.Globals.TSBroker, s.Globals.Clients, s.Logger,
-	)
+	s.Handlers = routes.New(s.Renderer, s.Globals)
 	return s, nil
 }
 
@@ -105,38 +100,37 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Other Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(echo.WrapMiddleware(session.NewCSRFMiddleware(
-		s.Globals.Clients.Sessions.Config,
-		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Clients.Sessions)),
+	e.Use(echo.WrapMiddleware(s.Globals.Sessions.NewCSRFMiddleware(
+		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Sessions)),
 	)))
 	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 
 	// Handlers
-	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Clients.Sessions)
+	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
 }
 
 func (s *Server) RunBackgroundWorkers() {
 	eg, _ := errgroup.WithContext(context.Background())
 	eg.Go(func() error {
-		return workers.PrescanZerotierControllers(s.Globals.Clients.ZTControllers)
+		return workers.PrescanZerotierControllers(s.Globals.ZTControllers)
 	})
 	eg.Go(func() error {
 		return workers.PrefetchZerotierNetworks(
-			s.Globals.Clients.Zerotier, s.Globals.Clients.ZTControllers,
+			s.Globals.Zerotier, s.Globals.ZTControllers,
 		)
 	})
 	eg.Go(func() error {
-		return workers.PrefetchDNSRecords(s.Globals.Clients.Desec)
+		return workers.PrefetchDNSRecords(s.Globals.Desec)
 	})
 	/*eg.Go(func() error {
-		return workers.TestWriteLimiter(s.Globals.Clients.Desec)
+		return workers.TestWriteLimiter(s.Globals.Desec)
 	})*/
 	eg.Go(func() error {
 		return s.Globals.TSBroker.Serve()
 	})
 	if err := eg.Wait(); err != nil {
-		s.Logger.Error(err)
+		s.Globals.Logger.Error(err)
 	}
 }

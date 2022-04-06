@@ -29,9 +29,9 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, sc *session.Client) {
-	ar := auth.NewHTTPRouter(er, sc)
-	az := auth.RequireHTTPAuthz(sc)
+func (h *Handlers) Register(er godest.EchoRouter, ss session.Store) {
+	ar := auth.NewHTTPRouter(er, ss)
+	az := auth.RequireHTTPAuthz(ss)
 	ar.GET("/dns", h.HandleServerGet(), az)
 	er.POST("/dns/:subname/:type", h.HandleRRsetPost(), az)
 }

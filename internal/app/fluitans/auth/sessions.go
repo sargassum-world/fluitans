@@ -10,13 +10,13 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
-func GetWithoutRequest(s sessions.Session, sc *session.Client) (a Auth, err error) {
+func GetWithoutRequest(s sessions.Session, ss session.Store) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
 		return Auth{}, err
 	}
 
-	a.CSRF.Config = sc.Config.CSRFOptions
+	a.CSRF.Config = ss.CSRFOptions()
 	a.CSRF.Behavior, err = GetCSRFBehavior(s)
 	if err != nil {
 		return Auth{}, err
@@ -28,12 +28,12 @@ func GetWithoutRequest(s sessions.Session, sc *session.Client) (a Auth, err erro
 
 // HTTP
 
-func Get(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
-	return GetFromRequest(r, s, sc)
+func Get(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
+	return GetFromRequest(r, s, ss)
 }
 
-func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a Auth, err error) {
-	a, err = GetWithoutRequest(s, sc)
+func GetFromRequest(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
+	a, err = GetWithoutRequest(s, ss)
 	if err != nil {
 		return Auth{}, err
 	}
@@ -45,18 +45,18 @@ func GetFromRequest(r *http.Request, s sessions.Session, sc *session.Client) (a 
 }
 
 func GetWithSession(
-	r *http.Request, sc *session.Client, l godest.Logger,
+	r *http.Request, ss session.Store, l godest.Logger,
 ) (a Auth, s *sessions.Session, err error) {
-	s, err = sc.Get(r)
+	s, err = ss.Get(r)
 	if err != nil {
 		// If the user doesn't have a valid session, create one
-		if s, err = sc.New(r); err != nil {
+		if s, err = ss.New(r); err != nil {
 			// When an error is returned, a new (valid) session is still created
 			l.Warnf("created new session to replace invalid session")
 		}
 		// We let the caller save the new session
 	}
-	a, err = Get(r, *s, sc)
+	a, err = Get(r, *s, ss)
 	if err != nil {
 		return Auth{}, s, err
 	}

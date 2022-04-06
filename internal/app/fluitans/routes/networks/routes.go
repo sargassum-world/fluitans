@@ -30,11 +30,11 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, sc *session.Client) {
-	ahr := auth.NewHTTPRouter(er, sc)
-	atsr := auth.NewTSRouter(tsr, sc)
-	ahz := auth.RequireHTTPAuthz(sc)
-	atsz := auth.RequireTSAuthz(sc)
+func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
+	ahr := auth.NewHTTPRouter(er, ss)
+	atsr := auth.NewTSRouter(tsr, ss)
+	ahz := auth.RequireHTTPAuthz(ss)
+	atsz := auth.RequireTSAuthz(ss)
 	ahr.GET("/networks", h.HandleNetworksGet())
 	er.POST("/networks", h.HandleNetworksPost(), ahz)
 	ahr.GET("/networks/:id", h.HandleNetworkGet())
