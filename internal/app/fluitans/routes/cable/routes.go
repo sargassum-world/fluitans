@@ -14,21 +14,27 @@ import (
 )
 
 type Handlers struct {
-	r   godest.TemplateRenderer
+	r godest.TemplateRenderer
+
+	ss session.Store
+
 	acc *actioncable.Cancellers
+	tss turbostreams.Signer
 	tsb *turbostreams.Broker
-	ss  session.Store
-	l   godest.Logger
+
+	l godest.Logger
+
 	wsu websocket.Upgrader
 }
 
 func New(
-	r godest.TemplateRenderer, acc *actioncable.Cancellers, tsb *turbostreams.Broker,
-	ss session.Store, l godest.Logger,
+	r godest.TemplateRenderer, ss session.Store,
+	acc *actioncable.Cancellers, tss turbostreams.Signer, tsb *turbostreams.Broker, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		acc: acc,
+		tss: tss,
 		tsb: tsb,
 		ss:  ss,
 		l:   l,

@@ -1,12 +1,9 @@
 package session
 
 import (
-	"encoding/base64"
-	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 	"github.com/pkg/errors"
 
@@ -35,7 +32,8 @@ type Config struct {
 }
 
 func GetConfig() (c Config, err error) {
-	c.AuthKey, err = getAuthKey()
+	const authKeySize = 32
+	c.AuthKey, err = env.GetKey(envPrefix+"AUTH_KEY", authKeySize)
 	if err != nil {
 		return Config{}, errors.Wrap(err, "couldn't make session key config")
 	}
@@ -60,24 +58,6 @@ func GetConfig() (c Config, err error) {
 
 	c.CSRFOptions = getCSRFOptions()
 	return c, nil
-}
-
-func getAuthKey() (authKey []byte, err error) {
-	authKey, err = env.GetBase64(envPrefix + "AUTH_KEY")
-	if err != nil {
-		return nil, err
-	}
-
-	if authKey == nil {
-		authKeySize := 32
-		authKey = securecookie.GenerateRandomKey(authKeySize)
-		// TODO: print to the logger instead?
-		fmt.Printf(
-			"Record this key for future use as %sAUTH_KEY: %s\n",
-			envPrefix, base64.StdEncoding.EncodeToString(authKey),
-		)
-	}
-	return authKey, nil
 }
 
 func getTimeouts() (t Timeouts, err error) {

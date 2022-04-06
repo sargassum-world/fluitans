@@ -23,7 +23,7 @@ func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {
 
 		acc := actioncable.Upgrade(wsc, actioncable.WithChannels(
 			map[string]actioncable.ChannelFactory{
-				turbostreams.ChannelName: h.tsb.ChannelFactory(sess.ID),
+				turbostreams.ChannelName: h.tsb.ChannelFactory(sess.ID, h.tss),
 			},
 			make(map[string]actioncable.Channel),
 		))

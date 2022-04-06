@@ -17,20 +17,21 @@ import (
 )
 
 type Globals struct {
-	Config        conf.Config
-	Cache         clientcache.Cache
+	Config conf.Config
+	Cache  clientcache.Cache
 
-	Sessions      session.Store
-	Authn         *authn.Client
+	Sessions session.Store
+	Authn    *authn.Client
 
-	ACCancellers  *actioncable.Cancellers
-	TSBroker      *turbostreams.Broker
+	ACCancellers *actioncable.Cancellers
+	TSSigner     turbostreams.Signer
+	TSBroker     *turbostreams.Broker
 
 	Desec         *desec.Client
 	Zerotier      *zerotier.Client
 	ZTControllers *ztcontrollers.Client
 
-	Logger        godest.Logger
+	Logger godest.Logger
 }
 
 func NewGlobals(l godest.Logger) (g *Globals, err error) {
@@ -54,6 +55,11 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	g.Authn = authn.NewClient(authnConfig)
 
 	g.ACCancellers = actioncable.NewCancellers()
+	tssConfig, err := turbostreams.GetSignerConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up turbo streams signer config")
+	}
+	g.TSSigner = turbostreams.NewSigner(tssConfig)
 	g.TSBroker = turbostreams.NewBroker(l)
 
 	desecConfig, err := desec.GetConfig(g.Config.DomainName)

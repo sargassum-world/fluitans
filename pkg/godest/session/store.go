@@ -23,7 +23,7 @@ type Store interface {
 
 type MemStore struct {
 	Config Config
-	Store *memstore.MemStore
+	Store  *memstore.MemStore
 }
 
 func NewMemStore(c Config) *MemStore {

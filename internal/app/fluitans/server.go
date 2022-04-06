@@ -26,29 +26,30 @@ import (
 )
 
 type Server struct {
+	Globals  *client.Globals
 	Embeds   godest.Embeds
 	Inlines  godest.Inlines
 	Renderer godest.TemplateRenderer
-	Globals  *client.Globals
 	Handlers *routes.Handlers
 }
 
 func NewServer(e *echo.Echo) (s *Server, err error) {
 	s = &Server{}
+	s.Globals, err = client.NewGlobals(e.Logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't make app globals")
+	}
+
 	s.Embeds = web.NewEmbeds()
 	s.Inlines = web.NewInlines()
 	s.Renderer, err = godest.NewTemplateRenderer(
 		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
+			s.Globals.TSSigner.Sign,
 		),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't make template renderer")
-	}
-
-	s.Globals, err = client.NewGlobals(e.Logger)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
 
 	s.Handlers = routes.New(s.Renderer, s.Globals)

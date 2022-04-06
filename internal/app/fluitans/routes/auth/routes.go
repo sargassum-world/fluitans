@@ -10,20 +10,22 @@ import (
 )
 
 type Handlers struct {
-	r   godest.TemplateRenderer
+	r godest.TemplateRenderer
+
+	ss session.Store
+
 	acc *actioncable.Cancellers
 	ac  *authn.Client
-	ss  session.Store
 }
 
 func New(
-	r godest.TemplateRenderer, acc *actioncable.Cancellers, ac *authn.Client, ss session.Store,
+	r godest.TemplateRenderer, ss session.Store, acc *actioncable.Cancellers, ac *authn.Client,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
+		ss:  ss,
 		acc: acc,
 		ac:  ac,
-		ss:  ss,
 	}
 }
 

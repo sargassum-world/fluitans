@@ -2,7 +2,10 @@
 package env
 
 import (
+	"crypto/rand"
 	"encoding/base64"
+	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strconv"
@@ -129,4 +132,43 @@ func GetURLOrigin(varName, defaultValue, defaultScheme string) (*url.URL, error)
 	url.Fragment = ""
 
 	return url, nil
+}
+
+// GenerateRandomKey creates a random key with the given length in bytes.
+// On failure, returns nil.
+//
+// Note that keys created using `GenerateRandomKey()` are not automatically
+// persisted. New keys will be created when the application is restarted, and
+// previously issued cookies will not be able to be decoded.
+//
+// Callers should explicitly check for the possibility of a nil return, treat
+// it as a failure of the system random number generator, and not continue.
+func GenerateRandomKey(length int) []byte {
+	// Note: copied from github.com/gorilla/securecookie
+	k := make([]byte, length)
+	if _, err := io.ReadFull(rand.Reader, k); err != nil {
+		return nil
+	}
+	return k
+}
+
+func GetKey(varName string, length int) ([]byte, error) {
+	key, err := GetBase64(varName)
+	if err != nil {
+		return nil, err
+	}
+
+	if key == nil {
+		hashKeySize := 32
+		key = GenerateRandomKey(hashKeySize)
+		if key == nil {
+			return nil, errors.New("unable to generate a random key")
+		}
+		// TODO: print to the logger instead?
+		fmt.Printf(
+			"Record this key for future use as %s: %s\n",
+			varName, base64.StdEncoding.EncodeToString(key),
+		)
+	}
+	return key, nil
 }

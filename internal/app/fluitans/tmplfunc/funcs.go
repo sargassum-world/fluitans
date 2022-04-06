@@ -6,7 +6,9 @@ import (
 	"net/url"
 )
 
-func FuncMap(h HashedNamers) template.FuncMap {
+type TurboStreamSigner func(streamName string) (signed string, err error)
+
+func FuncMap(h HashedNamers, tss TurboStreamSigner) template.FuncMap {
 	return template.FuncMap{
 		"queryEscape":            url.QueryEscape,
 		"identifyNetwork":        IdentifyNetwork,
@@ -21,5 +23,6 @@ func FuncMap(h HashedNamers) template.FuncMap {
 		"exemplifyDNSRecordType": ExemplifyDNSRecordType,
 		"appHashed":              h.AppHashed,
 		"staticHashed":           h.StaticHashed,
+		"turboStreamSigned":      tss,
 	}
 }

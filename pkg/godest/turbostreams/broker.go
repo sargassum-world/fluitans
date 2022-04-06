@@ -95,8 +95,8 @@ func (b *Broker) MSG(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 	return b.Add(MethodMsg, topic, h, m...)
 }
 
-func (b *Broker) ChannelFactory(sessionID string) actioncable.ChannelFactory {
-	return ChannelFactory(b.hub, b.handleSubscribe(sessionID), b.handleMessage(sessionID))
+func (b *Broker) ChannelFactory(sessionID string, signer Signer) actioncable.ChannelFactory {
+	return signer.ChannelFactory(b.hub, b.handleSubscribe(sessionID), b.handleMessage(sessionID))
 }
 
 func (b *Broker) newPubContext(topic string) (*context, func()) {
