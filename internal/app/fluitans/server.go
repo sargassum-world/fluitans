@@ -19,7 +19,6 @@ import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/assets"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/tmplfunc"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/workers"
-	imw "github.com/sargassum-world/fluitans/internal/middleware"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
 	"github.com/sargassum-world/fluitans/web"
@@ -104,7 +103,7 @@ func (s *Server) Register(e *echo.Echo) {
 	e.Use(echo.WrapMiddleware(s.Globals.Sessions.NewCSRFMiddleware(
 		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Sessions)),
 	)))
-	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))
+	e.Use(gmw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 
 	// Handlers

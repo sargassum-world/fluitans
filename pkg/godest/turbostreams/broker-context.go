@@ -1,9 +1,9 @@
 package turbostreams
 
 import (
+	"bytes"
 	stdContext "context"
-
-	"github.com/sargassum-world/fluitans/pkg/godest/pubsub"
+	"io"
 )
 
 type Context interface {
@@ -11,11 +11,10 @@ type Context interface {
 	Topic() string
 	SessionID() string
 	Param(name string) string
-	Broadcast(topic, message string)
-	// TODO: rename to Data, return an interface{}
-	Message() string
-	// TODO: replace this with a Message method
-	Write(message string)
+	Hub() *MessagesHub
+	Publish(messages ...Message)
+	Published() []Message
+	MsgWriter() io.Writer
 }
 
 type context struct {
@@ -24,10 +23,11 @@ type context struct {
 	pnames    []string
 	pvalues   []string
 	handler   HandlerFunc
-	hub       *pubsub.StringHub
+	hub       *MessagesHub
 	topic     string
 	sessionID string
-	message   string
+	messages  []Message
+	rendered  *bytes.Buffer
 }
 
 func (c *context) Context() stdContext.Context {
@@ -54,14 +54,18 @@ func (c *context) Param(name string) string {
 	return ""
 }
 
-func (c *context) Broadcast(topic, message string) {
-	c.hub.Broadcast(topic, message)
+func (c *context) Hub() *MessagesHub {
+	return c.hub
 }
 
-func (c *context) Message() string {
-	return c.message
+func (c *context) Publish(messages ...Message) {
+	c.hub.Broadcast(c.topic, messages...)
 }
 
-func (c *context) Write(message string) {
-	c.message = message
+func (c *context) Published() []Message {
+	return c.messages
+}
+
+func (c *context) MsgWriter() io.Writer {
+	return c.rendered
 }

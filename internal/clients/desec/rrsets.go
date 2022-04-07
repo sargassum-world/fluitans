@@ -42,7 +42,7 @@ func FilterAndSortRRsets(rrsets []desec.RRset, recordTypes []string) []desec.RRs
 func (c *Client) getRRsetsFromCache() map[string][]desec.RRset {
 	domainName := c.Config.DomainName
 	subnames, err := c.Cache.GetSubnames(domainName)
-	if err != nil {
+	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
 		// Log the error but return as a cache miss so we can manually query the RRsets
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for the RRsets for %s", domainName,
@@ -126,7 +126,7 @@ func (c *Client) GetRRsets(ctx context.Context) (map[string][]desec.RRset, error
 func (c *Client) getSubnameRRsetsFromCache(subname string) []desec.RRset {
 	domainName := c.Config.DomainName
 	rrsets, err := c.Cache.GetRRsetsByName(domainName, subname)
-	if err != nil {
+	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
 		// Log the error but return as a cache miss so we can manually query the RRsets
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for one of the RRsets for %s.%s", subname, domainName,
@@ -184,7 +184,7 @@ func (c *Client) GetSubnameRRsets(ctx context.Context, subname string) ([]desec.
 func (c *Client) getRRsetFromCache(subname, recordType string) (*desec.RRset, bool) {
 	domainName := c.Config.DomainName
 	rrset, cacheHit, err := c.Cache.GetRRsetByNameAndType(domainName, subname, recordType)
-	if err != nil {
+	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
 		// Log the error but return as a cache miss so we can manually query the RRsets
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for the %s RRsets for %s.%s",

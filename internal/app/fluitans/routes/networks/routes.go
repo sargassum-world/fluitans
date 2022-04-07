@@ -3,6 +3,7 @@ package networks
 
 import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/rendering"
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
@@ -31,20 +32,19 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
-	ahr := auth.NewHTTPRouter(er, ss)
-	atsr := auth.NewTSRouter(tsr, ss)
-	ahz := auth.RequireHTTPAuthz(ss)
+	hr := auth.NewHTTPRouter(er, ss)
+	haz := auth.RequireHTTPAuthz(ss)
 	atsz := auth.RequireTSAuthz(ss)
-	ahr.GET("/networks", h.HandleNetworksGet())
-	er.POST("/networks", h.HandleNetworksPost(), ahz)
-	ahr.GET("/networks/:id", h.HandleNetworkGet())
-	er.POST("/networks/:id", h.HandleNetworkPost(), ahz)
-	er.POST("/networks/:id/name", h.HandleNetworkNamePost(), ahz)
-	ahr.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), ahz)
-	ahr.POST("/networks/:id/devices", h.HandleDevicesPost(), ahz)
-	atsr.SUB("/networks/:id/devices", h.HandleDevicesSub(), atsz)
-	atsr.MSG("/networks/:id/devices", h.HandleDevicesMsg(), atsz)
+	hr.GET("/networks", h.HandleNetworksGet())
+	er.POST("/networks", h.HandleNetworksPost(), haz)
+	hr.GET("/networks/:id", h.HandleNetworkGet())
+	er.POST("/networks/:id", h.HandleNetworkPost(), haz)
+	er.POST("/networks/:id/name", h.HandleNetworkNamePost(), haz)
+	hr.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), haz)
+	hr.POST("/networks/:id/devices", h.HandleDevicesPost(), haz)
+	tsr.SUB("/networks/:id/devices", h.HandleDevicesSub(), atsz)
 	tsr.PUB("/networks/:id/devices", h.HandleDevicesPub())
-	ahr.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), ahz)
-	ahr.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), ahz)
+	tsr.MSG("/networks/:id/devices", rendering.HandleTSMsg(h.r, ss), atsz)
+	hr.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), haz)
+	hr.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), haz)
 }

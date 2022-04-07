@@ -18,6 +18,46 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
+// Device Membership Comparison
+
+type StringSet map[string]bool
+
+func NewStringSet(strings []string) StringSet {
+	set := make(map[string]bool)
+	for _, s := range strings {
+		set[s] = true
+	}
+	return set
+}
+
+func (ss StringSet) Contains(set StringSet) bool {
+	if ss == nil || set == nil {
+		return false
+	}
+	if len(set) > len(ss) {
+		return false
+	}
+
+	for s := range set {
+		if _, ok := ss[s]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (ss StringSet) Equals(set StringSet) bool {
+	if ss == nil || set == nil {
+		return false
+	}
+	if len(set) != len(ss) {
+		return false
+	}
+
+	// This might not be the most efficient algorithm, but it's fine for now
+	return ss.Contains(set) && set.Contains(ss)
+}
+
 // Authorization
 
 const devicesListPartial = "networks/devices-list.partial.tmpl"
@@ -43,8 +83,8 @@ func replaceDevicesListStream(
 	}, nil
 }
 
-func (h *Handlers) HandleDevicesSub() auth.TSHandlerFunc {
-	return func(c turbostreams.Context, a auth.Auth) error {
+func (h *Handlers) HandleDevicesSub() turbostreams.HandlerFunc {
+	return func(c turbostreams.Context) error {
 		// Parse params
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
@@ -68,18 +108,30 @@ func (h *Handlers) HandleDevicesSub() auth.TSHandlerFunc {
 	}
 }
 
-func (h *Handlers) HandleDevicesMsg() auth.TSHandlerFunc {
-	return func(c turbostreams.Context, a auth.Auth) error {
-		// TODO: render the data into the context
-		c.Write(c.Message())
-		return nil
+func checkDevicesList(
+	ctx context.Context, controllerAddress, networkID string, prevDevices StringSet,
+	c *ztc.Client, cc *ztcontrollers.Client,
+) (changed bool, updatedDevices StringSet, err error) {
+	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
+	if err != nil {
+		return false, prevDevices, err
 	}
+	addresses, err := c.GetNetworkMemberAddresses(ctx, *controller, networkID)
+	if err != nil {
+		return false, prevDevices, err
+	}
+	updatedDevices = NewStringSet(addresses)
+	if updatedDevices.Equals(prevDevices) {
+		return false, prevDevices, nil
+	}
+	return true, updatedDevices, nil
 }
 
 func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 	return func(c turbostreams.Context) error {
-		const pubInterval = 5 * time.Second
+		const pubInterval = 2 * time.Second
 		pubTicker := time.NewTicker(pubInterval)
+		var prevDevices StringSet
 		for {
 			select {
 			case <-c.Context().Done():
@@ -89,11 +141,31 @@ func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 					// Context was also canceled, it should have priority
 					return err
 				}
-				const publishInterval = 5000
-				time.Sleep(publishInterval * time.Millisecond)
-				// TODO: instead broadcast the result of replaceDevicesListStream
-				message := fmt.Sprintf("hello, /networks/%s/devices!", c.Param("id"))
-				c.Broadcast(c.Topic(), message)
+
+				// Parse params
+				networkID := c.Param("id")
+				controllerAddress := ztc.GetControllerAddress(networkID)
+
+				// Run queries
+				changed, devices, err := checkDevicesList(
+					c.Context(), controllerAddress, networkID, prevDevices, h.ztc, h.ztcc,
+				)
+				if err != nil {
+					return err
+				}
+				if !changed {
+					break
+				}
+				prevDevices = devices
+				message, err := replaceDevicesListStream(
+					c.Context(), controllerAddress, networkID, auth.Auth{}, h.ztc, h.ztcc, h.dc,
+				)
+				if err != nil {
+					return err
+				}
+
+				// Produce output
+				c.Publish(message)
 			}
 		}
 	}

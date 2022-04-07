@@ -10,7 +10,6 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 
 	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/pubsub"
 )
 
 type Signer struct {
@@ -24,8 +23,7 @@ func NewSigner(config SignerConfig) Signer {
 }
 
 func (s Signer) NewChannel(
-	identifier string, h *pubsub.StringHub,
-	handleSubscribe SubscribeHandler, handleMessage MessageHandler,
+	identifier string, h *MessagesHub, handleSub SubHandler, handleMsg MsgHandler,
 ) (*Channel, error) {
 	name, err := s.parseIdentifier(identifier)
 	if err != nil {
@@ -35,19 +33,19 @@ func (s Signer) NewChannel(
 		return nil, errors.Errorf("signed stream name %s failed HMAC check", name.Name)
 	}
 	return &Channel{
-		identifier:      identifier,
-		name:            name,
-		h:               h,
-		handleSubscribe: handleSubscribe,
-		handleMessage:   handleMessage,
+		identifier: identifier,
+		name:       name,
+		h:          h,
+		handleSub:  handleSub,
+		handleMsg:  handleMsg,
 	}, nil
 }
 
 func (s Signer) ChannelFactory(
-	h *pubsub.StringHub, handleSubscribe SubscribeHandler, handleMessage MessageHandler,
+	h *MessagesHub, handleSub SubHandler, handleMsg MsgHandler,
 ) actioncable.ChannelFactory {
 	return func(identifier string) (actioncable.Channel, error) {
-		return s.NewChannel(identifier, h, handleSubscribe, handleMessage)
+		return s.NewChannel(identifier, h, handleSub, handleMsg)
 	}
 }
 
@@ -81,6 +79,7 @@ func (s Signer) hash(streamName string) []byte {
 	h.Write([]byte(streamName))
 	return h.Sum(nil)
 }
+
 func (s Signer) Sign(streamName string) (signed string, err error) {
 	signedRaw, err := msgpack.Marshal(signedName{
 		Name: streamName,
@@ -91,4 +90,3 @@ func (s Signer) Sign(streamName string) (signed string, err error) {
 	}
 	return base64.StdEncoding.EncodeToString(signedRaw), nil
 }
-

@@ -4,10 +4,6 @@
 {{$auth := (get . "Auth")}}
 
 <turbo-frame id="/networks/{{$network.Id}}/devices">
-  {{
-    template "shared/turbo-cable-stream-source.partial.tmpl"
-    (print "/networks/" (derefString $network.Id "") "/devices")
-  }}
   {{range $member := $members}}
     {{
       template "networks/device.partial.tmpl" dict
