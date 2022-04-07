@@ -84,9 +84,9 @@ func filterNormalClose(underlying error, wrapped error) error {
 // Connection
 
 type (
-	SubscriptionHandler   func(sub Subscription) (unsubscriber func(), err error)
-	ActionHandler         func(identifier, data string) error
-	ErrorMessageSanitizer func(err error) string
+	SubscriptionHandler func(ctx context.Context, sub Subscription) (unsubscriber func(), err error)
+	ActionHandler       func(ctx context.Context, identifier, data string) error
+	ErrorSanitizer      func(err error) string
 )
 
 type Conn struct {
@@ -95,7 +95,7 @@ type Conn struct {
 	sh            SubscriptionHandler
 	ah            ActionHandler
 	unsubscribers map[string]func()
-	sanitizeError ErrorMessageSanitizer
+	sanitizeError ErrorSanitizer
 	disconnector  *sync.Once
 }
 
@@ -113,7 +113,7 @@ func WithActionHandler(h ActionHandler) ConnOption {
 	}
 }
 
-func WithErrorMessageSanitizer(f ErrorMessageSanitizer) ConnOption {
+func WithErrorSanitizer(f ErrorSanitizer) ConnOption {
 	return func(conn *Conn) {
 		conn.sanitizeError = f
 	}
@@ -135,10 +135,10 @@ func Upgrade(wsc *websocket.Conn, opts ...ConnOption) (conn *Conn) {
 	conn = &Conn{
 		wsc:      wsc,
 		toClient: make(chan serverMessage),
-		sh: func(_ Subscription) (func(), error) {
+		sh: func(ctx context.Context, _ Subscription) (func(), error) {
 			return nil, errors.New("No subscription handler registered")
 		},
-		ah: func(_, _ string) error {
+		ah: func(ctx context.Context, _, _ string) error {
 			return errors.New("No action handler registered")
 		},
 		sanitizeError: defaultErrorSanitizer,
@@ -192,34 +192,13 @@ const (
 	actionCommand      = "message"
 )
 
-func (c *Conn) receive(command clientMessage) error {
-	switch command.Command {
-	default:
-		return errors.Errorf("unknown command %s", command.Command)
-	case subscribeCommand:
-		return c.subscribe(command.Identifier)
-	case unsubscribeCommand:
-		unsubscriber, ok := c.unsubscribers[command.Identifier]
-		if !ok || unsubscriber == nil {
-			return nil
-		}
-		unsubscriber()
-		delete(c.unsubscribers, command.Identifier)
-	case actionCommand:
-		if err := c.ah(command.Identifier, command.Data); err != nil {
-			return errors.Wrap(err, "action command handler encountered error")
-		}
-	}
-	return nil
-}
-
-func (c *Conn) subscribe(identifier string) error {
+func (c *Conn) subscribe(ctx context.Context, identifier string) error {
 	if _, ok := c.unsubscribers[identifier]; ok {
 		c.toClient <- newSubscriptionConfirmation(identifier)
 		return nil
 	}
 
-	unsubscriber, err := c.sh(Subscription{
+	unsubscriber, err := c.sh(ctx, Subscription{
 		identifier: identifier,
 		toClient:   c.toClient,
 	})
@@ -233,6 +212,27 @@ func (c *Conn) subscribe(identifier string) error {
 	}
 	c.unsubscribers[identifier] = unsubscriber
 	c.toClient <- newSubscriptionConfirmation(identifier)
+	return nil
+}
+
+func (c *Conn) receive(ctx context.Context, command clientMessage) error {
+	switch command.Command {
+	default:
+		return errors.Errorf("unknown command %s", command.Command)
+	case subscribeCommand:
+		return c.subscribe(ctx, command.Identifier)
+	case unsubscribeCommand:
+		unsubscriber, ok := c.unsubscribers[command.Identifier]
+		if !ok || unsubscriber == nil {
+			return nil
+		}
+		unsubscriber()
+		delete(c.unsubscribers, command.Identifier)
+	case actionCommand:
+		if err := c.ah(ctx, command.Identifier, command.Data); err != nil {
+			return errors.Wrap(err, "action command handler encountered error")
+		}
+	}
 	return nil
 }
 
@@ -256,7 +256,10 @@ func (c *Conn) receiveAll(ctx context.Context) (err error) {
 			if err != nil {
 				return filterNormalClose(err, errors.Wrap(err, "couldn't parse client message as JSON"))
 			}
-			if err = c.receive(command); err != nil {
+			if err = ctx.Err(); err != nil {
+				return err
+			}
+			if err = c.receive(ctx, command); err != nil {
 				return err
 			}
 		}

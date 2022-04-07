@@ -380,6 +380,7 @@ func (h *Handlers) HandleNetworkPost() echo.HandlerFunc {
 				// TODO: add a tombstone to the TXT RRset?
 				return err
 			}
+			h.tsh.Cancel("/networks/" + id + "/devices")
 
 			// Redirect user
 			return c.Redirect(http.StatusSeeOther, "/networks")

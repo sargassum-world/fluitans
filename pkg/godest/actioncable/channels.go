@@ -1,6 +1,7 @@
 package actioncable
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -19,7 +20,7 @@ func ParseIdentifier(identifierRaw string) (channelName string, err error) {
 }
 
 type Channel interface {
-	Subscribe(sub Subscription) (unsubscriber func(), err error)
+	Subscribe(ctx context.Context, sub Subscription) (unsubscriber func(), err error)
 	Perform(data string) error
 }
 
@@ -28,9 +29,9 @@ type ChannelFactory func(identifier string) (Channel, error)
 func HandleSubscription(
 	factories map[string]ChannelFactory, channels map[string]Channel,
 ) SubscriptionHandler {
-	return func(sub Subscription) (unsubscriber func(), err error) {
+	return func(ctx context.Context, sub Subscription) (unsubscriber func(), err error) {
 		if channel, ok := channels[sub.Identifier()]; ok {
-			unsubscriber, err = channel.Subscribe(sub)
+			unsubscriber, err = channel.Subscribe(ctx, sub)
 			if unsubscriber == nil || err != nil {
 				delete(channels, sub.Identifier())
 				return nil, errors.Wrapf(err, "couldn't re-subscribe to %s", sub.Identifier())
@@ -52,7 +53,7 @@ func HandleSubscription(
 		}
 		// The Subscribe method checks whether the subscription is possible, so we must check it before
 		// storing the channel.
-		unsubscriber, err = channel.Subscribe(sub)
+		unsubscriber, err = channel.Subscribe(ctx, sub)
 		if unsubscriber == nil || err != nil {
 			return nil, errors.Wrapf(err, "couldn't subscribe to %s", sub.Identifier())
 		}
@@ -62,7 +63,7 @@ func HandleSubscription(
 }
 
 func HandleAction(channels map[string]Channel) ActionHandler {
-	return func(identifier, data string) error {
+	return func(ctx context.Context, identifier, data string) error {
 		channel, ok := channels[identifier]
 		if !ok {
 			return errors.Errorf("no preexisting subscription on %s", identifier)

@@ -111,24 +111,21 @@ func (s *Server) Register(e *echo.Echo) {
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
 }
 
-func (s *Server) RunBackgroundWorkers() {
-	eg, _ := errgroup.WithContext(context.Background())
+func (s *Server) RunBackgroundWorkers(ctx context.Context) {
+	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
 	eg.Go(func() error {
-		return workers.PrescanZerotierControllers(s.Globals.ZTControllers)
+		return workers.PrescanZerotierControllers(ctx, s.Globals.ZTControllers)
 	})
 	eg.Go(func() error {
 		return workers.PrefetchZerotierNetworks(
-			s.Globals.Zerotier, s.Globals.ZTControllers,
+			ctx, s.Globals.Zerotier, s.Globals.ZTControllers,
 		)
 	})
 	eg.Go(func() error {
-		return workers.PrefetchDNSRecords(s.Globals.Desec)
+		return workers.PrefetchDNSRecords(ctx, s.Globals.Desec)
 	})
-	/*eg.Go(func() error {
-		return workers.TestWriteLimiter(s.Globals.Desec)
-	})*/
 	eg.Go(func() error {
-		return s.Globals.TSBroker.Serve()
+		return s.Globals.TSBroker.Serve(ctx)
 	})
 	if err := eg.Wait(); err != nil {
 		s.Globals.Logger.Error(err)

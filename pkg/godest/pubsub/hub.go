@@ -2,17 +2,23 @@
 package pubsub
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pkg/errors"
 )
+
+// Receiver
 
 type DataReceiveFunc func(message interface{}) (ok bool)
 
 type dataReceiver struct {
 	topic   string
 	receive DataReceiveFunc
+	cancel  context.CancelFunc
 }
+
+// Hub
 
 type DataHub struct {
 	receivers map[string]map[*dataReceiver]bool
@@ -27,10 +33,14 @@ func NewDataHub(brChanges chan<- BroadcastingChange) *DataHub {
 	}
 }
 
-func (h *DataHub) Subscribe(topic string, receive DataReceiveFunc) (unsubscriber func()) {
+func (h *DataHub) Subscribe(
+	topic string, receive DataReceiveFunc,
+) (unsubscriber func(), removed <-chan struct{}) {
+	ctx, cancel := context.WithCancel(context.Background())
 	receiver := &dataReceiver{
 		topic:   topic,
 		receive: receive,
+		cancel:  cancel,
 	}
 
 	h.mu.Lock()
@@ -50,7 +60,28 @@ func (h *DataHub) Subscribe(topic string, receive DataReceiveFunc) (unsubscriber
 	}
 
 	return func() {
+		cancel()
 		h.unsubscribe(receiver)
+	}, ctx.Done()
+}
+
+func (h *DataHub) Cancel(topics ...string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	for _, topic := range topics {
+		broadcasting, ok := h.receivers[topic]
+		if !ok {
+			continue
+		}
+		for receiver := range broadcasting {
+			receiver.cancel()
+		}
+		delete(h.receivers, topic)
+	}
+
+	if h.brChanges != nil && len(topics) > 0 {
+		h.brChanges <- BroadcastingChange{Removed: topics}
 	}
 }
 
@@ -73,6 +104,7 @@ func (h *DataHub) unsubscribe(receivers ...*dataReceiver) {
 			delete(h.receivers, receiver.topic)
 			removedTopics = append(removedTopics, receiver.topic)
 		}
+		receiver.cancel()
 	}
 	if h.brChanges != nil && len(removedTopics) > 0 {
 		h.brChanges <- BroadcastingChange{Removed: removedTopics}
@@ -102,7 +134,6 @@ func (h *DataHub) broadcastStrict(
 			defer wg.Done()
 			if !receiver.receive(message) {
 				willUnsubscribe <- receiver
-				return
 			}
 		}(receiver, message, willUnsubscribe)
 	}

@@ -58,6 +58,10 @@ func NewBroker(logger Logger) *Broker {
 	return b
 }
 
+func (b *Broker) Hub() *MessagesHub {
+	return b.hub
+}
+
 // Handler Registration
 
 func (b *Broker) Add(
@@ -108,8 +112,8 @@ func (b *Broker) newContext(ctx stdContext.Context, topic string) *context {
 }
 
 func (b *Broker) handleSub(sessionID string) SubHandler {
-	return func(topic string) error {
-		c := b.newContext(stdContext.Background(), topic)
+	return func(ctx stdContext.Context, topic string) error {
+		c := b.newContext(ctx, topic)
 		c.sessionID = sessionID
 		b.router.Find(MethodSub, topic, c)
 		err := errors.Wrapf(c.handler(c), "turbo streams not subscribable on topic %s", topic)
@@ -121,8 +125,8 @@ func (b *Broker) handleSub(sessionID string) SubHandler {
 }
 
 func (b *Broker) handleMsg(sessionID string) MsgHandler {
-	return func(topic string, messages []Message) (result string, err error) {
-		c := b.newContext(stdContext.Background(), topic)
+	return func(ctx stdContext.Context, topic string, messages []Message) (result string, err error) {
+		c := b.newContext(ctx, topic)
 		c.sessionID = sessionID
 		c.messages = messages
 		c.rendered = &bytes.Buffer{}
@@ -138,8 +142,8 @@ func (b *Broker) handleMsg(sessionID string) MsgHandler {
 
 // Managed Publishing
 
-func (b *Broker) startPub(topic string) {
-	ctx, canceler := stdContext.WithCancel(stdContext.Background())
+func (b *Broker) startPub(ctx stdContext.Context, topic string) {
+	ctx, canceler := stdContext.WithCancel(ctx)
 	c := b.newContext(ctx, topic)
 	b.pubCancellers[topic] = canceler
 	b.router.Find(MethodPub, topic, c)
@@ -158,14 +162,13 @@ func (b *Broker) cancelPub(topic string) {
 	}
 }
 
-func (b *Broker) Serve() error {
-	// TODO: make this cancellable on a context, and cancel all pubs after the context is done
+func (b *Broker) Serve(ctx stdContext.Context) error {
 	for change := range b.changes {
 		for _, topic := range change.Added {
 			if _, ok := b.pubCancellers[topic]; ok {
 				continue
 			}
-			b.startPub(topic)
+			b.startPub(ctx, topic)
 		}
 		for _, topic := range change.Removed {
 			b.cancelPub(topic)

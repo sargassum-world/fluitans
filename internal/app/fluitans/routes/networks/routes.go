@@ -13,18 +13,22 @@ import (
 )
 
 type Handlers struct {
-	r    godest.TemplateRenderer
+	r godest.TemplateRenderer
+
+	tsh *turbostreams.MessagesHub
+
 	dc   *desec.Client
 	ztc  *zerotier.Client
 	ztcc *ztcontrollers.Client
 }
 
 func New(
-	r godest.TemplateRenderer,
+	r godest.TemplateRenderer, tsh *turbostreams.MessagesHub,
 	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client,
 ) *Handlers {
 	return &Handlers{
 		r:    r,
+		tsh:  tsh,
 		dc:   dc,
 		ztc:  ztc,
 		ztcc: ztcc,

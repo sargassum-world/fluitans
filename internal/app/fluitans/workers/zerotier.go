@@ -11,10 +11,14 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 )
 
-func PrescanZerotierControllers(c *ztcontrollers.Client) error {
+func PrescanZerotierControllers(ctx context.Context, c *ztcontrollers.Client) error {
 	const retryInterval = 5000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		controllers, err := c.GetControllers()
 		if err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't get the list of known controllers"))
@@ -22,22 +26,27 @@ func PrescanZerotierControllers(c *ztcontrollers.Client) error {
 			continue
 		}
 
-		_, err = c.ScanControllers(context.Background(), controllers)
+		_, err = c.ScanControllers(ctx, controllers)
 		if err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't prescan Zerotier controllers for cache"))
 			time.Sleep(retryInterval * time.Millisecond)
 			continue
 		}
 
-		break
+		return nil
 	}
-	return nil
 }
 
-func PrefetchZerotierNetworks(c *zerotier.Client, cc *ztcontrollers.Client) error {
+func PrefetchZerotierNetworks(
+	ctx context.Context, c *zerotier.Client, cc *ztcontrollers.Client,
+) error {
 	const retryInterval = 5000
 
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		controllers, err := cc.GetControllers()
 		if err != nil {
 			cc.Logger.Error(errors.Wrap(err, "couldn't get the list of known controllers"))
@@ -45,7 +54,7 @@ func PrefetchZerotierNetworks(c *zerotier.Client, cc *ztcontrollers.Client) erro
 			continue
 		}
 
-		allNetworkIDs, err := c.GetAllNetworkIDs(context.Background(), controllers, cc)
+		allNetworkIDs, err := c.GetAllNetworkIDs(ctx, controllers, cc)
 		if err != nil {
 			c.Logger.Error(errors.Wrap(
 				err, "couldn't get the list of all Zerotier network IDs for cache",
@@ -54,14 +63,13 @@ func PrefetchZerotierNetworks(c *zerotier.Client, cc *ztcontrollers.Client) erro
 			continue
 		}
 
-		_, err = c.GetAllNetworks(context.Background(), controllers, allNetworkIDs)
+		_, err = c.GetAllNetworks(ctx, controllers, allNetworkIDs)
 		if err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't prefetch all Zerotier networks for cache"))
 			time.Sleep(retryInterval * time.Millisecond)
 			continue
 		}
 
-		break
+		return nil
 	}
-	return nil
 }

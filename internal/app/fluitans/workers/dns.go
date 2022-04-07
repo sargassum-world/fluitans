@@ -10,24 +10,31 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 )
 
-func PrefetchDNSRecords(c *desec.Client) error {
+func PrefetchDNSRecords(ctx context.Context, c *desec.Client) error {
 	const retryInterval = 5000
 	for {
-		if _, err := c.GetRRsets(context.Background()); err != nil {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
+		if _, err := c.GetRRsets(ctx); err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't prefetch DNS records for cache"))
 			time.Sleep(retryInterval * time.Millisecond)
 			continue
 		}
 
-		break
+		return nil
 	}
-	return nil
 }
 
-func TestWriteLimiter(c *desec.Client) error {
+func TestWriteLimiter(ctx context.Context, c *desec.Client) error {
 	const writeInterval = 5000
 	writeLimiter := c.WriteLimiter
 	for {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		if writeLimiter.TryAdd(time.Now(), 1) {
 			// fmt.Printf("Bumped the write limiter: %+v\n", writeLimiter.EstimateFillRatios(time.Now()))
 		} else {
