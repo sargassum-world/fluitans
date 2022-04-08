@@ -53,7 +53,7 @@
             {{
               template "shared/dns/rrset.partial.tmpl" dict
               "RRset" $rrset
-              "TurboFrameTarget" (print "dns-domain-" $name)
+              "TurboFrameTarget" (print "/dns/domains/" $name)
               "Auth" $auth
             }}
           </div>
