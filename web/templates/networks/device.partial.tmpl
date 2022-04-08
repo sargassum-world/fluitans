@@ -4,7 +4,7 @@
 {{$networkDNS := (get . "NetworkDNS")}}
 {{$auth := (get . "Auth")}}
 
-<turbo-frame id="network-{{$network.Id}}-device-{{$zerotierMember.Address}}">
+<turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}">
   <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
       <h3 class="entity-name">
@@ -56,9 +56,14 @@
               <input
                 class="button"
                 type="submit"
-                value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
+                value="
+                  {{if derefBool $zerotierMember.Authorized}}
+                    Revoke device authorization
+                  {{else}}
+                    Authorize device
+                  {{end}}
+                "
                 data-form-submission-target="submit"
-                data-csrf-target="submit"
               >
             </div>
           </form>
@@ -76,7 +81,11 @@
                 data-action="submit->form-submission#submit submit->csrf#addToken"
               >
                 {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-                <input type="hidden" name="unset-name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+                <input
+                  type="hidden"
+                  name="unset-name"
+                  value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}"
+                >
                 <input type="hidden" name="set-name" value="">
                 <div class="control" data-form-submission-target="submitter">
                   <span class="tag domain-name">
@@ -86,7 +95,6 @@
                         class="delete"
                         form="unset-name-{{$domainName}}"
                         data-form-submission-target="submit"
-                        data-csrf-target="submit"
                       ></button>
                     </span>
                   </span>
@@ -119,7 +127,6 @@
                       class="button"
                       value="Set domain name"
                       data-form-submission-target="submit"
-                      data-csrf-target="submit"
                     >
                   </div>
                 </div>

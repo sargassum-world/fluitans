@@ -48,11 +48,8 @@ function themeGenerator(theme) {
 							minify: true,
 							info: true,
 							cleanCssOptions: {
-								level: {
-									2: {
-										all: true,
-									},
-								},
+								// Level 2 messes up some styles from @sargassum-world/styles
+								level: 1,
 							},
 						},
 					);

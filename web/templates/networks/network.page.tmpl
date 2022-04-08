@@ -31,6 +31,7 @@
           "Network" .Data.Network
           "NetworkDNS" .Data.NetworkDNS
           "Auth" .Auth
+          "WithTurboStreamSource" true
         }}
         {{if .Data.NetworkDNS.Named}}
           <h2>DNS Records</h2>
@@ -86,7 +87,6 @@
                 type="submit"
                 value="Delete network"
                 data-form-submission-target="submit"
-                data-csrf-target="submit"
               >
             </div>
           </form>

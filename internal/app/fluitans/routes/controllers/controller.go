@@ -53,7 +53,7 @@ func getControllerData(
 	}, nil
 }
 
-func (h *Handlers) HandleControllerGet() auth.Handler {
+func (h *Handlers) HandleControllerGet() auth.HTTPHandlerFunc {
 	t := "controllers/controller.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {

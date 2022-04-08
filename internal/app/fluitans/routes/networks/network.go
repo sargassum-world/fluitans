@@ -18,7 +18,7 @@ import (
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/desec"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbo"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
@@ -297,7 +297,7 @@ func getNetworkData(
 	}, nil
 }
 
-func (h *Handlers) HandleNetworkGet() auth.Handler {
+func (h *Handlers) HandleNetworkGet() auth.HTTPHandlerFunc {
 	t := "networks/network.page.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -380,6 +380,7 @@ func (h *Handlers) HandleNetworkPost() echo.HandlerFunc {
 				// TODO: add a tombstone to the TXT RRset?
 				return err
 			}
+			h.tsh.Cancel("/networks/" + id + "/devices")
 
 			// Redirect user
 			return c.Redirect(http.StatusSeeOther, "/networks")
@@ -404,7 +405,7 @@ func setNetworkRules(
 	return network, nil
 }
 
-func (h *Handlers) HandleNetworkRulesPost() auth.Handler {
+func (h *Handlers) HandleNetworkRulesPost() auth.HTTPHandlerFunc {
 	t := "networks/network-rules.partial.tmpl"
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
@@ -426,14 +427,14 @@ func (h *Handlers) HandleNetworkRulesPost() auth.Handler {
 		}
 
 		// Render Turbo Stream if accepted
-		if turbo.StreamAccepted(c.Request().Header) {
+		if turbostreams.Accepted(c.Request().Header) {
 			rules, err := printJSONRules(*network.Rules)
 			if err != nil {
 				return err
 			}
-			return h.r.TurboStreams(c.Response(), turbo.Stream{
-				Action:   turbo.StreamReplace,
-				Target:   "network-" + id + "-rules",
+			return h.r.TurboStream(c.Response(), turbostreams.Message{
+				Action:   turbostreams.ActionReplace,
+				Target:   "/networks/" + id + "/rules",
 				Template: t,
 				Data: map[string]interface{}{
 					"Network":          network,

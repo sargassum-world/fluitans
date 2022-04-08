@@ -16,7 +16,7 @@
       <h1>Networks</h1>
       {{range $controllerNetworks := .Data}}
         <h2>Hosted by {{$controllerNetworks.Controller.Name}}</h2>
-        <turbo-frame id="controller-{{$controllerNetworks.Controller.Name}}-info">
+        <turbo-frame id="/controllers/{{$controllerNetworks.Controller.Name}}/info">
           <p>
             <a href="/controllers/{{$controllerNetworks.Controller.Name}}">More Information</a>
           </p>

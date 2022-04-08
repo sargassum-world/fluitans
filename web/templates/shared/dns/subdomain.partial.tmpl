@@ -3,7 +3,7 @@
 
 {{$name := trimSuffix "." (index $subdomain.RRsets 0).Name}}
 
-<turbo-frame id="dns-domain-{{$name}}">
+<turbo-frame id="/dns/domains/{{$name}}">
   <article class="panel entity-panel">
     <header class="panel-heading">
       <h3 class="entity-name"><span class="tag domain-name">{{$name}}</span></h3>
@@ -27,7 +27,7 @@
           <h4>Network</h4>
           {{template "shared/accordion-icon.partial.tmpl"}}
         </summary>
-        <turbo-frame id="dns-domain-{{$name}}-network">
+        <turbo-frame id="/dns/domains/{{$name}}/network">
           <div class="accordion-content">
             <p>ID: <a href="/networks/{{$subdomain.Network.Id}}" data-turbo-frame="_top">
               {{template "shared/networks/network-id.partial.tmpl" $subdomain.Network.Id}}
@@ -48,12 +48,12 @@
           <h4>{{describeDNSRecordType $rrset.Type}} ({{$rrset.Type}})</h4>
           {{template "shared/accordion-icon.partial.tmpl"}}
         </summary>
-        <turbo-frame id="dns-domain-{{$name}}-rrset-{{$rrset.Type}}">
+        <turbo-frame id="/dns/domain/{{$name}}/rrsets/{{$rrset.Type}}">
           <div class="accordion-content">
             {{
               template "shared/dns/rrset.partial.tmpl" dict
               "RRset" $rrset
-              "TurboFrameTarget" (print "dns-domain-" $name)
+              "TurboFrameTarget" (print "/dns/domains/" $name)
               "Auth" $auth
             }}
           </div>

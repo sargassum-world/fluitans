@@ -31,12 +31,11 @@ func NewClient(c Config, cache clientcache.Cache, l godest.Logger) *Client {
 		TTL:         c.APISettings.ReadCacheTTL,
 		RecordTypes: c.RecordTypes,
 	}
-	readLimiter := desec.NewReadLimiter(0)
 	return &Client{
 		Config:       c,
 		Logger:       l,
 		Cache:        &clientCache,
-		ReadLimiter:  readLimiter,
+		ReadLimiter:  desec.NewReadLimiter(0),
 		WriteLimiter: desec.NewRRSetWriteLimiter(0),
 	}
 }
@@ -92,6 +91,17 @@ func (c *Client) tryAddLimitedRead() error {
 	return nil
 }
 
+func (c *Client) tryAddLimitedWrite() error {
+	maybeAllowed := c.WriteLimiter.MaybeAllowed(time.Now(), 1)
+	if !maybeAllowed || !c.WriteLimiter.TryAdd(time.Now(), 1) {
+		return newWriteRateLimitError(
+			c.WriteLimiter.EstimateWaitDuration(time.Now(), 1).Seconds(),
+		)
+	}
+
+	return nil
+}
+
 // Rate-Limiting
 
 func CalculateBatchWaitDuration(
@@ -118,6 +128,16 @@ func newReadRateLimitError(retryWaitSec float64) error {
 		http.StatusTooManyRequests,
 		fmt.Sprintf(
 			"too many read requests have been issued to the DeSEC API. Try again in %f sec.",
+			retryWaitSec,
+		),
+	)
+}
+
+func newWriteRateLimitError(retryWaitSec float64) error {
+	return echo.NewHTTPError(
+		http.StatusTooManyRequests,
+		fmt.Sprintf(
+			"too many write requests have been issued to the DeSEC API. Try again in %f sec.",
 			retryWaitSec,
 		),
 	)

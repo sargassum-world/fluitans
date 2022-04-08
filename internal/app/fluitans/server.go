@@ -19,42 +19,39 @@ import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/assets"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/tmplfunc"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/workers"
-	imw "github.com/sargassum-world/fluitans/internal/middleware"
 	"github.com/sargassum-world/fluitans/pkg/godest"
 	gmw "github.com/sargassum-world/fluitans/pkg/godest/middleware"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/web"
 )
 
 type Server struct {
+	Globals  *client.Globals
 	Embeds   godest.Embeds
 	Inlines  godest.Inlines
 	Renderer godest.TemplateRenderer
-	Globals  *client.Globals
 	Handlers *routes.Handlers
-	Logger   godest.Logger
 }
 
 func NewServer(e *echo.Echo) (s *Server, err error) {
 	s = &Server{}
+	s.Globals, err = client.NewGlobals(e.Logger)
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't make app globals")
+	}
+
 	s.Embeds = web.NewEmbeds()
 	s.Inlines = web.NewInlines()
 	s.Renderer, err = godest.NewTemplateRenderer(
 		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
+			s.Globals.TSSigner.Sign,
 		),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't make template renderer")
 	}
 
-	s.Globals, err = client.NewGlobals(e.Logger)
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't make app globals")
-	}
-
-	s.Handlers = routes.New(s.Renderer, s.Globals.Clients)
-	s.Logger = e.Logger
+	s.Handlers = routes.New(s.Renderer, s.Globals)
 	return s, nil
 }
 
@@ -103,35 +100,38 @@ func (s *Server) Register(e *echo.Echo) {
 
 	// Other Middleware
 	e.Pre(middleware.RemoveTrailingSlash())
-	e.Use(echo.WrapMiddleware(session.NewCSRFMiddleware(
-		s.Globals.Clients.Sessions.Config,
-		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Clients.Sessions)),
+	e.Use(echo.WrapMiddleware(s.Globals.Sessions.NewCSRFMiddleware(
+		csrf.ErrorHandler(NewCSRFErrorHandler(s.Renderer, e.Logger, s.Globals.Sessions)),
 	)))
-	e.Use(imw.RequireContentTypes(echo.MIMEApplicationForm))
+	e.Use(gmw.RequireContentTypes(echo.MIMEApplicationForm))
 	// TODO: enable Prometheus and rate-limiting
 
 	// Handlers
-	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Clients.Sessions)
-	s.Handlers.Register(e, s.Embeds)
+	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
+	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
 }
 
-func (s *Server) RunBackgroundWorkers() {
-	eg, _ := errgroup.WithContext(context.Background())
+func (s *Server) RunBackgroundWorkers(ctx context.Context) {
+	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
 	eg.Go(func() error {
-		return workers.PrescanZerotierControllers(s.Globals.Clients.ZTControllers)
+		return workers.PrescanZerotierControllers(ctx, s.Globals.ZTControllers)
 	})
 	eg.Go(func() error {
 		return workers.PrefetchZerotierNetworks(
-			s.Globals.Clients.Zerotier, s.Globals.Clients.ZTControllers,
+			ctx, s.Globals.Zerotier, s.Globals.ZTControllers,
 		)
 	})
 	eg.Go(func() error {
-		return workers.PrefetchDNSRecords(s.Globals.Clients.Desec)
+		return workers.PrefetchDNSRecords(ctx, s.Globals.Desec)
 	})
+	// TODO: replace with a worker to batch DNS record writes when needed
 	/*eg.Go(func() error {
-		return workers.TestWriteLimiter(s.Globals.Clients.Desec)
+		return workers.TestWriteLimiter(ctx, s.Globals.Desec)
 	})*/
+	eg.Go(func() error {
+		return s.Globals.TSBroker.Serve(ctx)
+	})
 	if err := eg.Wait(); err != nil {
-		s.Logger.Error(err)
+		s.Globals.Logger.Error(err)
 	}
 }

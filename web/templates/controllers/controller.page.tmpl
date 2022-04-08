@@ -9,13 +9,17 @@
       <ul>
         <li><a href="/">Fluitans</a></li>
         <li><a href="/controllers">Controllers</a></li>
-        <li class="is-active"><a href="/controllers/{{.Data.Controller.Name}}" aria-current="page">{{.Data.Controller.Name}}</a></li>
+        <li class="is-active">
+          <a href="/controllers/{{.Data.Controller.Name}}" aria-current="page">
+            {{.Data.Controller.Name}}
+          </a>
+        </li>
       </ul>
     </nav>
 
     <section class="section content">
       <h1>Network Controller {{.Data.Controller.Name}}</h1>
-      <turbo-frame id="controller-{{.Data.Controller.Name}}-info">
+      <turbo-frame id="/controllers/{{.Data.Controller.Name}}/info">
         <div class="tags">
           {{if .Data.Status.Online}}
             <span class="tag is-success">Online</span>

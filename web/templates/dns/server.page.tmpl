@@ -15,7 +15,8 @@
     <section class="section content">
       <h1>DNS</h1>
       <h2>Server</h2>
-      <turbo-frame id="dns-server-info">
+      {{template "shared/turbo-cable-stream-source.partial.tmpl" "/dns/server/info"}}
+      <turbo-frame id="/dns/server/info">
         <div class="card section-card">
           <div class="card-content">
             <h3>Server Configuration</h3>
@@ -33,11 +34,13 @@
           template "dns/desec-read-quotas.partial.tmpl" dict
           "DesecAPISettings" .Data.DesecAPISettings
           "APILimiterStats" .Data.APILimiterStats
+          "WithTurboStreamSource" true
         }}
         {{
           template "dns/desec-write-quotas.partial.tmpl" dict
           "DesecAPISettings" .Data.DesecAPISettings
           "APILimiterStats" .Data.APILimiterStats
+          "WithTurboStreamSource" true
         }}
       </turbo-frame>
       <h2>Domain</h2>

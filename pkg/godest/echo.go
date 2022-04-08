@@ -4,8 +4,6 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// Routing
-
 // EchoRouter is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration.

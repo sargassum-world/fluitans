@@ -9,24 +9,30 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
 	"github.com/sargassum-world/fluitans/pkg/godest/authn"
 	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
+	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
-type Clients struct {
-	Authn    *authn.Client
-	Sessions *session.Client
+type Globals struct {
+	Config conf.Config
+	Cache  clientcache.Cache
+
+	Sessions    session.Store
+	CSRFChecker *session.CSRFTokenChecker
+	Authn       *authn.Client
+
+	ACCancellers *actioncable.Cancellers
+	TSSigner     turbostreams.Signer
+	TSBroker     *turbostreams.Broker
 
 	Desec         *desec.Client
 	Zerotier      *zerotier.Client
 	ZTControllers *ztcontrollers.Client
-}
 
-type Globals struct {
-	Config  conf.Config
-	Cache   clientcache.Cache
-	Clients *Clients
+	Logger godest.Logger
 }
 
 func NewGlobals(l godest.Logger) (g *Globals, err error) {
@@ -37,37 +43,43 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
-	g.Clients = &Clients{}
-
-	authnConfig, err := authn.GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up authn config")
-	}
-	g.Clients.Authn = authn.NewClient(authnConfig)
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
-	g.Clients.Sessions = session.NewMemStoreClient(sessionsConfig)
+	g.Sessions = session.NewMemStore(sessionsConfig)
+	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
+	authnConfig, err := authn.GetConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up authn config")
+	}
+	g.Authn = authn.NewClient(authnConfig)
+
+	g.ACCancellers = actioncable.NewCancellers()
+	tssConfig, err := turbostreams.GetSignerConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up turbo streams signer config")
+	}
+	g.TSSigner = turbostreams.NewSigner(tssConfig)
+	g.TSBroker = turbostreams.NewBroker(l)
 
 	desecConfig, err := desec.GetConfig(g.Config.DomainName)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up desec config")
 	}
-	g.Clients.Desec = desec.NewClient(desecConfig, g.Cache, l)
-
+	g.Desec = desec.NewClient(desecConfig, g.Cache, l)
 	ztConfig, err := zerotier.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier config")
 	}
-	g.Clients.Zerotier = zerotier.NewClient(ztConfig, g.Cache, l)
-
+	g.Zerotier = zerotier.NewClient(ztConfig, g.Cache, l)
 	ztcConfig, err := ztcontrollers.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up zerotier controllers config")
 	}
-	g.Clients.ZTControllers = ztcontrollers.NewClient(ztcConfig, g.Cache, l)
+	g.ZTControllers = ztcontrollers.NewClient(ztcConfig, g.Cache, l)
 
+	g.Logger = l
 	return g, nil
 }

@@ -2,7 +2,7 @@
 {{$apexRRsets := get . "ApexRRsets"}}
 {{$auth := get . "Auth"}}
 
-<turbo-frame id="dns-domain-{{$domain.Name}}">
+<turbo-frame id="/dns/domains/{{$domain.Name}}">
   <article class="panel entity-panel">
     <header class="panel-heading">
       <h3 class="entity-name"><span class="tag domain-name">{{$domain.Name}}</span></h3>
@@ -24,13 +24,13 @@
           <h4>{{describeDNSRecordType $rrset.Type}} ({{$rrset.Type}})</h4>
           {{template "shared/accordion-icon.partial.tmpl"}}
         </summary>
-        <turbo-frame id="dns-domain-{{$domain.Name}}-rrset-{{$rrset.Type}}">
+        <turbo-frame id="/dns/domains/{{$domain.Name}}/rrsets/{{$rrset.Type}}">
           <div class="accordion-content">
             {{
               template "shared/dns/rrset.partial.tmpl" dict
               "RRset" $rrset
               "Auth" $auth
-              "TurboFrameTarget" (print "dns-domain-" $domain.Name)
+              "TurboFrameTarget" (print "/dns/domain/" $domain.Name)
             }}
           </div>
         </turbo-frame>
