@@ -244,6 +244,10 @@ func (c *Client) GetRRset(ctx context.Context, subname, recordType string) (*des
 func (c *Client) CreateRRset(
 	ctx context.Context, subname, recordType string, ttl int64, records []string,
 ) (*desec.RRset, error) {
+	if err := c.tryAddLimitedWrite(); err != nil {
+		return nil, err
+	}
+
 	client, cerr := c.Config.DNSServer.NewClient()
 	if cerr != nil {
 		return nil, cerr
@@ -285,6 +289,10 @@ func (c *Client) CreateRRset(
 }
 
 func (c *Client) DeleteRRset(ctx context.Context, subname, recordType string) error {
+	if err := c.tryAddLimitedWrite(); err != nil {
+		return err
+	}
+
 	client, cerr := c.Config.DNSServer.NewClient()
 	if cerr != nil {
 		return cerr

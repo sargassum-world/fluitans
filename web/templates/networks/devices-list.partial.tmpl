@@ -2,7 +2,14 @@
 {{$network := (get . "Network")}}
 {{$networkDNS := (get . "NetworkDNS")}}
 {{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
 
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (print "/networks/" (derefString $network.Id "") "/devices")
+  }}
+{{end}}
 <turbo-frame id="/networks/{{$network.Id}}/devices">
   {{range $member := $members}}
     {{

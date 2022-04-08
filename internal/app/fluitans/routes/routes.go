@@ -40,5 +40,5 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 	auth.New(h.r, ss, acc, h.globals.Authn).Register(er)
 	controllers.New(h.r, ztcc, ztc).Register(er, ss)
 	networks.New(h.r, h.globals.TSBroker.Hub(), dc, ztc, ztcc).Register(er, tsr, ss)
-	dns.New(h.r, dc, ztc, ztcc).Register(er, ss)
+	dns.New(h.r, dc, ztc, ztcc).Register(er, tsr, ss)
 }

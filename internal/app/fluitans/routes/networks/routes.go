@@ -3,7 +3,7 @@ package networks
 
 import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-world/fluitans/internal/app/fluitans/rendering"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/handling"
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
@@ -48,7 +48,7 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss se
 	hr.POST("/networks/:id/devices", h.HandleDevicesPost(), haz)
 	tsr.SUB("/networks/:id/devices", h.HandleDevicesSub(), atsz)
 	tsr.PUB("/networks/:id/devices", h.HandleDevicesPub())
-	tsr.MSG("/networks/:id/devices", rendering.HandleTSMsg(h.r, ss), atsz)
+	tsr.MSG("/networks/:id/devices", handling.HandleTSMsg(h.r, ss), atsz)
 	hr.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), haz)
 	hr.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), haz)
 }

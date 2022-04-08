@@ -56,7 +56,13 @@
               <input
                 class="button"
                 type="submit"
-                value="{{if derefBool $zerotierMember.Authorized}}Revoke device authorization{{else}}Authorize device{{end}}"
+                value="
+                  {{if derefBool $zerotierMember.Authorized}}
+                    Revoke device authorization
+                  {{else}}
+                    Authorize device
+                  {{end}}
+                "
                 data-form-submission-target="submit"
                 data-csrf-target="submit"
               >
@@ -76,7 +82,11 @@
                 data-action="submit->form-submission#submit submit->csrf#addToken"
               >
                 {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-                <input type="hidden" name="unset-name" value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}">
+                <input
+                  type="hidden"
+                  name="unset-name"
+                  value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}"
+                >
                 <input type="hidden" name="set-name" value="">
                 <div class="control" data-form-submission-target="submitter">
                   <span class="tag domain-name">

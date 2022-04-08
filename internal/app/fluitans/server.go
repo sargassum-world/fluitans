@@ -124,6 +124,10 @@ func (s *Server) RunBackgroundWorkers(ctx context.Context) {
 	eg.Go(func() error {
 		return workers.PrefetchDNSRecords(ctx, s.Globals.Desec)
 	})
+	// TODO: replace with a worker to batch DNS record writes when needed
+	eg.Go(func() error {
+		return workers.TestWriteLimiter(ctx, s.Globals.Desec)
+	})
 	eg.Go(func() error {
 		return s.Globals.TSBroker.Serve(ctx)
 	})

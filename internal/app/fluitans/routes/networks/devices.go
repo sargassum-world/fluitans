@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/handling"
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
@@ -128,46 +129,49 @@ func checkDevicesList(
 }
 
 func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
+	t := devicesListPartial
+	h.r.MustHave(t)
 	return func(c turbostreams.Context) error {
-		const pubInterval = 2 * time.Second
-		pubTicker := time.NewTicker(pubInterval)
+		// Make change trackers
+		initialized := false
 		var prevDevices StringSet
-		for {
-			select {
-			case <-c.Context().Done():
-				return c.Context().Err()
-			case <-pubTicker.C:
-				if err := c.Context().Err(); err != nil {
-					// Context was also canceled, it should have priority
-					return err
-				}
 
-				// Parse params
-				networkID := c.Param("id")
-				controllerAddress := ztc.GetControllerAddress(networkID)
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
 
-				// Run queries
-				changed, devices, err := checkDevicesList(
-					c.Context(), controllerAddress, networkID, prevDevices, h.ztc, h.ztcc,
-				)
-				if err != nil {
-					return err
-				}
-				if !changed {
-					break
-				}
-				prevDevices = devices
-				message, err := replaceDevicesListStream(
-					c.Context(), controllerAddress, networkID, auth.Auth{}, h.ztc, h.ztcc, h.dc,
-				)
-				if err != nil {
-					return err
-				}
-
-				// Produce output
-				c.Publish(message)
+		// Publish periodically
+		const pubInterval = 2 * time.Second
+		return handling.Repeat(c.Context(), pubInterval, func() (done bool, err error) {
+			// Check for changes
+			changed, devices, err := checkDevicesList(
+				c.Context(), controllerAddress, networkID, prevDevices, h.ztc, h.ztcc,
+			)
+			if err != nil {
+				return false, err
 			}
-		}
+			if !changed {
+				return false, nil
+			}
+			if !initialized {
+				// We just started publishing because a page added a subscription, so there's no need to
+				// send the devices list again - that page already has the latest version
+				prevDevices = devices
+				initialized = true
+				return false, nil
+			}
+			prevDevices = devices
+
+			// Publish changes
+			message, err := replaceDevicesListStream(
+				c.Context(), controllerAddress, networkID, auth.Auth{}, h.ztc, h.ztcc, h.dc,
+			)
+			if err != nil {
+				return false, err
+			}
+			c.Publish(message)
+			return false, nil
+		})
 	}
 }
 

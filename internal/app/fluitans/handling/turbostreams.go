@@ -1,5 +1,4 @@
-// Package rendering provides utilities for rendering data.
-package rendering
+package handling
 
 import (
 	"github.com/pkg/errors"
@@ -9,6 +8,8 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
+
+// Rendering
 
 func AddAuthData(a auth.Auth, messages []turbostreams.Message) ([]turbostreams.Message, error) {
 	published := make([]turbostreams.Message, len(messages))

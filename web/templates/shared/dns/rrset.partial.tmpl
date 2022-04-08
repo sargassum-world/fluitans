@@ -7,7 +7,14 @@
 <label class="label" for="ttl">TTL</label>
 <div class="field has-addons">
   <div class="control">
-    <input type="text" class="input" name="ttl" value="{{$rrset.Ttl}}" placeholder="3600" readonly />
+    <input
+      type="text"
+      class="input"
+      name="ttl"
+      value="{{$rrset.Ttl}}"
+      placeholder="3600"
+      readonly
+    />
   </div>
   <div class="control">
     <span class="button is-static">sec</span>
@@ -17,11 +24,22 @@
   <label class="label">Records</label>
   {{range $record := $rrset.Records}}
     <div class="control">
-      <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" value="{{$record}}" readonly />
+      <input
+        type="text"
+        class="input"
+        placeholder="{{exemplifyDNSRecordType $rrset.Type}}"
+        value="{{$record}}"
+        readonly
+      />
     </div>
   {{else}}
     <div class="control">
-      <input type="text" class="input" placeholder="{{exemplifyDNSRecordType $rrset.Type}}" readonly />
+      <input
+        type="text"
+        class="input"
+        placeholder="{{exemplifyDNSRecordType $rrset.Type}}"
+        readonly
+      />
     </div>
   {{end}}
 </div>

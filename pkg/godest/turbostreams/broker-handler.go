@@ -23,6 +23,10 @@ func NotFoundHandler(c Context) error {
 	return errors.Errorf("handler not found for topic %s", c.Topic())
 }
 
+func EmptyHandler(c Context) error {
+	return nil
+}
+
 type methodHandler struct {
 	pub HandlerFunc
 	sub HandlerFunc

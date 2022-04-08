@@ -26,15 +26,12 @@
       {{if .Auth.Identity.Authenticated}}
         <h2>Devices</h2>
         {{
-          template "shared/turbo-cable-stream-source.partial.tmpl"
-          (print "/networks/" (derefString .Data.Network.Id "") "/devices")
-        }}
-        {{
           template "networks/devices-list.partial.tmpl" dict
           "Members" .Data.Members
           "Network" .Data.Network
           "NetworkDNS" .Data.NetworkDNS
           "Auth" .Auth
+          "WithTurboStreamSource" true
         }}
         {{if .Data.NetworkDNS.Named}}
           <h2>DNS Records</h2>
