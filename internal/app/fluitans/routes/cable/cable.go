@@ -23,9 +23,12 @@ func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {
 
 		acc := actioncable.Upgrade(wsc, actioncable.WithChannels(
 			map[string]actioncable.ChannelFactory{
-				turbostreams.ChannelName: h.tsb.ChannelFactory(sess.ID, h.tss),
+				turbostreams.ChannelName: h.tsb.ChannelFactory(sess.ID, h.tss.Check),
 			},
 			make(map[string]actioncable.Channel),
+			actioncable.WithCSRFTokenChecker(func(token string) error {
+				return h.cc.Check(c.Request(), token)
+			}),
 		))
 		ctx, cancel := context.WithCancel(c.Request().Context())
 		h.acc.Add(sess.ID, cancel)
@@ -34,7 +37,7 @@ func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {
 		if serr != nil && serr != context.Canceled {
 			h.l.Error(serr)
 		}
-		if err := acc.Close(); err != nil {
+		if err := acc.Close(serr); err != nil {
 			h.l.Error(err)
 		}
 		return nil

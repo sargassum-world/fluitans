@@ -13,7 +13,10 @@ import { Application } from 'stimulus';
 
 Turbo.session.drive = true;
 
-customElements.define('turbo-cable-stream-source', TurboCableStreamSourceElement)
+customElements.define(
+  'turbo-cable-stream-source',
+  TurboCableStreamSourceElement,
+);
 
 const Stimulus = Application.start();
 Stimulus.register('csrf', CSRFController);

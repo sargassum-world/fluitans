@@ -35,7 +35,9 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, em go
 
 	assets.RegisterStatic(er, em)
 	assets.NewTemplated(h.r).Register(er)
-	cable.New(h.r, ss, acc, h.globals.TSSigner, h.globals.TSBroker, h.globals.Logger).Register(er)
+	cable.New(
+		h.r, ss, h.globals.CSRFChecker, acc, h.globals.TSSigner, h.globals.TSBroker, h.globals.Logger,
+	).Register(er)
 	home.New(h.r).Register(er, ss)
 	auth.New(h.r, ss, acc, h.globals.Authn).Register(er)
 	controllers.New(h.r, ztcc, ztc).Register(er, ss)

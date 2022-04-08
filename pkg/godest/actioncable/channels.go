@@ -2,22 +2,9 @@ package actioncable
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/pkg/errors"
 )
-
-// Channel
-
-func ParseIdentifier(identifierRaw string) (channelName string, err error) {
-	var i struct {
-		Channel string `json:"channel"`
-	}
-	if err := json.Unmarshal([]byte(identifierRaw), &i); err != nil {
-		return "", errors.Wrap(err, "couldn't parse identifier")
-	}
-	return i.Channel, nil
-}
 
 type Channel interface {
 	Subscribe(ctx context.Context, sub Subscription) (unsubscriber func(), err error)
@@ -27,7 +14,7 @@ type Channel interface {
 type ChannelFactory func(identifier string) (Channel, error)
 
 func HandleSubscription(
-	factories map[string]ChannelFactory, channels map[string]Channel,
+	factories map[string]ChannelFactory, channels map[string]Channel, checkers ...IdentifierChecker,
 ) SubscriptionHandler {
 	return func(ctx context.Context, sub Subscription) (unsubscriber func(), err error) {
 		if channel, ok := channels[sub.Identifier()]; ok {
@@ -39,9 +26,14 @@ func HandleSubscription(
 			return unsubscriber, nil
 		}
 
-		channelName, err := ParseIdentifier(sub.Identifier())
+		channelName, err := parseChannelName(sub.Identifier())
 		if err != nil {
 			return nil, err
+		}
+		for _, checker := range checkers {
+			if err = checker(sub.Identifier()); err != nil {
+				return nil, errors.Wrap(err, "channel identifier failed check")
+			}
 		}
 		factory, ok := factories[channelName]
 		if !ok {
@@ -73,10 +65,10 @@ func HandleAction(channels map[string]Channel) ActionHandler {
 }
 
 func WithChannels(
-	factories map[string]ChannelFactory, channels map[string]Channel,
+	factories map[string]ChannelFactory, channels map[string]Channel, checkers ...IdentifierChecker,
 ) ConnOption {
 	return func(conn *Conn) {
-		conn.sh = HandleSubscription(factories, channels)
+		conn.sh = HandleSubscription(factories, channels, checkers...)
 		conn.ah = HandleAction(channels)
 	}
 }

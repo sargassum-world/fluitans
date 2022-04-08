@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-type TurboStreamSigner func(streamName string) (signed string, err error)
+type TurboStreamSigner func(streamName string) (hash string)
 
 func FuncMap(h HashedNamers, tss TurboStreamSigner) template.FuncMap {
 	return template.FuncMap{
@@ -23,6 +23,6 @@ func FuncMap(h HashedNamers, tss TurboStreamSigner) template.FuncMap {
 		"exemplifyDNSRecordType": ExemplifyDNSRecordType,
 		"appHashed":              h.AppHashed,
 		"staticHashed":           h.StaticHashed,
-		"turboStreamSigned":      tss,
+		"signTurboStream":        tss,
 	}
 }

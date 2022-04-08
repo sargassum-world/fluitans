@@ -7,9 +7,6 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
-	"github.com/vmihailenco/msgpack/v5"
-
-	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
 )
 
 type Signer struct {
@@ -22,56 +19,40 @@ func NewSigner(config SignerConfig) Signer {
 	}
 }
 
-func (s Signer) NewChannel(
-	identifier string, h *MessagesHub, handleSub SubHandler, handleMsg MsgHandler,
-) (*Channel, error) {
+func (s Signer) Check(identifier string) error {
 	name, err := s.parseIdentifier(identifier)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !s.validate(name) {
-		return nil, errors.Errorf("signed stream name %s failed HMAC check", name.Name)
+		return errors.Errorf("signed stream name %s failed HMAC check", name.Name)
 	}
-	return &Channel{
-		identifier: identifier,
-		name:       name,
-		h:          h,
-		handleSub:  handleSub,
-		handleMsg:  handleMsg,
-	}, nil
-}
-
-func (s Signer) ChannelFactory(
-	h *MessagesHub, handleSub SubHandler, handleMsg MsgHandler,
-) actioncable.ChannelFactory {
-	return func(identifier string) (actioncable.Channel, error) {
-		return s.NewChannel(identifier, h, handleSub, handleMsg)
-	}
+	return nil
 }
 
 type signedName struct {
-	Name string `msgpack:"name"`
-	Hash []byte `msgpack:"hash"`
+	Name string
+	Hash []byte
 }
 
 func (s Signer) validate(n signedName) bool {
 	return hmac.Equal(n.Hash, s.hash(n.Name))
 }
 
-func (s Signer) parseIdentifier(identifier string) (signedName, error) {
-	var p struct {
-		SignedName string `json:"signed_stream_name"`
+func (s Signer) parseIdentifier(identifier string) (parsed signedName, err error) {
+	var params struct {
+		Name string `json:"name"`
+		Hash string `json:"integrity"`
 	}
-	if err := json.Unmarshal([]byte(identifier), &p); err != nil {
+	if err = json.Unmarshal([]byte(identifier), &params); err != nil {
 		return signedName{}, errors.Wrap(err, "couldn't parse identifier for params")
 	}
-	signedRaw, err := base64.StdEncoding.DecodeString(p.SignedName)
+	parsed.Name = params.Name
+	parsed.Hash, err = base64.StdEncoding.DecodeString(params.Hash)
 	if err != nil {
-		return signedName{}, errors.Wrap(err, "couldn't base64-decode signed stream name")
+		return signedName{}, errors.Wrap(err, "couldn't base64-decode stream name hash")
 	}
-	var name signedName
-	err = msgpack.Unmarshal(signedRaw, &name)
-	return name, errors.Wrap(err, "couldn't parse name and hash from decoded signed stream name")
+	return parsed, nil
 }
 
 func (s Signer) hash(streamName string) []byte {
@@ -80,13 +61,6 @@ func (s Signer) hash(streamName string) []byte {
 	return h.Sum(nil)
 }
 
-func (s Signer) Sign(streamName string) (signed string, err error) {
-	signedRaw, err := msgpack.Marshal(signedName{
-		Name: streamName,
-		Hash: s.hash(streamName),
-	})
-	if err != nil {
-		return "", errors.Wrap(err, "couldn't marshal stream name and hash")
-	}
-	return base64.StdEncoding.EncodeToString(signedRaw), nil
+func (s Signer) Sign(streamName string) (hash string) {
+	return base64.StdEncoding.EncodeToString(s.hash(streamName))
 }

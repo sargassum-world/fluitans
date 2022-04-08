@@ -1,1 +1,8 @@
-<turbo-cable-stream-source channel="Turbo::StreamsChannel" name="{{.}}" signed-stream-name="{{turboStreamSigned .}}">
+<turbo-cable-stream-source
+  channel="Turbo::StreamsChannel"
+  name="{{.}}"
+  integrity="{{signTurboStream .}}"
+  csrf-token=""
+  data-csrf-route="/csrf"
+>
+</turbo-cable-stream-source>

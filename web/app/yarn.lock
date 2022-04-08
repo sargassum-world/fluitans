@@ -15,9 +15,9 @@
   integrity sha512-hsEnFemeiW4D08A5gUAZxLBTXpZ39P+a+DGDsHw1yxqyQ/jzFEnxf5uTEGp+3bzAbNOxU1paTgYS4ECU/IgfDw==
 
 "@babel/highlight@^7.16.7":
-  version "7.16.10"
-  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.16.10.tgz#744f2eb81579d6eea753c227b0f570ad785aba88"
-  integrity sha512-5FnTQLSLswEj6IkgVw5KusNUUFY9ZGqe/TRFnP/BKYHYgfh7tc+C7mwiy95/yNP7Dh9x580Vv8r7u7ZfTBFxdw==
+  version "7.17.9"
+  resolved "https://registry.yarnpkg.com/@babel/highlight/-/highlight-7.17.9.tgz#61b2ee7f32ea0454612def4fccdae0de232b73e3"
+  integrity sha512-J9PfEKCbFIv2X5bjTMiZu6Vf341N05QIY+d6FvVKynkG1S7G0j3I0QoRtWIrXhZ+/Nlb5Q0MzqL7TokEJ5BNHg==
   dependencies:
     "@babel/helper-validator-identifier" "^7.16.7"
     chalk "^2.0.0"
@@ -135,10 +135,10 @@
     estree-walker "^1.0.1"
     picomatch "^2.2.2"
 
-"@sargassum-world/stimulated@^0.3.0":
-  version "0.3.0"
-  resolved "https://registry.yarnpkg.com/@sargassum-world/stimulated/-/stimulated-0.3.0.tgz#b4082f354ae61e82df20e47c9e665ac09fb7076b"
-  integrity sha512-Td5MLMAGcBnym8unA8H9dKuFiBad1cnaf6mVukBhylu7+tyoQAHyteRRpcXeu7gbM8irPYtq2gm4Qzr0eSa7UA==
+"@sargassum-world/stimulated@^0.4.0":
+  version "0.4.0"
+  resolved "https://registry.yarnpkg.com/@sargassum-world/stimulated/-/stimulated-0.4.0.tgz#4a879311ce7847c2d08c9af37d6df88d90b9b5b5"
+  integrity sha512-olfeL7N91LIuJDwQCRvI7wd2SA+0+lKqFQ4Hdd3E8se1XP/jVWlng4/nmz9GDigWeOxo01Z2jG3GfQSh+JiIPQ==
   dependencies:
     "@hotwired/turbo" "^7.0.1"
     "@rails/actioncable" "^6.1.5"
@@ -1377,7 +1377,7 @@ minimatch@^3.0.4, minimatch@^3.1.2:
   dependencies:
     brace-expansion "^1.1.7"
 
-minimist@^1.2.0, minimist@^1.2.5, minimist@^1.2.6:
+minimist@^1.2.0, minimist@^1.2.6:
   version "1.2.6"
   resolved "https://registry.yarnpkg.com/minimist/-/minimist-1.2.6.tgz#8637a5b759ea0d6e98702cfb3a9283323c93af44"
   integrity sha512-Jsjnk4bw3YJqYzbdyBiNsPWHPfO++UGG749Cxs6peCu5Xg4nrena6OVxOYxrQTqww0Jmwt+Ref8rggumkTLz9Q==
@@ -1813,9 +1813,9 @@ sander@^0.5.0:
     rimraf "^2.5.2"
 
 sass@^1.43.2:
-  version "1.49.11"
-  resolved "https://registry.yarnpkg.com/sass/-/sass-1.49.11.tgz#1ffeb77faeed8b806a2a1e021d7c9fd3fc322cb7"
-  integrity sha512-wvS/geXgHUGs6A/4ud5BFIWKO1nKd7wYIGimDk4q4GFkJicILActpv9ueMT4eRGSsp1BdKHuw1WwAHXbhsJELQ==
+  version "1.50.0"
+  resolved "https://registry.yarnpkg.com/sass/-/sass-1.50.0.tgz#3e407e2ebc53b12f1e35ce45efb226ea6063c7c8"
+  integrity sha512-cLsD6MEZ5URXHStxApajEh7gW189kkjn4Rc8DQweMyF+o5HF5nfEz8QYLMlPsTOD88DknatTmBWkOcw5/LnJLQ==
   dependencies:
     chokidar ">=3.0.0 <4.0.0"
     immutable "^4.0.0"
@@ -2065,14 +2065,13 @@ supports-preserve-symlinks-flag@^1.0.0:
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
 svelte-check@^2.0.0:
-  version "2.4.6"
-  resolved "https://registry.yarnpkg.com/svelte-check/-/svelte-check-2.4.6.tgz#dfdb6b4a68d9b2cececdedd4e17d895eb82314b3"
-  integrity sha512-luzdly7RJhyXucQe8ID/7CqDgXdMrPYXmyZBjCbp+cixzTopZotuWevrB5hWDOnOU19m2cyetigIIa7WDHnCmQ==
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/svelte-check/-/svelte-check-2.5.0.tgz#510b5715dfa81f47e88dd2769cc52352b7728e7a"
+  integrity sha512-/laO032JQ1TpmYHgaaLndHNPeWW3VSL3liMB97sA9fYTEzlIy3jIo4Rgr7EzjNvieiNWG73C5voOAeNHlrwbpg==
   dependencies:
     chokidar "^3.4.1"
     fast-glob "^3.2.7"
     import-fresh "^3.2.1"
-    minimist "^1.2.5"
     picocolors "^1.0.0"
     sade "^1.7.4"
     source-map "^0.7.3"

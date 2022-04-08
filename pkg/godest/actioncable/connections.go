@@ -5,7 +5,6 @@ package actioncable
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -96,7 +95,6 @@ type Conn struct {
 	ah            ActionHandler
 	unsubscribers map[string]func()
 	sanitizeError ErrorSanitizer
-	disconnector  *sync.Once
 }
 
 type ConnOption func(conn *Conn)
@@ -124,11 +122,11 @@ func defaultErrorSanitizer(err error) string {
 		return ""
 	}
 
-	if err == context.Canceled {
-		return "user logged out"
+	if err == context.Canceled || errors.Unwrap(err) == context.Canceled {
+		return "logged out"
 	}
 	// Sanitize the error message to avoid leaking information from Serve method errors
-	return "server error"
+	return "server or client error"
 }
 
 func Upgrade(wsc *websocket.Conn, opts ...ConnOption) (conn *Conn) {
@@ -143,7 +141,6 @@ func Upgrade(wsc *websocket.Conn, opts ...ConnOption) (conn *Conn) {
 		},
 		sanitizeError: defaultErrorSanitizer,
 		unsubscribers: make(map[string]func()),
-		disconnector:  &sync.Once{},
 	}
 	for _, opt := range opts {
 		opt(conn)
@@ -168,15 +165,12 @@ func (c *Conn) disconnect(serr error, allowReconnect bool) {
 	_ = c.sendJSON(newDisconnect(c.sanitizeError(serr), allowReconnect))
 }
 
-func (c *Conn) Close() error {
-	c.disconnector.Do(func() {
-		// TODO: is there any situation where we don't want to allow reconnection?
-		c.disconnect(nil, true)
-	})
-
+func (c *Conn) Close(err error) error {
 	// We send close messages only as a courtesy; they may fail if the client already closed the
 	// websocket connection by going away, so we don't care about such errors; we need to call the
 	// websocket's Close method regardless.
+	// TODO: is there any situation where we want to allow reconnection?
+	c.disconnect(err, false)
 	_ = c.sendMessage(websocket.CloseMessage, []byte{})
 
 	return errors.Wrap(c.wsc.Close(), "couldn't close websocket")
@@ -247,12 +241,18 @@ func (c *Conn) receiveAll(ctx context.Context) (err error) {
 	})
 
 	for {
+		var command clientMessage
+		received := make(chan interface{})
+		go func() {
+			// ReadJSON blocks for a while due to websocke read timeout, but we don't want it to delay
+			// context cancellation so we launch it and synchronize with a closable channel
+			err = c.wsc.ReadJSON(&command)
+			close(received)
+		}()
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		default:
-			var command clientMessage
-			err = c.wsc.ReadJSON(&command)
+		case <-received:
 			if err != nil {
 				return filterNormalClose(err, errors.Wrap(err, "couldn't parse client message as JSON"))
 			}
@@ -300,10 +300,6 @@ func (c *Conn) sendAll(ctx context.Context) (err error) {
 	defer func() {
 		wsPingTicker.Stop()
 		cablePingTicker.Stop()
-		c.disconnector.Do(func() {
-			// TODO: is there any situation where we want to allow reconnection?
-			c.disconnect(err, false)
-		})
 	}()
 
 	if err = c.resetWriteDeadline(); err != nil {

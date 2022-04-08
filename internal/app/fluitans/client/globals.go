@@ -20,8 +20,9 @@ type Globals struct {
 	Config conf.Config
 	Cache  clientcache.Cache
 
-	Sessions session.Store
-	Authn    *authn.Client
+	Sessions    session.Store
+	CSRFChecker *session.CSRFTokenChecker
+	Authn       *authn.Client
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -48,6 +49,7 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
 	g.Sessions = session.NewMemStore(sessionsConfig)
+	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
 	authnConfig, err := authn.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up authn config")

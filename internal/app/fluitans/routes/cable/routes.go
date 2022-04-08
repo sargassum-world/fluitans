@@ -17,6 +17,7 @@ type Handlers struct {
 	r godest.TemplateRenderer
 
 	ss session.Store
+	cc *session.CSRFTokenChecker
 
 	acc *actioncable.Cancellers
 	tss turbostreams.Signer
@@ -28,15 +29,16 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, ss session.Store,
+	r godest.TemplateRenderer, ss session.Store, cc *session.CSRFTokenChecker,
 	acc *actioncable.Cancellers, tss turbostreams.Signer, tsb *turbostreams.Broker, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
+		ss:  ss,
+		cc:  cc,
 		acc: acc,
 		tss: tss,
 		tsb: tsb,
-		ss:  ss,
 		l:   l,
 		wsu: websocket.Upgrader{
 			Subprotocols: actioncable.Subprotocols(),

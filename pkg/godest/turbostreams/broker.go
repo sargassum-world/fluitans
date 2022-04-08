@@ -97,8 +97,14 @@ func (b *Broker) MSG(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 
 // Action Cable Support
 
-func (b *Broker) ChannelFactory(sessionID string, signer Signer) actioncable.ChannelFactory {
-	return signer.ChannelFactory(b.hub, b.handleSub(sessionID), b.handleMsg(sessionID))
+func (b *Broker) ChannelFactory(
+	sessionID string, checkers ...actioncable.IdentifierChecker,
+) actioncable.ChannelFactory {
+	return func(identifier string) (actioncable.Channel, error) {
+		return NewChannel(
+			identifier, b.hub, b.subHandler(sessionID), b.msgHandler(sessionID), checkers...,
+		)
+	}
 }
 
 func (b *Broker) newContext(ctx stdContext.Context, topic string) *context {
@@ -111,7 +117,7 @@ func (b *Broker) newContext(ctx stdContext.Context, topic string) *context {
 	}
 }
 
-func (b *Broker) handleSub(sessionID string) SubHandler {
+func (b *Broker) subHandler(sessionID string) SubHandler {
 	return func(ctx stdContext.Context, topic string) error {
 		c := b.newContext(ctx, topic)
 		c.sessionID = sessionID
@@ -124,7 +130,7 @@ func (b *Broker) handleSub(sessionID string) SubHandler {
 	}
 }
 
-func (b *Broker) handleMsg(sessionID string) MsgHandler {
+func (b *Broker) msgHandler(sessionID string) MsgHandler {
 	return func(ctx stdContext.Context, topic string, messages []Message) (result string, err error) {
 		c := b.newContext(ctx, topic)
 		c.sessionID = sessionID
