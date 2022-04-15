@@ -28,10 +28,6 @@ func GetWithoutRequest(s sessions.Session, ss session.Store) (a Auth, err error)
 
 // HTTP
 
-func Get(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
-	return GetFromRequest(r, s, ss)
-}
-
 func GetFromRequest(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
 	a, err = GetWithoutRequest(s, ss)
 	if err != nil {
@@ -56,7 +52,7 @@ func GetWithSession(
 		}
 		// We let the caller save the new session
 	}
-	a, err = Get(r, *s, ss)
+	a, err = GetFromRequest(r, *s, ss)
 	if err != nil {
 		return Auth{}, s, err
 	}

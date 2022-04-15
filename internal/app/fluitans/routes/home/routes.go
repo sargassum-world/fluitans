@@ -20,8 +20,8 @@ func New(r godest.TemplateRenderer) *Handlers {
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, ss session.Store) {
-	ar := auth.NewHTTPRouter(er, ss)
-	ar.GET("/", h.HandleHomeGet())
+	hr := auth.NewHTTPRouter(er, ss)
+	hr.GET("/", h.HandleHomeGet())
 }
 
 func (h *Handlers) HandleHomeGet() auth.HTTPHandlerFunc {

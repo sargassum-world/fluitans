@@ -27,6 +27,7 @@
   >
   <script>{{.Inlines.JS.BundleEager}}</script>
   {{block "nav/navbar.assets" .}}{{end}}
+  <!-- crossorigin is needed to preload fonts correctly -->
   <link
     rel="preload"
     as="font"
