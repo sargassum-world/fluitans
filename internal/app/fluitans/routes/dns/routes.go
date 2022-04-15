@@ -33,12 +33,12 @@ func New(
 }
 
 func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
-	ar := auth.NewHTTPRouter(er, ss)
-	az := auth.RequireHTTPAuthz(ss)
-	atsz := auth.RequireTSAuthz(ss)
-	ar.GET("/dns", h.HandleServerGet(), az)
-	tsr.SUB("/dns/server/info", turbostreams.EmptyHandler, atsz)
+	hr := auth.NewHTTPRouter(er, ss)
+	haz := auth.RequireHTTPAuthz(ss)
+	tsaz := auth.RequireTSAuthz(ss)
+	hr.GET("/dns", h.HandleServerGet(), haz)
+	tsr.SUB("/dns/server/info", turbostreams.EmptyHandler, tsaz)
 	tsr.PUB("/dns/server/info", h.HandleServerInfoPub())
-	tsr.MSG("/dns/server/info", handling.HandleTSMsg(h.r, ss), atsz)
-	er.POST("/dns/:subname/:type", h.HandleRRsetPost(), az)
+	tsr.MSG("/dns/server/info", handling.HandleTSMsg(h.r, ss), tsaz)
+	er.POST("/dns/:subname/:type", h.HandleRRsetPost(), haz)
 }
