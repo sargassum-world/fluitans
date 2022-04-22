@@ -154,7 +154,7 @@ func (c *Client) FindControllerByAddress(ctx context.Context, address string) (*
 func (c *Client) getAddressFromCache(controller Controller) (string, bool) {
 	address, cacheHit, err := c.Cache.GetAddressByServer(controller.Server)
 	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
-		// Log the error but return as a cache miss so we can manually query the RRsets
+		// Log the error but return as a cache miss so we can manually query the controller
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for the Zerotier address for %s", controller.Server,
 		))

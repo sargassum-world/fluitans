@@ -12,18 +12,20 @@ import (
 const ChannelName = "Turbo::StreamsChannel"
 
 type (
-	SubHandler func(ctx stdContext.Context, streamName string) error
-	MsgHandler func(
+	SubHandler   func(ctx stdContext.Context, streamName string) error
+	UnsubHandler func(ctx stdContext.Context, streamName string)
+	MsgHandler   func(
 		ctx stdContext.Context, streamName string, messages []Message,
 	) (result string, err error)
 )
 
 type Channel struct {
-	identifier string
-	streamName string
-	h          *MessagesHub
-	handleSub  SubHandler
-	handleMsg  MsgHandler
+	identifier  string
+	streamName  string
+	h           *MessagesHub
+	handleSub   SubHandler
+	handleUnsub UnsubHandler
+	handleMsg   MsgHandler
 }
 
 func parseStreamName(identifier string) (string, error) {
@@ -37,7 +39,8 @@ func parseStreamName(identifier string) (string, error) {
 }
 
 func NewChannel(
-	identifier string, h *MessagesHub, handleSub SubHandler, handleMsg MsgHandler,
+	identifier string, h *MessagesHub,
+	handleSub SubHandler, handleUnsub UnsubHandler, handleMsg MsgHandler,
 	checkers ...actioncable.IdentifierChecker,
 ) (*Channel, error) {
 	name, err := parseStreamName(identifier)
@@ -50,11 +53,12 @@ func NewChannel(
 		}
 	}
 	return &Channel{
-		identifier: identifier,
-		streamName: name,
-		h:          h,
-		handleSub:  handleSub,
-		handleMsg:  handleMsg,
+		identifier:  identifier,
+		streamName:  name,
+		h:           h,
+		handleSub:   handleSub,
+		handleUnsub: handleUnsub,
+		handleMsg:   handleMsg,
 	}, nil
 }
 
@@ -92,6 +96,7 @@ func (c *Channel) Subscribe(
 		}
 		cancel()
 		unsub()
+		c.handleUnsub(ctx, c.streamName)
 		sub.Close()
 	}()
 	return cancel, nil

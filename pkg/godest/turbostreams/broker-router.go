@@ -88,6 +88,8 @@ func (n *node) addHandler(method string, h HandlerFunc) {
 		n.methodHandler.pub = h
 	case MethodSub:
 		n.methodHandler.sub = h
+	case MethodUnsub:
+		n.methodHandler.unsub = h
 	case MethodMsg:
 		n.methodHandler.msg = h
 	}
@@ -107,6 +109,8 @@ func (n *node) findHandler(method string) HandlerFunc {
 		return n.methodHandler.pub
 	case MethodSub:
 		return n.methodHandler.sub
+	case MethodUnsub:
+		return n.methodHandler.unsub
 	case MethodMsg:
 		return n.methodHandler.msg
 	}
