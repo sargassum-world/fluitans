@@ -31,6 +31,7 @@ type Logger interface {
 type Router interface {
 	PUB(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route
 	SUB(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route
+	UNSUB(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route
 	MSG(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route
 }
 
@@ -91,6 +92,10 @@ func (b *Broker) SUB(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 	return b.Add(MethodSub, topic, h, m...)
 }
 
+func (b *Broker) UNSUB(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
+	return b.Add(MethodUnsub, topic, h, m...)
+}
+
 func (b *Broker) MSG(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 	return b.Add(MethodMsg, topic, h, m...)
 }
@@ -102,7 +107,8 @@ func (b *Broker) ChannelFactory(
 ) actioncable.ChannelFactory {
 	return func(identifier string) (actioncable.Channel, error) {
 		return NewChannel(
-			identifier, b.hub, b.subHandler(sessionID), b.msgHandler(sessionID), checkers...,
+			identifier, b.hub,
+			b.subHandler(sessionID), b.unsubHandler(sessionID), b.msgHandler(sessionID), checkers...,
 		)
 	}
 }
@@ -127,6 +133,18 @@ func (b *Broker) subHandler(sessionID string) SubHandler {
 			b.logger.Error(err)
 		}
 		return err
+	}
+}
+
+func (b *Broker) unsubHandler(sessionID string) UnsubHandler {
+	return func(ctx stdContext.Context, topic string) {
+		c := b.newContext(ctx, topic)
+		c.sessionID = sessionID
+		b.router.Find(MethodUnsub, topic, c)
+		err := errors.Wrapf(c.handler(c), "turbo streams not unsubscribable on topic %s", topic)
+		if err != nil {
+			b.logger.Error(err)
+		}
 	}
 }
 

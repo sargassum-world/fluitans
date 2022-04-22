@@ -10,9 +10,10 @@ import (
 // Methods
 
 const (
-	MethodPub = "PUB"
-	MethodSub = "SUB"
-	MethodMsg = "MSG"
+	MethodPub   = "PUB"
+	MethodSub   = "SUB"
+	MethodUnsub = "UNSUB"
+	MethodMsg   = "MSG"
 )
 
 // Handlers
@@ -28,13 +29,14 @@ func EmptyHandler(c Context) error {
 }
 
 type methodHandler struct {
-	pub HandlerFunc
-	sub HandlerFunc
-	msg HandlerFunc
+	pub   HandlerFunc
+	sub   HandlerFunc
+	unsub HandlerFunc
+	msg   HandlerFunc
 }
 
 func (m *methodHandler) isHandler() bool {
-	return m.pub != nil || m.sub != nil || m.msg != nil
+	return m.pub != nil || m.sub != nil || m.unsub != nil || m.msg != nil
 }
 
 func handlerName(h HandlerFunc) string {
