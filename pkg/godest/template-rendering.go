@@ -212,15 +212,17 @@ type renderedStreamMessage struct {
 
 func (tr TemplateRenderer) WriteTurboStream(w io.Writer, messages ...turbostreams.Message) error {
 	rendered := make([]renderedStreamMessage, len(messages))
-	for i, stream := range messages {
+	for i, message := range messages {
 		buf := new(bytes.Buffer)
-		if err := tr.WritePartial(buf, stream.Template, stream.Data); err != nil {
-			return errors.Wrapf(err, "couldn't execute stream template %s", stream.Template)
+		if message.Action != turbostreams.ActionRemove {
+			if err := tr.WritePartial(buf, message.Template, message.Data); err != nil {
+				return errors.Wrapf(err, "couldn't execute stream message template %s", message.Template)
+			}
 		}
 		rendered[i] = renderedStreamMessage{
-			Action:  stream.Action,
-			Targets: stream.Targets,
-			Target:  stream.Target,
+			Action:  message.Action,
+			Targets: message.Targets,
+			Target:  message.Target,
 			//nolint:gosec // This is generated from trusted templates, so we know it's well-formed
 			Rendered: template.HTML(buf.String()),
 		}
@@ -228,7 +230,7 @@ func (tr TemplateRenderer) WriteTurboStream(w io.Writer, messages ...turbostream
 
 	buf := new(bytes.Buffer)
 	if err := tr.turboStreamsTemplate.Execute(buf, rendered); err != nil {
-		return errors.Wrap(err, "couldn't execute Turbo Streams template")
+		return errors.Wrap(err, "couldn't execute Turbo Streams message template")
 	}
 
 	_, werr := w.Write(buf.Bytes())
