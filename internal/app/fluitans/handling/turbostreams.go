@@ -1,3 +1,4 @@
+// Package handling provides utilities for handlers
 package handling
 
 import (
@@ -14,6 +15,17 @@ import (
 func AddAuthData(a auth.Auth, messages []turbostreams.Message) ([]turbostreams.Message, error) {
 	published := make([]turbostreams.Message, len(messages))
 	for i, m := range messages {
+		published[i] = turbostreams.Message{
+			Action:   m.Action,
+			Target:   m.Target,
+			Template: m.Template,
+		}
+		if m.Action == turbostreams.ActionRemove {
+			// The contents of the stream element will be ignored anyways
+			published[i].Template = ""
+			continue
+		}
+
 		d, ok := m.Data.(map[string]interface{})
 		if !ok {
 			return nil, errors.Errorf("unexpected turbo stream message data type: %T", m.Data)
@@ -24,12 +36,7 @@ func AddAuthData(a auth.Auth, messages []turbostreams.Message) ([]turbostreams.M
 			data[key] = value
 		}
 		data["Auth"] = a
-		published[i] = turbostreams.Message{
-			Action:   m.Action,
-			Target:   m.Target,
-			Template: m.Template,
-			Data:     data,
-		}
+		published[i].Data = data
 	}
 	return published, nil
 }

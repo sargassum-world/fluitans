@@ -1,4 +1,3 @@
-// Package handling provides utilities for handlers
 package handling
 
 import (
