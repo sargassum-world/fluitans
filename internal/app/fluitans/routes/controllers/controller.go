@@ -13,16 +13,16 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
-type ControllerData struct {
+type ControllerViewData struct {
 	Controller       ztcontrollers.Controller
 	Status           zerotier.Status
 	ControllerStatus zerotier.ControllerStatus
 	Networks         map[string]zerotier.ControllerNetwork
 }
 
-func getControllerData(
+func getControllerViewData(
 	ctx context.Context, name string, cc *ztcontrollers.Client, c *ztc.Client,
-) (*ControllerData, error) {
+) (*ControllerViewData, error) {
 	controller, err := cc.FindController(name)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func getControllerData(
 		return nil, err
 	}
 
-	return &ControllerData{
+	return &ControllerViewData{
 		Controller:       *controller,
 		Status:           *status,
 		ControllerStatus: *controllerStatus,
@@ -61,15 +61,15 @@ func (h *Handlers) HandleControllerGet() auth.HTTPHandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		controllerData, err := getControllerData(c.Request().Context(), name, h.ztcc, h.ztc)
+		controllerViewData, err := getControllerViewData(c.Request().Context(), name, h.ztcc, h.ztc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
 		// Zero out clocks before computing etag for client-side caching
-		*controllerData.Status.Clock = 0
-		*controllerData.ControllerStatus.Clock = 0
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *controllerData, a)
+		*controllerViewData.Status.Clock = 0
+		*controllerViewData.ControllerStatus.Clock = 0
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *controllerViewData, a)
 	}
 }

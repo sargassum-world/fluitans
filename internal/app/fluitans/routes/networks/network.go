@@ -219,7 +219,7 @@ func getNetworkDNSRecords(
 	return networkDNS, nil
 }
 
-type NetworkData struct {
+type NetworkViewData struct {
 	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
 	Members          map[string]Member
@@ -236,10 +236,10 @@ func printJSONRules(rawRules []map[string]interface{}) (string, error) {
 	return string(rules), err
 }
 
-func getNetworkData(
+func getNetworkViewData(
 	ctx context.Context, address, id string,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
-) (*NetworkData, error) {
+) (*NetworkViewData, error) {
 	controller, err := cc.FindControllerByAddress(ctx, address)
 	if err != nil {
 		return nil, err
@@ -287,7 +287,7 @@ func getNetworkData(
 		return nil, err
 	}
 
-	return &NetworkData{
+	return &NetworkViewData{
 		Controller:       *controller,
 		Network:          *network,
 		Members:          members,
@@ -306,13 +306,15 @@ func (h *Handlers) HandleNetworkGet() auth.HTTPHandlerFunc {
 		address := ztc.GetControllerAddress(id)
 
 		// Run queries
-		networkData, err := getNetworkData(c.Request().Context(), address, id, h.ztc, h.ztcc, h.dc)
+		networkViewData, err := getNetworkViewData(
+			c.Request().Context(), address, id, h.ztc, h.ztcc, h.dc,
+		)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *networkData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *networkViewData, a)
 	}
 }
 

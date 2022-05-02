@@ -67,7 +67,7 @@ func replaceDevicesListStream(
 	ctx context.Context, controllerAddress, networkID string, a auth.Auth,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desec.Client,
 ) (turbostreams.Message, error) {
-	networkData, err := getNetworkData(ctx, controllerAddress, networkID, c, cc, dc)
+	networkViewData, err := getNetworkViewData(ctx, controllerAddress, networkID, c, cc, dc)
 	if err != nil {
 		return turbostreams.Message{}, err
 	}
@@ -76,9 +76,9 @@ func replaceDevicesListStream(
 		Target:   "/networks/" + networkID + "/devices",
 		Template: devicesListPartial,
 		Data: map[string]interface{}{
-			"Members":    networkData.Members,
-			"Network":    networkData.Network,
-			"NetworkDNS": networkData.NetworkDNS,
+			"Members":    networkViewData.Members,
+			"Network":    networkViewData.Network,
+			"NetworkDNS": networkViewData.NetworkDNS,
 			"Auth":       a,
 		},
 	}, nil

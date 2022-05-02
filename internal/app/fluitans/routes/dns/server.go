@@ -26,7 +26,7 @@ type APILimiterStats struct {
 	WriteBatchWaitSec      float64
 }
 
-type ServerData struct {
+type ServerView struct {
 	Server           models.DNSServer
 	Domain           desec.Domain
 	DesecAPISettings desecc.DesecAPISettings
@@ -48,9 +48,9 @@ func getAPILimiterStats(c *desecc.Client) APILimiterStats {
 	}
 }
 
-func getServerData(
+func getServerView(
 	ctx context.Context, c *desecc.Client, zc *ztc.Client, zcc *ztcontrollers.Client,
-) (*ServerData, error) {
+) (*ServerView, error) {
 	desecDomain, err := c.GetDomain(ctx)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func getServerData(
 		return nil, err
 	}
 
-	return &ServerData{
+	return &ServerView{
 		Server:           c.Config.DNSServer,
 		Domain:           *desecDomain,
 		DesecAPISettings: c.Config.APISettings,
@@ -83,13 +83,13 @@ func (h *Handlers) HandleServerGet() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
-		serverData, err := getServerData(c.Request().Context(), h.dc, h.ztc, h.ztcc)
+		serverView, err := getServerView(c.Request().Context(), h.dc, h.ztc, h.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *serverData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, *serverView, a)
 	}
 }
 

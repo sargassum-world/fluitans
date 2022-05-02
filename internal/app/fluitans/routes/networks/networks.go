@@ -13,14 +13,14 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
-type NetworksData struct {
+type NetworksViewData struct {
 	Controller ztcontrollers.Controller
 	Networks   map[string]zerotier.ControllerNetwork
 }
 
-func getNetworksData(
+func getNetworksViewData(
 	ctx context.Context, c *ztc.Client, cc *ztcontrollers.Client,
-) ([]NetworksData, error) {
+) ([]NetworksViewData, error) {
 	controllers, err := cc.GetControllers()
 	if err != nil {
 		return nil, err
@@ -36,12 +36,12 @@ func getNetworksData(
 		return nil, err
 	}
 
-	networksData := make([]NetworksData, len(controllers))
+	networksViewData := make([]NetworksViewData, len(controllers))
 	for i, controller := range controllers {
-		networksData[i].Controller = controller
-		networksData[i].Networks = networks[i]
+		networksViewData[i].Controller = controller
+		networksViewData[i].Networks = networks[i]
 	}
-	return networksData, nil
+	return networksViewData, nil
 }
 
 func (h *Handlers) HandleNetworksGet() auth.HTTPHandlerFunc {
@@ -49,13 +49,13 @@ func (h *Handlers) HandleNetworksGet() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
-		networksData, err := getNetworksData(c.Request().Context(), h.ztc, h.ztcc)
+		networksViewData, err := getNetworksViewData(c.Request().Context(), h.ztc, h.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, networksData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, networksViewData, a)
 	}
 }
 
