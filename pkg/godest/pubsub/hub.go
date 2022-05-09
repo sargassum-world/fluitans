@@ -33,6 +33,10 @@ func NewDataHub(brChanges chan<- BroadcastingChange) *DataHub {
 	}
 }
 
+func (h *DataHub) Shutdown() {
+	close(h.brChanges)
+}
+
 func (h *DataHub) Subscribe(
 	topic string, receive DataReceiveFunc,
 ) (unsubscriber func(), removed <-chan struct{}) {

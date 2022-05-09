@@ -10,6 +10,10 @@ func NewStringHub(brChanges chan<- BroadcastingChange) *StringHub {
 	return &StringHub{hub: NewDataHub(brChanges)}
 }
 
+func (h *StringHub) Shutdown() {
+	h.hub.Shutdown()
+}
+
 func (h *StringHub) Subscribe(
 	topic string, receive StringReceiveFunc,
 ) (unsubscriber func(), removed <-chan struct{}) {
