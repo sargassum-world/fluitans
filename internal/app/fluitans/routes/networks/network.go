@@ -239,11 +239,15 @@ func printJSONRules(rawRules []map[string]interface{}) (string, error) {
 func getNetworkViewData(
 	ctx context.Context, address, id string,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
-) (*NetworkViewData, error) {
+) (vd NetworkViewData, err error) {
 	controller, err := cc.FindControllerByAddress(ctx, address)
 	if err != nil {
-		return nil, err
+		return NetworkViewData{}, err
 	}
+	if controller == nil {
+		return NetworkViewData{}, echo.NewHTTPError(http.StatusNotFound, "controller not found")
+	}
+	vd.Controller = *controller
 
 	eg, egctx := errgroup.WithContext(ctx)
 	var network *zerotier.ControllerNetwork
@@ -258,43 +262,36 @@ func getNetworkViewData(
 		return err
 	})
 	if err = eg.Wait(); err != nil {
-		return nil, err
+		return NetworkViewData{}, err
 	}
 	if network == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, "zerotier network not found")
+		return NetworkViewData{}, echo.NewHTTPError(http.StatusNotFound, "zerotier network not found")
 	}
-	rules, err := printJSONRules(*network.Rules)
-	if err != nil {
-		return nil, err
+	vd.Network = *network
+	if vd.JSONPrintedRules, err = printJSONRules(*network.Rules); err != nil {
+		return NetworkViewData{}, err
 	}
 
 	eg, egctx = errgroup.WithContext(ctx)
-	var members map[string]Member
 	eg.Go(func() (err error) {
-		members, err = getMemberRecords(
+		vd.Members, err = getMemberRecords(
 			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
 		)
 		return err
 	})
-	var networkDNS NetworkDNS
 	eg.Go(func() (err error) {
-		networkDNS, err = getNetworkDNSRecords(
+		vd.NetworkDNS, err = getNetworkDNSRecords(
 			egctx, *network.Id, *network.Name, subnameRRsets, c, cc, dc,
 		)
 		return err
 	})
 	if err := eg.Wait(); err != nil {
-		return nil, err
+		return NetworkViewData{}, err
 	}
 
-	return &NetworkViewData{
-		Controller:       *controller,
-		Network:          *network,
-		Members:          members,
-		JSONPrintedRules: rules,
-		DomainName:       dc.Config.DomainName,
-		NetworkDNS:       networkDNS,
-	}, nil
+	vd.DomainName = dc.Config.DomainName
+
+	return vd, nil
 }
 
 func (h *Handlers) HandleNetworkGet() auth.HTTPHandlerFunc {
@@ -314,7 +311,7 @@ func (h *Handlers) HandleNetworkGet() auth.HTTPHandlerFunc {
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *networkViewData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, networkViewData, a)
 	}
 }
 

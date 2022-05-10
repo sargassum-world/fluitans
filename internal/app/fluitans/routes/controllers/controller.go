@@ -22,35 +22,34 @@ type ControllerViewData struct {
 
 func getControllerViewData(
 	ctx context.Context, name string, cc *ztcontrollers.Client, c *ztc.Client,
-) (*ControllerViewData, error) {
+) (vd ControllerViewData, err error) {
 	controller, err := cc.FindController(name)
 	if err != nil {
-		return nil, err
+		return ControllerViewData{}, err
 	}
 	if controller == nil {
-		return nil, echo.NewHTTPError(
+		return ControllerViewData{}, echo.NewHTTPError(
 			http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
 		)
 	}
+	vd.Controller = *controller
 
 	status, controllerStatus, networkIDs, err := c.GetControllerInfo(ctx, *controller, cc)
 	if err != nil {
-		return nil, err
+		return ControllerViewData{}, err
 	}
+	vd.Status = *status
+	vd.ControllerStatus = *controllerStatus
 
 	networks, err := c.GetAllNetworks(
 		ctx, []ztcontrollers.Controller{*controller}, [][]string{networkIDs},
 	)
 	if err != nil {
-		return nil, err
+		return ControllerViewData{}, err
 	}
+	vd.Networks = networks[0]
 
-	return &ControllerViewData{
-		Controller:       *controller,
-		Status:           *status,
-		ControllerStatus: *controllerStatus,
-		Networks:         networks[0],
-	}, nil
+	return vd, nil
 }
 
 func (h *Handlers) HandleControllerGet() auth.HTTPHandlerFunc {
@@ -70,6 +69,6 @@ func (h *Handlers) HandleControllerGet() auth.HTTPHandlerFunc {
 		// Zero out clocks before computing etag for client-side caching
 		*controllerViewData.Status.Clock = 0
 		*controllerViewData.ControllerStatus.Clock = 0
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *controllerViewData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, controllerViewData, a)
 	}
 }

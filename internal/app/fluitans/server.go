@@ -135,7 +135,9 @@ func (s *Server) Register(e *echo.Echo) {
 func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
 	eg.Go(func() error {
-		if err := workers.PrescanZerotierControllers(ctx, s.Globals.ZTControllers); err != nil {
+		if err := workers.PrescanZerotierControllers(
+			ctx, s.Globals.ZTControllers,
+		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't prescan zerotier controllers"))
 		}
 		return nil
@@ -143,13 +145,15 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg.Go(func() error {
 		if err := workers.PrefetchZerotierNetworks(
 			ctx, s.Globals.Zerotier, s.Globals.ZTControllers,
-		); err != nil {
+		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't prefetch zerotier networks"))
 		}
 		return nil
 	})
 	eg.Go(func() error {
-		if err := workers.PrefetchDNSRecords(ctx, s.Globals.Desec); err != nil {
+		if err := workers.PrefetchDNSRecords(
+			ctx, s.Globals.Desec,
+		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't prefetch dns records"))
 		}
 		return nil
