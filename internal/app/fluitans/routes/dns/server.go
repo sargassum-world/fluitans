@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
@@ -26,7 +27,7 @@ type APILimiterStats struct {
 	WriteBatchWaitSec      float64
 }
 
-type ServerView struct {
+type ServerViewData struct {
 	Server           models.DNSServer
 	Domain           desec.Domain
 	DesecAPISettings desecc.DesecAPISettings
@@ -48,34 +49,35 @@ func getAPILimiterStats(c *desecc.Client) APILimiterStats {
 	}
 }
 
-func getServerView(
+func getServerViewData(
 	ctx context.Context, c *desecc.Client, zc *ztc.Client, zcc *ztcontrollers.Client,
-) (*ServerView, error) {
+) (vd ServerViewData, err error) {
+	vd.Server = c.Config.DNSServer
+
 	desecDomain, err := c.GetDomain(ctx)
 	if err != nil {
-		return nil, err
+		return ServerViewData{}, err
 	}
+	if desecDomain == nil {
+		return ServerViewData{}, errors.New("couldn't get desec domain")
+	}
+	vd.Domain = *desecDomain
+
+	vd.DesecAPISettings = c.Config.APISettings
+	vd.APILimiterStats = getAPILimiterStats(c)
 
 	subnameRRsets, err := c.GetRRsets(ctx)
 	if err != nil {
-		return nil, err
+		return ServerViewData{}, err
 	}
-	apexRRsets := desecc.FilterAndSortRRsets(subnameRRsets[""], c.Cache.RecordTypes)
+	vd.ApexRRsets = desecc.FilterAndSortRRsets(subnameRRsets[""], c.Cache.RecordTypes)
+
 	delete(subnameRRsets, "")
-
-	subdomains, err := client.GetSubdomains(ctx, subnameRRsets, c, zc, zcc)
-	if err != nil {
-		return nil, err
+	if vd.Subdomains, err = client.GetSubdomains(ctx, subnameRRsets, c, zc, zcc); err != nil {
+		return ServerViewData{}, err
 	}
 
-	return &ServerView{
-		Server:           c.Config.DNSServer,
-		Domain:           *desecDomain,
-		DesecAPISettings: c.Config.APISettings,
-		APILimiterStats:  getAPILimiterStats(c),
-		ApexRRsets:       apexRRsets,
-		Subdomains:       subdomains,
-	}, nil
+	return vd, nil
 }
 
 func (h *Handlers) HandleServerGet() auth.HTTPHandlerFunc {
@@ -83,13 +85,13 @@ func (h *Handlers) HandleServerGet() auth.HTTPHandlerFunc {
 	h.r.MustHave(t)
 	return func(c echo.Context, a auth.Auth) error {
 		// Run queries
-		serverView, err := getServerView(c.Request().Context(), h.dc, h.ztc, h.ztcc)
+		serverView, err := getServerViewData(c.Request().Context(), h.dc, h.ztc, h.ztcc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *serverView, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, serverView, a)
 	}
 }
 
