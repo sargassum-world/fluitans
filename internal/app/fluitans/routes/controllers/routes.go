@@ -10,7 +10,8 @@ import (
 )
 
 type Handlers struct {
-	r    godest.TemplateRenderer
+	r godest.TemplateRenderer
+
 	ztcc *ztcontrollers.Client
 	ztc  *zerotier.Client
 }
