@@ -244,8 +244,10 @@ func (c *Conn) receiveAll(ctx context.Context) (err error) {
 		var command clientMessage
 		received := make(chan interface{})
 		go func() {
-			// ReadJSON blocks for a while due to websocke read timeout, but we don't want it to delay
+			// ReadJSON blocks for a while due to websocket read timeout, but we don't want it to delay
 			// context cancellation so we launch it and synchronize with a closable channel
+			// FIXME: there's a rare data race in which ReadJSON may try to write to the websocket
+			// at the same time that something happens in the select.
 			err = c.wsc.ReadJSON(&command)
 			close(received)
 		}()

@@ -15,7 +15,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
-type CSRFData struct {
+type CSRFViewData struct {
 	HeaderName string `json:"headerName,omitempty"`
 	FieldName  string `json:"fieldName,omitempty"`
 	Token      string `json:"token,omitempty"`
@@ -25,7 +25,7 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Produce output
 		godest.WithUncacheable()(c.Response().Header())
-		return c.JSON(http.StatusOK, CSRFData{
+		return c.JSON(http.StatusOK, CSRFViewData{
 			HeaderName: h.ss.CSRFOptions().HeaderName,
 			FieldName:  h.ss.CSRFOptions().FieldName,
 			Token:      csrf.Token(c.Request()),
@@ -33,7 +33,7 @@ func (h *Handlers) HandleCSRFGet() echo.HandlerFunc {
 	}
 }
 
-type LoginData struct {
+type LoginViewData struct {
 	NoAuth        bool
 	ReturnURL     string
 	ErrorMessages []string
@@ -48,7 +48,7 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 		if err != nil {
 			return err
 		}
-		loginData := LoginData{
+		loginViewData := LoginViewData{
 			NoAuth:        h.ac.Config.NoAuth,
 			ReturnURL:     c.QueryParam("return"),
 			ErrorMessages: errorMessages,
@@ -61,7 +61,7 @@ func (h *Handlers) HandleLoginGet() auth.HTTPHandlerFuncWithSession {
 		a.CSRF.SetInlining(c.Request(), true)
 
 		// Produce output
-		return h.r.CacheablePage(c.Response(), c.Request(), t, loginData, a)
+		return h.r.CacheablePage(c.Response(), c.Request(), t, loginViewData, a)
 	}
 }
 

@@ -13,44 +13,43 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
-type ControllerData struct {
+type ControllerViewData struct {
 	Controller       ztcontrollers.Controller
 	Status           zerotier.Status
 	ControllerStatus zerotier.ControllerStatus
 	Networks         map[string]zerotier.ControllerNetwork
 }
 
-func getControllerData(
+func getControllerViewData(
 	ctx context.Context, name string, cc *ztcontrollers.Client, c *ztc.Client,
-) (*ControllerData, error) {
+) (vd ControllerViewData, err error) {
 	controller, err := cc.FindController(name)
 	if err != nil {
-		return nil, err
+		return ControllerViewData{}, err
 	}
 	if controller == nil {
-		return nil, echo.NewHTTPError(
+		return ControllerViewData{}, echo.NewHTTPError(
 			http.StatusNotFound, fmt.Sprintf("zerotier controller %s not found", name),
 		)
 	}
+	vd.Controller = *controller
 
 	status, controllerStatus, networkIDs, err := c.GetControllerInfo(ctx, *controller, cc)
 	if err != nil {
-		return nil, err
+		return ControllerViewData{}, err
 	}
+	vd.Status = *status
+	vd.ControllerStatus = *controllerStatus
 
 	networks, err := c.GetAllNetworks(
 		ctx, []ztcontrollers.Controller{*controller}, [][]string{networkIDs},
 	)
 	if err != nil {
-		return nil, err
+		return ControllerViewData{}, err
 	}
+	vd.Networks = networks[0]
 
-	return &ControllerData{
-		Controller:       *controller,
-		Status:           *status,
-		ControllerStatus: *controllerStatus,
-		Networks:         networks[0],
-	}, nil
+	return vd, nil
 }
 
 func (h *Handlers) HandleControllerGet() auth.HTTPHandlerFunc {
@@ -61,15 +60,15 @@ func (h *Handlers) HandleControllerGet() auth.HTTPHandlerFunc {
 		name := c.Param("name")
 
 		// Run queries
-		controllerData, err := getControllerData(c.Request().Context(), name, h.ztcc, h.ztc)
+		controllerViewData, err := getControllerViewData(c.Request().Context(), name, h.ztcc, h.ztc)
 		if err != nil {
 			return err
 		}
 
 		// Produce output
 		// Zero out clocks before computing etag for client-side caching
-		*controllerData.Status.Clock = 0
-		*controllerData.ControllerStatus.Clock = 0
-		return h.r.CacheablePage(c.Response(), c.Request(), t, *controllerData, a)
+		*controllerViewData.Status.Clock = 0
+		*controllerViewData.ControllerStatus.Clock = 0
+		return h.r.CacheablePage(c.Response(), c.Request(), t, controllerViewData, a)
 	}
 }

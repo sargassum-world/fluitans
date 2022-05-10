@@ -187,6 +187,10 @@ func (b *Broker) cancelPub(topic string) {
 }
 
 func (b *Broker) Serve(ctx stdContext.Context) error {
+	go func() {
+		<-ctx.Done()
+		b.hub.Close()
+	}()
 	for change := range b.changes {
 		for _, topic := range change.Added {
 			if _, ok := b.pubCancellers[topic]; ok {
@@ -198,5 +202,5 @@ func (b *Broker) Serve(ctx stdContext.Context) error {
 			b.cancelPub(topic)
 		}
 	}
-	return nil
+	return ctx.Err()
 }

@@ -14,6 +14,10 @@ func NewMessagesHub(brChanges chan<- pubsub.BroadcastingChange) *MessagesHub {
 	return &MessagesHub{hub: pubsub.NewDataHub(brChanges)}
 }
 
+func (h *MessagesHub) Close() {
+	h.hub.Close()
+}
+
 func (h *MessagesHub) Subscribe(
 	topic string, receive MessagesReceiveFunc,
 ) (unsubscriber func(), removed <-chan struct{}) {
