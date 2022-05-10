@@ -33,8 +33,12 @@ func NewDataHub(brChanges chan<- BroadcastingChange) *DataHub {
 	}
 }
 
-func (h *DataHub) Shutdown() {
-	close(h.brChanges)
+func (h *DataHub) Close() {
+	if h.brChanges != nil {
+		close(h.brChanges)
+	}
+	// FIXME: we should also prevent further subscriptions and publications, unsubscribe everyone,
+	// etc.
 }
 
 func (h *DataHub) Subscribe(

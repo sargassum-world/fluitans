@@ -14,8 +14,8 @@ func NewMessagesHub(brChanges chan<- pubsub.BroadcastingChange) *MessagesHub {
 	return &MessagesHub{hub: pubsub.NewDataHub(brChanges)}
 }
 
-func (h *MessagesHub) Shutdown() {
-	h.hub.Shutdown()
+func (h *MessagesHub) Close() {
+	h.hub.Close()
 }
 
 func (h *MessagesHub) Subscribe(

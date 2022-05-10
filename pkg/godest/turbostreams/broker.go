@@ -189,7 +189,7 @@ func (b *Broker) cancelPub(topic string) {
 func (b *Broker) Serve(ctx stdContext.Context) error {
 	go func() {
 		<-ctx.Done()
-		b.hub.Shutdown()
+		b.hub.Close()
 	}()
 	for change := range b.changes {
 		for _, topic := range change.Added {
