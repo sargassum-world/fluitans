@@ -8,7 +8,7 @@ require (
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/bmatcuk/doublestar/v4 v4.0.2
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
-	github.com/deepmap/oapi-codegen v1.10.1
+	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/golang/glog v1.0.0 // indirect
 	github.com/gorilla/csrf v1.7.1
