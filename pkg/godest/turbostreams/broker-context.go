@@ -19,6 +19,7 @@ type Context interface {
 
 type context struct {
 	context   stdContext.Context
+	method    string
 	path      string
 	pnames    []string
 	pvalues   []string
@@ -32,6 +33,10 @@ type context struct {
 
 func (c *context) Context() stdContext.Context {
 	return c.context
+}
+
+func (c *context) Method() string {
+	return c.method
 }
 
 func (c *context) Topic() string {
