@@ -8,6 +8,7 @@ import (
 
 type Context interface {
 	Context() stdContext.Context
+	Method() string
 	Topic() string
 	SessionID() string
 	Param(name string) string
