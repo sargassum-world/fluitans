@@ -126,6 +126,7 @@ func (b *Broker) newContext(ctx stdContext.Context, topic string) *context {
 func (b *Broker) subHandler(sessionID string) SubHandler {
 	return func(ctx stdContext.Context, topic string) error {
 		c := b.newContext(ctx, topic)
+		c.method = MethodSub
 		c.sessionID = sessionID
 		b.router.Find(MethodSub, topic, c)
 		err := errors.Wrapf(c.handler(c), "turbo streams not subscribable on topic %s", topic)
@@ -139,6 +140,7 @@ func (b *Broker) subHandler(sessionID string) SubHandler {
 func (b *Broker) unsubHandler(sessionID string) UnsubHandler {
 	return func(ctx stdContext.Context, topic string) {
 		c := b.newContext(ctx, topic)
+		c.method = MethodUnsub
 		c.sessionID = sessionID
 		b.router.Find(MethodUnsub, topic, c)
 		err := errors.Wrapf(c.handler(c), "turbo streams not unsubscribable on topic %s", topic)
@@ -151,6 +153,7 @@ func (b *Broker) unsubHandler(sessionID string) UnsubHandler {
 func (b *Broker) msgHandler(sessionID string) MsgHandler {
 	return func(ctx stdContext.Context, topic string, messages []Message) (result string, err error) {
 		c := b.newContext(ctx, topic)
+		c.method = MethodMsg
 		c.sessionID = sessionID
 		c.messages = messages
 		c.rendered = &bytes.Buffer{}
@@ -169,6 +172,7 @@ func (b *Broker) msgHandler(sessionID string) MsgHandler {
 func (b *Broker) startPub(ctx stdContext.Context, topic string) {
 	ctx, canceler := stdContext.WithCancel(ctx)
 	c := b.newContext(ctx, topic)
+	c.method = MethodPub
 	b.pubCancellers[topic] = canceler
 	b.router.Find(MethodPub, topic, c)
 	go func() {
