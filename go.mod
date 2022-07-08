@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/alexedwards/argon2id v0.0.0-20211130144151-3585854a6387
 	github.com/benbjohnson/hashfs v0.2.1
-	github.com/bmatcuk/doublestar/v4 v4.0.2
+	github.com/bmatcuk/doublestar/v4 v4.0.3
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/dgraph-io/ristretto v0.1.0
@@ -25,7 +25,7 @@ require (
 	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/twmb/murmur3 v1.1.6
-	github.com/unrolled/secure v1.10.0
+	github.com/unrolled/secure v1.11.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
 	golang.org/x/net v0.0.0-20220630215102-69896b714898 // indirect
