@@ -37,12 +37,15 @@ type Router interface {
 
 type Broker struct {
 	hub      *MessagesHub
-	changes  <-chan pubsub.BroadcastingChange
 	router   *router
 	maxParam *int
 	logger   Logger
+
+	middleware []MiddlewareFunc
+
 	// This is not guarded by a mutex because it's only used by a single goroutine
 	pubCancellers map[string]stdContext.CancelFunc
+	changes       <-chan pubsub.BroadcastingChange
 }
 
 func NewBroker(logger Logger) *Broker {
@@ -100,6 +103,17 @@ func (b *Broker) MSG(topic string, h HandlerFunc, m ...MiddlewareFunc) *Route {
 	return b.Add(MethodMsg, topic, h, m...)
 }
 
+// Middleware
+
+func (b *Broker) Use(middleware ...MiddlewareFunc) {
+	b.middleware = append(b.middleware, middleware...)
+}
+
+func (b *Broker) getHandler(method string, topic string, c *context) HandlerFunc {
+	b.router.Find(method, topic, c)
+	return applyMiddleware(c.handler, b.middleware...)
+}
+
 // Action Cable Support
 
 func (b *Broker) ChannelFactory(
@@ -128,8 +142,8 @@ func (b *Broker) subHandler(sessionID string) SubHandler {
 		c := b.newContext(ctx, topic)
 		c.method = MethodSub
 		c.sessionID = sessionID
-		b.router.Find(MethodSub, topic, c)
-		err := errors.Wrapf(c.handler(c), "turbo streams not subscribable on topic %s", topic)
+		h := b.getHandler(MethodSub, topic, c)
+		err := errors.Wrapf(h(c), "turbo streams not subscribable on topic %s", topic)
 		if err != nil {
 			b.logger.Error(err)
 		}
@@ -142,8 +156,8 @@ func (b *Broker) unsubHandler(sessionID string) UnsubHandler {
 		c := b.newContext(ctx, topic)
 		c.method = MethodUnsub
 		c.sessionID = sessionID
-		b.router.Find(MethodUnsub, topic, c)
-		err := errors.Wrapf(c.handler(c), "turbo streams not unsubscribable on topic %s", topic)
+		h := b.getHandler(MethodUnsub, topic, c)
+		err := errors.Wrapf(h(c), "turbo streams not unsubscribable on topic %s", topic)
 		if err != nil {
 			b.logger.Error(err)
 		}
@@ -157,8 +171,8 @@ func (b *Broker) msgHandler(sessionID string) MsgHandler {
 		c.sessionID = sessionID
 		c.messages = messages
 		c.rendered = &bytes.Buffer{}
-		b.router.Find(MethodMsg, topic, c)
-		err = errors.Wrapf(c.handler(c), "turbo streams message not processable on topic %s", topic)
+		h := b.getHandler(MethodMsg, topic, c)
+		err = errors.Wrapf(h(c), "turbo streams message not processable on topic %s", topic)
 		if err != nil {
 			b.logger.Error(err)
 			return "", err
@@ -174,9 +188,9 @@ func (b *Broker) startPub(ctx stdContext.Context, topic string) {
 	c := b.newContext(ctx, topic)
 	c.method = MethodPub
 	b.pubCancellers[topic] = canceler
-	b.router.Find(MethodPub, topic, c)
+	h := b.getHandler(MethodPub, topic, c)
 	go func() {
-		err := c.handler(c)
+		err := h(c)
 		if err != nil && err != stdContext.Canceled && errors.Unwrap(err) != stdContext.Canceled {
 			b.logger.Error(err)
 		}
