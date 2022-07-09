@@ -144,7 +144,7 @@ func (b *Broker) subHandler(sessionID string) SubHandler {
 		c.sessionID = sessionID
 		h := b.getHandler(MethodSub, topic, c)
 		err := errors.Wrapf(h(c), "turbo streams not subscribable on topic %s", topic)
-		if err != nil {
+		if err != nil && !errors.Is(err, stdContext.Canceled) {
 			b.logger.Error(err)
 		}
 		return err
@@ -158,7 +158,7 @@ func (b *Broker) unsubHandler(sessionID string) UnsubHandler {
 		c.sessionID = sessionID
 		h := b.getHandler(MethodUnsub, topic, c)
 		err := errors.Wrapf(h(c), "turbo streams not unsubscribable on topic %s", topic)
-		if err != nil {
+		if err != nil && !errors.Is(err, stdContext.Canceled) {
 			b.logger.Error(err)
 		}
 	}
@@ -173,7 +173,7 @@ func (b *Broker) msgHandler(sessionID string) MsgHandler {
 		c.rendered = &bytes.Buffer{}
 		h := b.getHandler(MethodMsg, topic, c)
 		err = errors.Wrapf(h(c), "turbo streams message not processable on topic %s", topic)
-		if err != nil {
+		if err != nil && !errors.Is(err, stdContext.Canceled) {
 			b.logger.Error(err)
 			return "", err
 		}
@@ -191,7 +191,7 @@ func (b *Broker) startPub(ctx stdContext.Context, topic string) {
 	h := b.getHandler(MethodPub, topic, c)
 	go func() {
 		err := h(c)
-		if err != nil && err != stdContext.Canceled && errors.Unwrap(err) != stdContext.Canceled {
+		if err != nil && !errors.Is(err, stdContext.Canceled) {
 			b.logger.Error(err)
 		}
 	}()
