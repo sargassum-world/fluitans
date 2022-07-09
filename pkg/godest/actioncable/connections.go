@@ -122,7 +122,7 @@ func defaultErrorSanitizer(err error) string {
 		return ""
 	}
 
-	if err == context.Canceled || errors.Unwrap(err) == context.Canceled {
+	if errors.Is(err, context.Canceled) {
 		return "logged out"
 	}
 	// Sanitize the error message to avoid leaking information from Serve method errors

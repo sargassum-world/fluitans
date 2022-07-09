@@ -23,7 +23,7 @@ func (c *Client) getNetworkIDsFromCache(
 	controller ztcontrollers.Controller, cc *ztcontrollers.Client,
 ) []string {
 	networkIDs, err := cc.Cache.GetNetworkIDsByServer(controller.Server)
-	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		// Log the error but return as a cache miss so we can manually query the network IDs
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for the network IDs controlled by %s", controller.Name,
@@ -149,7 +149,7 @@ func (c *Client) GetAllNetworks(
 
 func (c *Client) getNetworkFromCache(id string) (*zerotier.ControllerNetwork, bool) {
 	network, cacheHit, err := c.Cache.GetNetworkByID(id)
-	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		// Log the error but return as a cache miss so we can manually query the network
 		c.Logger.Error(errors.Wrapf(err, "couldn't get the cache entry for the network with id %s", id))
 		return nil, false // treat an unparseable cache entry like a cache miss
