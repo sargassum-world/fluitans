@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/alexedwards/argon2id v0.0.0-20211130144151-3585854a6387
 	github.com/benbjohnson/hashfs v0.2.1
-	github.com/bmatcuk/doublestar/v4 v4.0.3
+	github.com/bmatcuk/doublestar/v4 v4.2.0
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/dgraph-io/ristretto v0.1.0
