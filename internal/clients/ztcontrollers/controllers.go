@@ -117,7 +117,7 @@ func (c *Client) checkCachedController(ctx context.Context, address string) (*Co
 
 func (c *Client) FindControllerByAddress(ctx context.Context, address string) (*Controller, error) {
 	controller, err := c.checkCachedController(ctx, address)
-	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		// Log the error and proceed to manually query all controllers
 		c.Logger.Error(err, errors.Wrapf(
 			err, "couldn't handle the cache entry for the zerotier controller with address %s", address,
@@ -153,7 +153,7 @@ func (c *Client) FindControllerByAddress(ctx context.Context, address string) (*
 
 func (c *Client) getAddressFromCache(controller Controller) (string, bool) {
 	address, cacheHit, err := c.Cache.GetAddressByServer(controller.Server)
-	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		// Log the error but return as a cache miss so we can manually query the controller
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for the Zerotier address for %s", controller.Server,

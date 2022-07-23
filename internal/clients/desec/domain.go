@@ -13,7 +13,7 @@ import (
 func (c *Client) getDomainFromCache() (*desec.Domain, bool) {
 	domainName := c.Config.DomainName
 	domain, cacheHit, err := c.Cache.GetDomainByName(domainName)
-	if err != nil && err != context.Canceled && errors.Unwrap(err) != context.Canceled {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		// Log the error but return as a cache miss so we can manually query the domain
 		c.Logger.Error(errors.Wrapf(
 			err, "couldn't get the cache entry for the domain with name %s", domainName,
