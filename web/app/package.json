@@ -35,8 +35,8 @@
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^4.5.8",
     "@fontsource/oxygen-mono": "^4.5.9",
+    "@hotwired/stimulus": "3.1.0",
     "@hotwired/turbo": "^7.0.1",
-    "@sargassum-world/stimulated": "^0.4.2",
-    "stimulus": "2.0.0"
+    "@sargassum-world/stimulated": "^0.4.3"
   }
 }
