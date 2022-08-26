@@ -1,8 +1,8 @@
 package godest
 
 import (
+	"io"
 	"io/fs"
-	"io/ioutil"
 )
 
 // Directories
@@ -64,7 +64,7 @@ func readFile(filename string, f fs.FS) ([]byte, error) {
 		}
 	}()
 
-	data, err := ioutil.ReadAll(file)
+	data, err := io.ReadAll(file)
 	if err != nil {
 		return nil, err
 	}
