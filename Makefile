@@ -40,11 +40,13 @@ vet: ## go vet
 fmt: ## go fmt
 	$(call print-target)
 	go fmt ./...
+	cd web/app && yarn format
 
 .PHONY: lint
 lint: ## golangci-lint
 	$(call print-target)
 	golangci-lint run
+	cd web/app && yarn run svelte-check && yarn lint
 
 .PHONY: test
 test: ## go test with race detector and code covarage
