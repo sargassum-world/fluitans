@@ -46,7 +46,7 @@ fmt: ## go fmt
 lint: ## golangci-lint
 	$(call print-target)
 	golangci-lint run
-	cd web/app && yarn lint
+	cd web/app && yarn run svelte-check && yarn lint
 
 .PHONY: test
 test: ## go test with race detector and code covarage
