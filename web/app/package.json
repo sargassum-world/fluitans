@@ -6,8 +6,8 @@
     "build": "rollup -c",
     "check": "svelte-check",
     "format": "prettier --write ./src/**/*.{js,svelte,html} --no-error-on-unmatched-pattern",
-    "lint": "prettier --check --write ./src/**/*.{js,svelte,html} --no-error-on-unmatched-pattern && eslint src/**/*.{js,svelte}",
-    "lint:fix": "prettier --write ./src/**/*.{js,svelte,html} --no-error-on-unmatched-pattern && eslint --fix src/**/*.{js,svelte}"
+    "lint": "prettier --check --write ./src/**/*.{js,svelte,html} --no-error-on-unmatched-pattern && eslint src/**/*.{js,svelte} --no-error-on-unmatched-pattern",
+    "lint:fix": "prettier --write ./src/**/*.{js,svelte,html} --no-error-on-unmatched-pattern && eslint --fix src/**/*.{js,svelte} --no-error-on-unmatched-pattern"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.2",
