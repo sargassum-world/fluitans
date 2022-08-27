@@ -5,10 +5,10 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
+	"github.com/sargassum-world/godest/actioncable"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
 func (h *Handlers) HandleCableGet() auth.HTTPHandlerFuncWithSession {

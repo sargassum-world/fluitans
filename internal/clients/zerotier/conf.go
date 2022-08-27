@@ -2,8 +2,7 @@ package zerotier
 
 import (
 	"github.com/pkg/errors"
-
-	"github.com/sargassum-world/fluitans/pkg/godest/env"
+	"github.com/sargassum-world/godest/env"
 )
 
 const envPrefix = "ZEROTIER_"

@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
@@ -16,7 +17,6 @@ import (
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/internal/models"
 	"github.com/sargassum-world/fluitans/pkg/desec"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 	"github.com/sargassum-world/fluitans/pkg/slidingwindows"
 )
 

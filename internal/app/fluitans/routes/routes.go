@@ -2,6 +2,9 @@
 package routes
 
 import (
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/turbostreams"
+
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/assets"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/auth"
@@ -10,8 +13,6 @@ import (
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/dns"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/home"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/networks"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
 type Handlers struct {

@@ -2,11 +2,12 @@
 package auth
 
 import (
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/actioncable"
+	"github.com/sargassum-world/godest/authn"
+	"github.com/sargassum-world/godest/session"
+
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/authn"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Handlers struct {
