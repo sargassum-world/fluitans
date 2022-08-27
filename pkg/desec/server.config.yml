@@ -1,0 +1,6 @@
+output: server.gen.go
+package: desec
+generate:
+  models: false
+  client: false
+  echo-server: true

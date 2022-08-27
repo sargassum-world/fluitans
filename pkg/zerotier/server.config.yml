@@ -1,0 +1,6 @@
+output: server.gen.go
+package: zerotier
+generate:
+  models: false
+  client: false
+  echo-server: true
