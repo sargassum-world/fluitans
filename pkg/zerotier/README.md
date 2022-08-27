@@ -12,11 +12,9 @@ This package does not yet decompose out the embedded objects from any other sche
 
 ## Usage
 
-To regenerate, install and run the [deepmap/oapi-codegen](github.com/deepmap/oapi-codegen) tool:
+To regenerate, make sure you've installed the [deepmap/oapi-codegen](github.com/deepmap/oapi-codegen) tool:
 ```
-go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-oapi-codegen --generate=types zerotier.json > types.gen.go
-oapi-codegen --generate=client zerotier.json > client.gen.go
-oapi-codegen --generate=server zerotier.json > server.gen.go
+go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
 ```
-Then you will have to manually change the package name in the generated files from `Zerotier` to `zerotier`.
+
+Then run `go generate ./...`.

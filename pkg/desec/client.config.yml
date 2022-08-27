@@ -1,0 +1,4 @@
+output: client.gen.go
+package: desec
+generate:
+  client: true

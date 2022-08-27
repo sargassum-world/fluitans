@@ -1,0 +1,4 @@
+output: types.gen.go
+package: zerotier
+generate:
+  types: true

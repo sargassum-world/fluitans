@@ -1,0 +1,4 @@
+output: client.gen.go
+package: zerotier
+generate:
+  client: true

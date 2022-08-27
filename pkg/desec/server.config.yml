@@ -1,0 +1,4 @@
+output: server.gen.go
+package: desec
+generate:
+  server: true

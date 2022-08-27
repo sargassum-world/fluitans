@@ -1,0 +1,4 @@
+output: server.gen.go
+package: zerotier
+generate:
+  server: true

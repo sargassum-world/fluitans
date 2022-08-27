@@ -13,11 +13,9 @@ This package provides Go bindings for writing HTTP clients to the deSEC DNS mana
 
 ## Usage
 
-To regenerate, install and run the [deepmap/oapi-codegen](github.com/deepmap/oapi-codegen) tool:
+To regenerate, make sure you've installed the [deepmap/oapi-codegen](github.com/deepmap/oapi-codegen) tool:
 ```
-go get github.com/deepmap/oapi-codegen/cmd/oapi-codegen
-oapi-codegen --generate=types desec.yml > types.gen.go
-oapi-codegen --generate=client desec.yml > client.gen.go
-oapi-codegen --generate=server desec.yml > server.gen.go
+go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest
 ```
-Then you will have to manually change the package name in the generated files from `Desec` to `desec`.
+
+Then run `go generate ./...`.
