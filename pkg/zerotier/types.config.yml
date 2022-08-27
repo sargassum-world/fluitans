@@ -1,4 +1,6 @@
 output: types.gen.go
 package: zerotier
 generate:
-  types: true
+  models: true
+  client: false
+  echo-server: false
