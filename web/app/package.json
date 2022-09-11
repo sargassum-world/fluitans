@@ -33,7 +33,7 @@
     "svelte-preprocess": "^4.10.7"
   },
   "dependencies": {
-    "@fontsource/atkinson-hyperlegible": "^4.5.8",
+    "@fontsource/atkinson-hyperlegible": "^4.5.9",
     "@fontsource/oxygen-mono": "^4.5.9",
     "@hotwired/stimulus": "3.1.0",
     "@hotwired/turbo": "^7.0.1",

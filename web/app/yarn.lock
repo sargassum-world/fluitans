@@ -38,10 +38,10 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
-"@fontsource/atkinson-hyperlegible@^4.5.8":
-  version "4.5.8"
-  resolved "https://registry.yarnpkg.com/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-4.5.8.tgz#ab22180fb05b1be7b90ad7f58fd3fdfc2db80055"
-  integrity sha512-4V35Dcimfz//m6Xy7YmnDtJAKFC+8XwWr7D7fqtlPheOPJ7KiuwQMI0evbn/1dvtvenWoqfJ9U5JFyvMFGafoA==
+"@fontsource/atkinson-hyperlegible@^4.5.9":
+  version "4.5.9"
+  resolved "https://registry.yarnpkg.com/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-4.5.9.tgz#87a377801c1b8ebc4d575da95d75a83efcbbacdc"
+  integrity sha512-LPnUFmAwc11Ki+EmqzipFvSJKvHBhLBtCzOLKQTC9hkOgrrtNdz2kiRvl+mdwCfgXVFwHtxIhsIyPUxou14Z1w==
 
 "@fontsource/oxygen-mono@^4.5.9":
   version "4.5.9"
