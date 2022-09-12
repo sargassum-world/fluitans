@@ -18,7 +18,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/quasoft/memstore v0.0.0-20191010062613-2bce066d2b0b
 	github.com/twmb/murmur3 v1.1.6
-	github.com/unrolled/secure v1.12.0
+	github.com/unrolled/secure v1.13.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 )
