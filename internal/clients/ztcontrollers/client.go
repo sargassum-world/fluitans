@@ -3,8 +3,8 @@
 package ztcontrollers
 
 import (
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/clientcache"
 )
 
 type Client struct {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest/turbostreams"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
@@ -18,7 +19,6 @@ import (
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/desec"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 

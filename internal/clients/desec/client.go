@@ -9,10 +9,10 @@ import (
 
 	"github.com/labstack/echo/v4"
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/clientcache"
 
 	"github.com/sargassum-world/fluitans/pkg/desec"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 	"github.com/sargassum-world/fluitans/pkg/slidingwindows"
 )
 

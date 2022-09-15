@@ -3,8 +3,7 @@ package assets
 
 import (
 	"github.com/labstack/echo/v4"
-
-	"github.com/sargassum-world/fluitans/pkg/godest"
+	"github.com/sargassum-world/godest"
 )
 
 func (h *TemplatedHandlers) getWebmanifest() echo.HandlerFunc {

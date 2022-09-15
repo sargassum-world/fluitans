@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest/env"
 
 	"github.com/sargassum-world/fluitans/internal/models"
-	"github.com/sargassum-world/fluitans/pkg/godest/env"
 )
 
 const envPrefix = "DNS_"

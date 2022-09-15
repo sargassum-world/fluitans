@@ -3,17 +3,17 @@ package client
 
 import (
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/actioncable"
+	"github.com/sargassum-world/godest/authn"
+	"github.com/sargassum-world/godest/clientcache"
+	"github.com/sargassum-world/godest/session"
+	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/conf"
 	"github.com/sargassum-world/fluitans/internal/clients/desec"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/actioncable"
-	"github.com/sargassum-world/fluitans/pkg/godest/authn"
-	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
-	"github.com/sargassum-world/fluitans/pkg/godest/turbostreams"
 )
 
 type Globals struct {

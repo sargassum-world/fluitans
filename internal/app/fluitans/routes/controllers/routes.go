@@ -2,11 +2,12 @@
 package controllers
 
 import (
+	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/session"
+
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
-	"github.com/sargassum-world/fluitans/pkg/godest"
-	"github.com/sargassum-world/fluitans/pkg/godest/session"
 )
 
 type Handlers struct {

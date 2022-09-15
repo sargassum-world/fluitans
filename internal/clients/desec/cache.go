@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest/clientcache"
 
 	"github.com/sargassum-world/fluitans/pkg/desec"
-	"github.com/sargassum-world/fluitans/pkg/godest/clientcache"
 )
 
 type Cache struct {
