@@ -13,9 +13,9 @@ require (
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/labstack/gommon v0.3.1
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/godest v0.1.0
-	github.com/unrolled/secure v1.12.0
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
+	github.com/sargassum-world/godest v0.2.0
+	github.com/unrolled/secure v1.13.0
+	golang.org/x/sync v0.0.0-20220907140024-f12130a52804
 )
 
 require (
@@ -43,9 +43,9 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/crypto v0.0.0-20220824171710-5757bc0c5503 // indirect
-	golang.org/x/net v0.0.0-20220822230855-b0a4917ee28c // indirect
-	golang.org/x/sys v0.0.0-20220825204002-c680a09ffe64 // indirect
+	golang.org/x/crypto v0.0.0-20220829220503-c86fa9a7ed90 // indirect
+	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
+	golang.org/x/sys v0.0.0-20220913175220-63ea55921009 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 )
