@@ -34,7 +34,8 @@ func GetNetworks(
 				address := ztc.GetControllerAddress(id)
 				controller, err := cc.FindControllerByAddress(ctx, address)
 				if err != nil {
-					return err
+					// Tolerate unknown controllers by acting as if they (and their networks) don't exist
+					return nil
 				}
 				controllers[i] = controller
 
