@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/deepmap/oapi-codegen v1.11.0
 	github.com/golangci/golangci-lint v1.49.0
-	github.com/goreleaser/goreleaser v1.11.2
+	github.com/goreleaser/goreleaser v1.11.4
 	mvdan.cc/gofumpt v0.3.1
 )
 
