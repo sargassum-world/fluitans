@@ -31,7 +31,7 @@ func (a Auth) RequireHTTPAuthz() error {
 	return echo.NewHTTPError(http.StatusNotFound, "unauthorized")
 }
 
-func RequireHTTPAuthz(ss session.Store) echo.MiddlewareFunc {
+func RequireHTTPAuthz(ss *session.Store) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			a, _, err := GetWithSession(c.Request(), ss, c.Logger())
@@ -59,7 +59,7 @@ func (a Auth) RequireTSAuthz() error {
 	return errors.Errorf("user %s not authorized", a.Identity.User)
 }
 
-func RequireTSAuthz(ss session.Store) turbostreams.MiddlewareFunc {
+func RequireTSAuthz(ss *session.Store) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
 		return func(c turbostreams.Context) error {
 			sess, err := ss.Lookup(c.SessionID())

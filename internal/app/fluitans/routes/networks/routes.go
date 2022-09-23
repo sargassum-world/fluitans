@@ -36,7 +36,7 @@ func New(
 	}
 }
 
-func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss session.Store) {
+func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *session.Store) {
 	hr := auth.NewHTTPRouter(er, ss)
 	haz := auth.RequireHTTPAuthz(ss)
 	tsaz := auth.RequireTSAuthz(ss)

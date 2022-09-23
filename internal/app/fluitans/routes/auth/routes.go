@@ -13,14 +13,14 @@ import (
 type Handlers struct {
 	r godest.TemplateRenderer
 
-	ss session.Store
+	ss *session.Store
 
 	acc *actioncable.Cancellers
 	ac  *authn.Client
 }
 
 func New(
-	r godest.TemplateRenderer, ss session.Store, acc *actioncable.Cancellers, ac *authn.Client,
+	r godest.TemplateRenderer, ss *session.Store, acc *actioncable.Cancellers, ac *authn.Client,
 ) *Handlers {
 	return &Handlers{
 		r:   r,

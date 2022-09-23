@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sargassum-world/godest/handling"
 
-	"github.com/sargassum-world/fluitans/internal/app/fluitans/handling"
 	"github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 )

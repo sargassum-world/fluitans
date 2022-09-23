@@ -74,7 +74,7 @@ func sanitizeReturnURL(returnURL string) (*url.URL, error) {
 }
 
 func handleAuthenticationSuccess(
-	c echo.Context, username, returnURL string, omitCSRFToken bool, ss session.Store,
+	c echo.Context, username, returnURL string, omitCSRFToken bool, ss *session.Store,
 ) error {
 	// Update session
 	sess, err := ss.Get(c.Request())
@@ -100,7 +100,7 @@ func handleAuthenticationSuccess(
 	return c.Redirect(http.StatusSeeOther, u.String())
 }
 
-func handleAuthenticationFailure(c echo.Context, returnURL string, ss session.Store) error {
+func handleAuthenticationFailure(c echo.Context, returnURL string, ss *session.Store) error {
 	// Update session
 	sess, serr := ss.Get(c.Request())
 	if serr != nil {
