@@ -9,7 +9,7 @@ import (
 	"github.com/sargassum-world/godest/session"
 )
 
-func GetWithoutRequest(s sessions.Session, ss session.Store) (a Auth, err error) {
+func GetWithoutRequest(s sessions.Session, ss *session.Store) (a Auth, err error) {
 	a.Identity, err = GetIdentity(s)
 	if err != nil {
 		return Auth{}, err
@@ -27,7 +27,7 @@ func GetWithoutRequest(s sessions.Session, ss session.Store) (a Auth, err error)
 
 // HTTP
 
-func GetFromRequest(r *http.Request, s sessions.Session, ss session.Store) (a Auth, err error) {
+func GetFromRequest(r *http.Request, s sessions.Session, ss *session.Store) (a Auth, err error) {
 	a, err = GetWithoutRequest(s, ss)
 	if err != nil {
 		return Auth{}, err
@@ -40,7 +40,7 @@ func GetFromRequest(r *http.Request, s sessions.Session, ss session.Store) (a Au
 }
 
 func GetWithSession(
-	r *http.Request, ss session.Store, l godest.Logger,
+	r *http.Request, ss *session.Store, l godest.Logger,
 ) (a Auth, s *sessions.Session, err error) {
 	s, err = ss.Get(r)
 	if err != nil {

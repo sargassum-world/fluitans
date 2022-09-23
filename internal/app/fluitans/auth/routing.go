@@ -16,7 +16,7 @@ type (
 	HTTPHandlerFuncWithSession func(c echo.Context, a Auth, sess *sessions.Session) error
 )
 
-func HandleHTTP(h HTTPHandlerFunc, ss session.Store) echo.HandlerFunc {
+func HandleHTTP(h HTTPHandlerFunc, ss *session.Store) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		a, sess, err := GetWithSession(c.Request(), ss, c.Logger())
 		// We don't expect the handler to write to the session, so we save it now
@@ -30,7 +30,7 @@ func HandleHTTP(h HTTPHandlerFunc, ss session.Store) echo.HandlerFunc {
 	}
 }
 
-func HandleHTTPWithSession(h HTTPHandlerFuncWithSession, ss session.Store) echo.HandlerFunc {
+func HandleHTTPWithSession(h HTTPHandlerFuncWithSession, ss *session.Store) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		a, sess, err := GetWithSession(c.Request(), ss, c.Logger())
 		if err != nil {
@@ -44,10 +44,10 @@ func HandleHTTPWithSession(h HTTPHandlerFuncWithSession, ss session.Store) echo.
 // automatically extracting auth data from the session of the request.
 type HTTPRouter struct {
 	er godest.EchoRouter
-	ss session.Store
+	ss *session.Store
 }
 
-func NewHTTPRouter(er godest.EchoRouter, ss session.Store) HTTPRouter {
+func NewHTTPRouter(er godest.EchoRouter, ss *session.Store) HTTPRouter {
 	return HTTPRouter{
 		er: er,
 		ss: ss,
@@ -94,7 +94,7 @@ func (r *HTTPRouter) TRACE(path string, h HTTPHandlerFunc, m ...echo.MiddlewareF
 
 type TSHandlerFunc func(c turbostreams.Context, a Auth) error
 
-func HandleTS(h TSHandlerFunc, ss session.Store) turbostreams.HandlerFunc {
+func HandleTS(h TSHandlerFunc, ss *session.Store) turbostreams.HandlerFunc {
 	return func(c turbostreams.Context) error {
 		sess, err := ss.Lookup(c.SessionID())
 		if err != nil {
@@ -116,10 +116,10 @@ func HandleTS(h TSHandlerFunc, ss session.Store) turbostreams.HandlerFunc {
 // connection underlying the Turbo Stream.
 type TSRouter struct {
 	tsr turbostreams.Router
-	ss  session.Store
+	ss  *session.Store
 }
 
-func NewTSRouter(tsr turbostreams.Router, ss session.Store) TSRouter {
+func NewTSRouter(tsr turbostreams.Router, ss *session.Store) TSRouter {
 	return TSRouter{
 		tsr: tsr,
 		ss:  ss,

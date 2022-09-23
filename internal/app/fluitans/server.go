@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/gorilla/csrf"
@@ -13,11 +14,14 @@ import (
 	"github.com/labstack/gommon/log"
 	"github.com/pkg/errors"
 	"github.com/sargassum-world/godest"
+	"github.com/sargassum-world/godest/database"
 	gmw "github.com/sargassum-world/godest/middleware"
 	"github.com/unrolled/secure"
 	"github.com/unrolled/secure/cspbuilder"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/sargassum-world/fluitans/db"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes"
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/routes/assets"
@@ -27,6 +31,7 @@ import (
 )
 
 type Server struct {
+	DBEmbeds database.Embeds
 	Globals  *client.Globals
 	Embeds   godest.Embeds
 	Inlines  godest.Inlines
@@ -36,7 +41,8 @@ type Server struct {
 
 func NewServer(logger godest.Logger) (s *Server, err error) {
 	s = &Server{}
-	s.Globals, err = client.NewGlobals(logger)
+	s.DBEmbeds = db.NewEmbeds()
+	s.Globals, err = client.NewGlobals(s.DBEmbeds, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't make app globals")
 	}
@@ -141,13 +147,40 @@ func (s *Server) Register(e *echo.Echo) error {
 	// Handlers
 	e.HTTPErrorHandler = NewHTTPErrorHandler(s.Renderer, s.Globals.Sessions)
 	s.Handlers.Register(e, s.Globals.TSBroker, s.Embeds)
+
+	// Gob encodings
+	auth.RegisterGobTypes()
 	return nil
 }
 
 // Running
 
+func (s *Server) openDB(ctx context.Context) error {
+	schema, err := s.DBEmbeds.NewSchema()
+	if err != nil {
+		return errors.Wrap(err, "couldn't load database schema")
+	}
+	if err = s.Globals.DB.Open(); err != nil {
+		return errors.Wrap(err, "couldn't open connection pool for database")
+	}
+	// TODO: close the store when the context is canceled, in order to allow flushing the WAL
+	if err = s.Globals.DB.Migrate(ctx, schema); err != nil {
+		// TODO: close the store if the migration failed
+		return errors.Wrap(err, "couldn't perform database schema migrations")
+	}
+	return nil
+}
+
 func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
+	eg.Go(func() error {
+		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
+			ctx, time.Hour,
+		); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
+		}
+		return nil
+	})
 	eg.Go(func() error {
 		if err := workers.PrescanZerotierControllers(
 			ctx, s.Globals.ZTControllers,
@@ -188,6 +221,10 @@ const port = 3000 // TODO: configure this with env var
 
 func (s *Server) Run(e *echo.Echo) error {
 	s.Globals.Logger.Info("starting fluitans server")
+	if err := s.openDB(context.Background()); err != nil {
+		return errors.Wrap(err, "couldn't open database")
+	}
+
 	// The echo http server can't be canceled by context cancelation, so the API shouldn't promise to
 	// stop blocking execution on context cancelation - so we use the background context here. The
 	// http server should instead be stopped gracefully by calling the Shutdown method, or forcefully
@@ -217,6 +254,12 @@ func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
 	if errEcho := e.Shutdown(ctx); errEcho != nil {
 		s.Globals.Logger.Error(errors.Wrap(errEcho, "couldn't shut down http server"))
 		err = errEcho
+	}
+	if errDB := s.Globals.DB.Close(); errDB != nil {
+		s.Globals.Logger.Error(errors.Wrap(errDB, "couldn't close database"))
+		if err == nil {
+			err = errDB
+		}
 	}
 	return err
 }

@@ -7,7 +7,9 @@ import (
 	"github.com/sargassum-world/godest/actioncable"
 	"github.com/sargassum-world/godest/authn"
 	"github.com/sargassum-world/godest/clientcache"
+	"github.com/sargassum-world/godest/database"
 	"github.com/sargassum-world/godest/session"
+	"github.com/sargassum-world/godest/session/sqlitestore"
 	"github.com/sargassum-world/godest/turbostreams"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/conf"
@@ -19,10 +21,12 @@ import (
 type Globals struct {
 	Config conf.Config
 	Cache  clientcache.Cache
+	DB     *database.DB
 
-	Sessions    session.Store
-	CSRFChecker *session.CSRFTokenChecker
-	Authn       *authn.Client
+	Sessions        *session.Store
+	SessionsBacking *sqlitestore.SqliteStore
+	CSRFChecker     *session.CSRFTokenChecker
+	Authn           *authn.Client
 
 	ACCancellers *actioncable.Cancellers
 	TSSigner     turbostreams.Signer
@@ -35,7 +39,7 @@ type Globals struct {
 	Logger godest.Logger
 }
 
-func NewGlobals(l godest.Logger) (g *Globals, err error) {
+func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals, err error) {
 	g = &Globals{}
 	if g.Config, err = conf.GetConfig(); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up application config")
@@ -43,12 +47,20 @@ func NewGlobals(l godest.Logger) (g *Globals, err error) {
 	if g.Cache, err = clientcache.NewRistrettoCache(g.Config.Cache); err != nil {
 		return nil, errors.Wrap(err, "couldn't set up client cache")
 	}
+	storeConfig, err := database.GetConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "couldn't set up persistent store config")
+	}
+	g.DB = database.NewDB(
+		storeConfig,
+		database.WithPrepareConnQueries(persistenceEmbeds.PrepareConnQueriesFS),
+	)
 
 	sessionsConfig, err := session.GetConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "couldn't set up sessions config")
 	}
-	g.Sessions = session.NewMemStore(sessionsConfig)
+	g.Sessions, g.SessionsBacking = sqlitestore.NewStore(g.DB, sessionsConfig)
 	g.CSRFChecker = session.NewCSRFTokenChecker(sessionsConfig)
 	authnConfig, err := authn.GetConfig()
 	if err != nil {
