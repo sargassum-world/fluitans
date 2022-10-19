@@ -6,12 +6,12 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/benbjohnson/hashfs v0.2.1
 	github.com/deepmap/oapi-codegen v1.11.0
-	github.com/dgraph-io/ristretto v0.1.0
+	github.com/dgraph-io/ristretto v0.1.1
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/gorilla/websocket v1.5.0
-	github.com/labstack/echo/v4 v4.9.0
-	github.com/labstack/gommon v0.3.1
+	github.com/labstack/echo/v4 v4.9.1
+	github.com/labstack/gommon v0.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/sargassum-world/godest v0.3.0
 	github.com/unrolled/secure v1.13.0
@@ -43,10 +43,10 @@ require (
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/crypto v0.0.0-20220919173607-35f4265a4bc0 // indirect
-	golang.org/x/net v0.0.0-20220921203646-d300de134e69 // indirect
-	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a // indirect
+	golang.org/x/net v0.0.0-20221017152216-f25eb7ecb193 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
 	modernc.org/libc v1.16.7 // indirect
 	modernc.org/mathutil v1.4.1 // indirect

@@ -36,33 +36,37 @@ func GetNetworkIDs(subnameRRsets map[string][]desec.RRset) map[string]string {
 	return networkIDs
 }
 
-func SortSubnameRRsets(
-	rrsets map[string][]desec.RRset, recordTypes []string,
-) ([]string, [][]desec.RRset) {
-	keys := make([]string, 0, len(rrsets))
-	for key := range rrsets {
-		keys = append(keys, key)
-	}
-	sort.Slice(keys, func(i, j int) bool {
-		a := GetReverseDomainNameFragments(keys[i])
-		b := GetReverseDomainNameFragments(keys[j])
-		k := 0
-		for k = 0; k < len(a) && k < len(b); k++ {
-			if a[k] < b[k] {
-				return true
-			}
-
-			if a[k] > b[k] {
-				return false
-			}
+func CompareSubnames(first, second string) bool {
+	a := GetReverseDomainNameFragments(first)
+	b := GetReverseDomainNameFragments(second)
+	k := 0
+	for k = 0; k < len(a) && k < len(b); k++ {
+		if a[k] < b[k] {
+			return true
 		}
-		return len(a) < len(b)
-	})
-	sorted := make([][]desec.RRset, 0, len(keys))
-	for _, key := range keys {
-		sorted = append(sorted, desecc.FilterAndSortRRsets(rrsets[key], recordTypes))
+
+		if a[k] > b[k] {
+			return false
+		}
 	}
-	return keys, sorted
+	return len(a) < len(b)
+}
+
+func SortSubnameRRsets(
+	rrsets map[string][]desec.RRset, filterRecordTypes []string,
+) (subnames []string, sorted [][]desec.RRset) {
+	subnames = make([]string, 0, len(rrsets))
+	for subname := range rrsets {
+		subnames = append(subnames, subname)
+	}
+	sort.Slice(subnames, func(i, j int) bool {
+		return CompareSubnames(subnames[i], subnames[j])
+	})
+	sorted = make([][]desec.RRset, 0, len(subnames))
+	for _, subname := range subnames {
+		sorted = append(sorted, desecc.FilterAndSortRRsets(rrsets[subname], filterRecordTypes))
+	}
+	return subnames, sorted
 }
 
 type Subdomain struct {
