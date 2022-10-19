@@ -120,6 +120,24 @@ func getMemberRecords(
 	return members, nil
 }
 
+func SortNetworkMembers(members map[string]Member) (addresses []string, sorted []Member) {
+	addresses = make([]string, 0, len(members))
+	for address := range members {
+		addresses = append(addresses, address)
+	}
+	sort.Slice(addresses, func(i, j int) bool {
+		return client.CompareSubnamesAndAddresses(
+			members[addresses[i]].DomainNames, addresses[i],
+			members[addresses[j]].DomainNames, addresses[j],
+		)
+	})
+	sorted = make([]Member, 0, len(addresses))
+	for _, address := range addresses {
+		sorted = append(sorted, members[address])
+	}
+	return addresses, sorted
+}
+
 // Network DNS
 
 func checkNamedByDNS(
@@ -222,7 +240,7 @@ func getNetworkDNSRecords(
 type NetworkViewData struct {
 	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
-	Members          map[string]Member
+	Members          []Member
 	JSONPrintedRules string
 	DomainName       string
 	NetworkDNS       NetworkDNS
@@ -274,9 +292,10 @@ func getNetworkViewData(
 
 	eg, egctx = errgroup.WithContext(ctx)
 	eg.Go(func() (err error) {
-		vd.Members, err = getMemberRecords(
+		members, err := getMemberRecords(
 			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
 		)
+		_, vd.Members = SortNetworkMembers(members)
 		return err
 	})
 	eg.Go(func() (err error) {

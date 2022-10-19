@@ -10,6 +10,24 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
+func CompareSubnamesAndAddresses(
+	firstSubnames []string, firstAddress string, secondSubnames []string, secondAddress string,
+) bool {
+	firstNamed := len(firstSubnames) > 0
+	secondNamed := len(secondSubnames) > 0
+	if firstNamed && secondNamed {
+		// fmt.Println("Comparing subnames", firstSubnames[0], secondSubnames[0])
+		return CompareSubnames(firstSubnames[0], secondSubnames[0])
+	}
+	if firstNamed {
+		return true
+	}
+	if secondNamed {
+		return false
+	}
+	return firstAddress < secondAddress
+}
+
 func GetNetworks(
 	ctx context.Context, networkIDs map[string]string, c *ztc.Client, cc *ztcontrollers.Client,
 ) (map[string]*zerotier.ControllerNetwork, map[string]*ztcontrollers.Controller, error) {
