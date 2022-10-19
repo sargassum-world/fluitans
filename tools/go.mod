@@ -17,16 +17,15 @@ require (
 	cloud.google.com/go/kms v1.4.0 // indirect
 	cloud.google.com/go/storage v1.27.0 // indirect
 	code.gitea.io/sdk/gitea v0.15.1 // indirect
+	github.com/Abirdcfly/dupword v0.0.7 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/Antonboom/errname v0.1.7 // indirect
 	github.com/Antonboom/nilnil v0.1.1 // indirect
-	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v67.0.0+incompatible // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.1.4 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.0.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v0.5.1 // indirect
-	github.com/Azure/azure-storage-blob-go v0.15.0 // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest v0.11.28 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.9.21 // indirect
@@ -135,7 +134,6 @@ require (
 	github.com/go-xmlfmt/xmlfmt v0.0.0-20191208150333-d5b6f63a941b // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
-	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -151,7 +149,6 @@ require (
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-github/v47 v47.1.0 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
-	github.com/google/rpmpack v0.0.0-20220411070212-51a1004ef6cb // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
@@ -187,6 +184,7 @@ require (
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/kisielk/errcheck v1.6.2 // indirect
 	github.com/kisielk/gotool v1.0.0 // indirect
+	github.com/kkHAIKE/contextcheck v1.1.2 // indirect
 	github.com/klauspost/compress v1.15.11 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/kulti/thelper v0.6.3 // indirect
@@ -202,10 +200,10 @@ require (
 	github.com/lufeee/execinquery v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
+	github.com/maratori/testableexamples v1.0.0 // indirect
 	github.com/maratori/testpackage v1.1.0 // indirect
 	github.com/matoous/godox v0.0.0-20210227103229-6504466cf951 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-ieproxy v0.0.9 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -271,12 +269,11 @@ require (
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	github.com/sylvia7788/contextcheck v1.0.6 // indirect
 	github.com/tdakkota/asciicheck v0.1.1 // indirect
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	github.com/tetafro/godot v1.4.11 // indirect
 	github.com/timakin/bodyclose v0.0.0-20210704033933-f49887972144 // indirect
-	github.com/timonwong/logrlint v0.1.0 // indirect
+	github.com/timonwong/loggercheck v0.9.3 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.6.2 // indirect
 	github.com/tommy-muehle/go-mnd/v2 v2.5.0 // indirect
 	github.com/ulikunitz/xz v0.5.10 // indirect
