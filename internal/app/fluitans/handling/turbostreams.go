@@ -43,7 +43,7 @@ func AddAuthData(a auth.Auth, messages []turbostreams.Message) ([]turbostreams.M
 
 func HandleTSMsg(r godest.TemplateRenderer, ss *session.Store) turbostreams.HandlerFunc {
 	return auth.HandleTS(
-		func(c turbostreams.Context, a auth.Auth) (err error) {
+		func(c *turbostreams.Context, a auth.Auth) (err error) {
 			// Render with auth data
 			published, err := AddAuthData(a, c.Published())
 			if err != nil {

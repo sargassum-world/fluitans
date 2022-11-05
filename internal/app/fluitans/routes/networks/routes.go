@@ -16,7 +16,7 @@ import (
 type Handlers struct {
 	r godest.TemplateRenderer
 
-	tsh *turbostreams.MessagesHub
+	tsh *turbostreams.Hub
 
 	dc   *desec.Client
 	ztc  *zerotier.Client
@@ -24,7 +24,7 @@ type Handlers struct {
 }
 
 func New(
-	r godest.TemplateRenderer, tsh *turbostreams.MessagesHub,
+	r godest.TemplateRenderer, tsh *turbostreams.Hub,
 	dc *desec.Client, ztc *zerotier.Client, ztcc *ztcontrollers.Client,
 ) *Handlers {
 	return &Handlers{

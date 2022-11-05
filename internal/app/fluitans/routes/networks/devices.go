@@ -85,7 +85,7 @@ func replaceDevicesListStream(
 }
 
 func (h *Handlers) HandleDevicesSub() turbostreams.HandlerFunc {
-	return func(c turbostreams.Context) error {
+	return func(c *turbostreams.Context) error {
 		// Parse params
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
@@ -131,7 +131,7 @@ func checkDevicesList(
 func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 	t := devicesListPartial
 	h.r.MustHave(t)
-	return func(c turbostreams.Context) error {
+	return func(c *turbostreams.Context) error {
 		// Make change trackers
 		initialized := false
 		var prevDevices StringSet
