@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Masterminds/sprig/v3 v3.2.2
 	github.com/benbjohnson/hashfs v0.2.1
-	github.com/deepmap/oapi-codegen v1.11.0
+	github.com/deepmap/oapi-codegen v1.12.2
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/gorilla/csrf v1.7.1
 	github.com/gorilla/sessions v1.2.1
@@ -22,6 +22,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/alexedwards/argon2id v0.0.0-20211130144151-3585854a6387 // indirect
+	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.3.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
