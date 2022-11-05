@@ -126,7 +126,7 @@ func replaceServerInfoStream(c *desecc.Client) []turbostreams.Message {
 
 func (h *Handlers) HandleServerInfoPub() turbostreams.HandlerFunc {
 	h.r.MustHave(readQuotasPartial, writeQuotasPartial)
-	return func(c turbostreams.Context) error {
+	return func(c *turbostreams.Context) error {
 		// Make change trackers
 		var prevStats APILimiterStats
 

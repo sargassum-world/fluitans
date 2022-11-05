@@ -61,7 +61,7 @@ func (a Auth) RequireTSAuthz() error {
 
 func RequireTSAuthz(ss *session.Store) turbostreams.MiddlewareFunc {
 	return func(next turbostreams.HandlerFunc) turbostreams.HandlerFunc {
-		return func(c turbostreams.Context) error {
+		return func(c *turbostreams.Context) error {
 			sess, err := ss.Lookup(c.SessionID())
 			if err != nil {
 				return errors.Errorf("couldn't lookup session to check authz on %s", c.Topic())
