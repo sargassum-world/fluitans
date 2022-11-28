@@ -29,7 +29,7 @@ type Globals struct {
 	Authn           *authn.Client
 
 	ACCancellers *actioncable.Cancellers
-	TSSigner     turbostreams.Signer
+	ACSigner     actioncable.Signer
 	TSBroker     *turbostreams.Broker
 
 	Desec         *desec.Client
@@ -69,11 +69,11 @@ func NewGlobals(persistenceEmbeds database.Embeds, l godest.Logger) (g *Globals,
 	g.Authn = authn.NewClient(authnConfig)
 
 	g.ACCancellers = actioncable.NewCancellers()
-	tssConfig, err := turbostreams.GetSignerConfig()
+	acsConfig, err := actioncable.GetSignerConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "couldn't set up turbo streams signer config")
+		return nil, errors.Wrap(err, "couldn't set up action cable signer config")
 	}
-	g.TSSigner = turbostreams.NewSigner(tssConfig)
+	g.ACSigner = actioncable.NewSigner(acsConfig)
 	g.TSBroker = turbostreams.NewBroker(l)
 
 	desecConfig, err := desec.GetConfig(g.Config.DomainName)

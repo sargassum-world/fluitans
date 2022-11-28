@@ -13,7 +13,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/labstack/gommon v0.4.0
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/godest v0.4.3
+	github.com/sargassum-world/godest v0.5.0
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/sync v0.1.0
 )
@@ -44,7 +44,7 @@ require (
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/net v0.2.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
