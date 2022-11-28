@@ -3,7 +3,7 @@ module github.com/sargassum-world/fluitans/tools
 go 1.19
 
 require (
-	github.com/deepmap/oapi-codegen v1.12.2
+	github.com/deepmap/oapi-codegen v1.12.3
 	github.com/golangci/golangci-lint v1.50.1
 	github.com/goreleaser/goreleaser v1.12.3
 	mvdan.cc/gofumpt v0.4.0
