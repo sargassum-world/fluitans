@@ -13,7 +13,7 @@ require (
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/labstack/gommon v0.4.0
 	github.com/pkg/errors v0.9.1
-	github.com/sargassum-world/godest v0.4.3
+	github.com/sargassum-world/godest v0.5.0
 	github.com/unrolled/secure v1.13.0
 	golang.org/x/sync v0.1.0
 )
