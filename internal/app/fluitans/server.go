@@ -190,7 +190,7 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
 	eg.Go(func() error {
 		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
-			ctx, time.Hour,
+			ctx, time.Minute,
 		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
 		}
