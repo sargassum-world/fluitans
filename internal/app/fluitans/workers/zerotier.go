@@ -14,7 +14,7 @@ import (
 
 func PrescanZerotierControllers(ctx context.Context, c *ztcontrollers.Client) error {
 	const retryInterval = 5 * time.Second
-	return handling.Repeat(ctx, retryInterval, func() (done bool, err error) {
+	return handling.RepeatImmediate(ctx, retryInterval, func() (done bool, err error) {
 		controllers, err := c.GetControllers()
 		if err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't get the list of known controllers"))
@@ -35,7 +35,7 @@ func PrefetchZerotierNetworks(
 	ctx context.Context, c *zerotier.Client, cc *ztcontrollers.Client,
 ) error {
 	const retryInterval = 5 * time.Second
-	return handling.Repeat(ctx, retryInterval, func() (done bool, err error) {
+	return handling.RepeatImmediate(ctx, retryInterval, func() (done bool, err error) {
 		controllers, err := cc.GetControllers()
 		if err != nil {
 			cc.Logger.Error(errors.Wrap(err, "couldn't get the list of known controllers"))

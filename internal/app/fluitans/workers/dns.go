@@ -12,7 +12,7 @@ import (
 
 func PrefetchDNSRecords(ctx context.Context, c *desec.Client) error {
 	const retryInterval = 5 * time.Second
-	return handling.Repeat(ctx, retryInterval, func() (done bool, err error) {
+	return handling.RepeatImmediate(ctx, retryInterval, func() (done bool, err error) {
 		if _, err := c.GetRRsets(ctx); err != nil {
 			c.Logger.Error(errors.Wrap(err, "couldn't prefetch DNS records for cache"))
 			return false, nil

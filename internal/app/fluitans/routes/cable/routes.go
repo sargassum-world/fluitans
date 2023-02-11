@@ -20,30 +20,30 @@ type Handlers struct {
 	cc *session.CSRFTokenChecker
 
 	acc *actioncable.Cancellers
-	tss turbostreams.Signer
+	acs actioncable.Signer
 	tsb *turbostreams.Broker
 
-	l godest.Logger
-
 	wsu websocket.Upgrader
+
+	l godest.Logger
 }
 
 func New(
 	r godest.TemplateRenderer, ss *session.Store, cc *session.CSRFTokenChecker,
-	acc *actioncable.Cancellers, tss turbostreams.Signer, tsb *turbostreams.Broker, l godest.Logger,
+	acc *actioncable.Cancellers, acs actioncable.Signer, tsb *turbostreams.Broker, l godest.Logger,
 ) *Handlers {
 	return &Handlers{
 		r:   r,
 		ss:  ss,
 		cc:  cc,
 		acc: acc,
-		tss: tss,
+		acs: acs,
 		tsb: tsb,
-		l:   l,
 		wsu: websocket.Upgrader{
-			Subprotocols: actioncable.Subprotocols(),
+			Subprotocols: actioncable.SupportedSubprotocols(),
 			// TODO: add parameters to the upgrader as needed
 		},
+		l: l,
 	}
 }
 

@@ -52,7 +52,7 @@ func NewServer(logger godest.Logger) (s *Server, err error) {
 	s.Renderer, err = godest.NewTemplateRenderer(
 		s.Embeds, s.Inlines, sprig.FuncMap(), tmplfunc.FuncMap(
 			tmplfunc.NewHashedNamers(assets.AppURLPrefix, assets.StaticURLPrefix, s.Embeds),
-			s.Globals.TSSigner.Sign,
+			s.Globals.ACSigner.Sign,
 		),
 	)
 	if err != nil {
@@ -190,7 +190,7 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
 	eg.Go(func() error {
 		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
-			ctx, time.Hour,
+			ctx, time.Minute,
 		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
 		}
@@ -266,6 +266,9 @@ func (s *Server) Run(e *echo.Echo) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context, e *echo.Echo) (err error) {
+	// FIXME: e.Shutdown calls e.Server.Shutdown, which doesn't wait for WebSocket connections. When
+	// starting Echo, we need to call e.Server.RegisterOnShutdown with a function to gracefully close
+	// WebSocket connections!
 	if errEcho := e.Shutdown(ctx); errEcho != nil {
 		s.Globals.Logger.Error(errors.Wrap(errEcho, "couldn't shut down http server"))
 		err = errEcho
