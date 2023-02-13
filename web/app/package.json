@@ -31,7 +31,7 @@
     "svelte": "^3.55.1",
     "svelte-check": "^2.9.2",
     "svelte-dark-mode": "^2.0.0",
-    "svelte-preprocess": "^4.10.7"
+    "svelte-preprocess": "^5.0.1"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^4.5.11",
