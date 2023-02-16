@@ -370,7 +370,7 @@ func checkDevice(
 		return false, updatedDevice, err
 	}
 	updatedDevice = *member
-	revisionChanged := prevDevice.Revision != nil &&
+	revisionChanged := prevDevice.Revision == nil ||
 		*updatedDevice.Revision != *prevDevice.Revision
 	// TODO: do we need to check whether the IP assignments list has changed?
 	if !revisionChanged {
