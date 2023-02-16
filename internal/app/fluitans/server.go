@@ -189,8 +189,9 @@ func (s *Server) openDB(ctx context.Context) error {
 func (s *Server) runWorkersInContext(ctx context.Context) error {
 	eg, _ := errgroup.WithContext(ctx) // Workers run independently, so we don't need egctx
 	eg.Go(func() error {
+		const interval = 10 * time.Minute
 		if err := s.Globals.SessionsBacking.PeriodicallyCleanup(
-			ctx, time.Minute,
+			ctx, interval,
 		); err != nil && err != context.Canceled {
 			s.Globals.Logger.Error(errors.Wrap(err, "couldn't periodically clean up session store"))
 		}

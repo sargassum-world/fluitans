@@ -69,8 +69,24 @@
               >
             </div>
           </div>
+          <p class="help">
+            Assign a domain name to this network in order to assign domain names to devices on
+            this network.
+          </p>
         </form>
       </div>
     </div>
   {{end}}
+  <p>
+    Devices can attempt to join this network by entering this network's ZeroTier ID into the
+    ZeroTier One client (detailed instructions can be found
+    <a href="https://zerotier.atlassian.net/wiki/spaces/SD/pages/6848513/Join+a+Network">here</a>).
+    {{if derefBool $network.Private}}
+      However, any device will need to be authorized by this network's administrator before it can
+      access the network.
+    {{else}}
+      Because this is a public network, any device will immediately have access to the network
+      &ndash; even potentially malicious ones.
+    {{end}}
+  </p>
 </turbo-frame>

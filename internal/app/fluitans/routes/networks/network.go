@@ -64,24 +64,52 @@ func identifyMemberDomainNames(
 }
 
 func addNDPAddresses(
-	id string, v6AssignMode zerotier.V6AssignMode,
+	networkID string, sixplane, rfc4193 bool, member zerotier.ControllerNetworkMember,
+) (updated zerotier.ControllerNetworkMember, err error) {
+	if !sixplane && !rfc4193 {
+		return member, nil
+	}
+
+	ndpAddresses := make([]string, 0)
+	if sixplane {
+		sixplaneAddress, err := zerotier.Get6Plane(networkID, *member.Address)
+		if err != nil {
+			return member, err
+		}
+		ndpAddresses = append(ndpAddresses, sixplaneAddress)
+	}
+	if rfc4193 {
+		rfc4193Address, err := zerotier.GetRFC4193(networkID, *member.Address)
+		if err != nil {
+			return member, err
+		}
+		ndpAddresses = append(ndpAddresses, rfc4193Address)
+	}
+
+	if member.IpAssignments == nil {
+		member.IpAssignments = &ndpAddresses
+	} else {
+		*member.IpAssignments = append(*member.IpAssignments, ndpAddresses...)
+	}
+	return member, nil
+}
+
+func addAllNDPAddresses(
+	networkID string, v6AssignMode zerotier.V6AssignMode,
 	members map[string]zerotier.ControllerNetworkMember,
 ) error {
-	n6plane := v6AssignMode.N6plane
-	if n6plane != nil && *n6plane {
-		for _, member := range members {
-			n6PlaneAddress, err := zerotier.Get6Plane(id, *member.Address)
-			if err != nil {
-				return err
-			}
+	sixplane := (v6AssignMode.N6plane != nil) && *(v6AssignMode.N6plane)
+	rfc4193 := (v6AssignMode.Rfc4193 != nil) && *(v6AssignMode.Rfc4193)
+	if !sixplane && !rfc4193 {
+		return nil
+	}
 
-			if member.IpAssignments == nil {
-				ipAssignments := []string{n6PlaneAddress}
-				member.IpAssignments = &ipAssignments
-			} else {
-				*member.IpAssignments = append(*member.IpAssignments, n6PlaneAddress)
-			}
+	for address, member := range members {
+		updated, err := addNDPAddresses(networkID, sixplane, rfc4193, member)
+		if err != nil {
+			return err
 		}
+		members[address] = updated
 	}
 	return nil
 }
@@ -101,7 +129,7 @@ func getMemberRecords(
 	if err != nil {
 		return nil, err
 	}
-	if err = addNDPAddresses(*network.Id, *network.V6AssignMode, zerotierMembers); err != nil {
+	if err = addAllNDPAddresses(*network.Id, *network.V6AssignMode, zerotierMembers); err != nil {
 		return nil, err
 	}
 
@@ -313,6 +341,8 @@ func getNetworkViewData(
 	return vd, nil
 }
 
+// Network
+
 func (h *Handlers) HandleNetworkGet() auth.HTTPHandlerFunc {
 	t := "networks/network.page.tmpl"
 	h.r.MustHave(t)
@@ -333,6 +363,39 @@ func (h *Handlers) HandleNetworkGet() auth.HTTPHandlerFunc {
 		return h.r.CacheablePage(c.Response(), c.Request(), t, networkViewData, a)
 	}
 }
+
+func (h *Handlers) HandleNetworkPost() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+		state := c.FormValue("state")
+
+		// Run queries
+		ctx := c.Request().Context()
+		switch state {
+		default:
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
+				"invalid network state %s", state,
+			))
+		case "deleted":
+			controller, err := h.ztcc.FindControllerByAddress(ctx, address)
+			if err != nil {
+				return err
+			}
+			if err = h.ztc.DeleteNetwork(ctx, *controller, id, h.ztcc); err != nil {
+				// TODO: add a tombstone to the TXT RRset?
+				return err
+			}
+			h.tsh.Cancel("/networks/" + id + "/devices")
+
+			// Redirect user
+			return c.Redirect(http.StatusSeeOther, "/networks")
+		}
+	}
+}
+
+// Network Name
 
 func nameNetwork(
 	ctx context.Context, controller ztcontrollers.Controller, id string, name string,
@@ -375,36 +438,148 @@ func nameNetwork(
 	)
 }
 
-func (h *Handlers) HandleNetworkPost() echo.HandlerFunc {
+func (h *Handlers) HandleNetworkNamePost() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
-		state := c.FormValue("state")
 
 		// Run queries
 		ctx := c.Request().Context()
-		switch state {
-		default:
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf(
-				"invalid network state %s", state,
-			))
-		case "deleted":
-			controller, err := h.ztcc.FindControllerByAddress(ctx, address)
-			if err != nil {
-				return err
-			}
-			if err = h.ztc.DeleteNetwork(ctx, *controller, id, h.ztcc); err != nil {
-				// TODO: add a tombstone to the TXT RRset?
-				return err
-			}
-			h.tsh.Cancel("/networks/" + id + "/devices")
-
-			// Redirect user
-			return c.Redirect(http.StatusSeeOther, "/networks")
+		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
+		if err != nil {
+			return err
 		}
+		if _, err = nameNetwork(ctx, *controller, id, c.FormValue("name"), h.ztc, h.dc); err != nil {
+			return err
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
 	}
 }
+
+// Network IP Auto-Assignments
+
+func setNetworkAutoIPv6(
+	ctx context.Context, controller ztcontrollers.Controller,
+	id string, modes zerotier.V6AssignMode, c *ztc.Client,
+) (*zerotier.ControllerNetwork, error) {
+	network, err := c.UpdateNetwork(
+		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{V6AssignMode: &modes},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return network, nil
+}
+
+const checkboxTrueValue = "true"
+
+func (h *Handlers) HandleNetworkAutoIPv6Post() auth.HTTPHandlerFunc {
+	t := "networks/network-autoipv6.partial.tmpl"
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+		sixplaneEnabled := strings.ToLower(c.FormValue("sixplane")) == checkboxTrueValue
+		rfc4193Enabled := strings.ToLower(c.FormValue("rfc4193")) == checkboxTrueValue
+		zerotierEnabled := strings.ToLower(c.FormValue("zerotier")) == checkboxTrueValue
+
+		// Run queries
+		ctx := c.Request().Context()
+		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
+		if err != nil {
+			return err
+		}
+		network, err := setNetworkAutoIPv6(
+			ctx, *controller, id, zerotier.V6AssignMode{
+				N6plane: &sixplaneEnabled,
+				Rfc4193: &rfc4193Enabled,
+				Zt:      &zerotierEnabled,
+			}, h.ztc,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Render Turbo Stream if accepted
+		if turbostreams.Accepted(c.Request().Header) {
+			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
+			return h.r.TurboStream(c.Response(), turbostreams.Message{
+				Action:   turbostreams.ActionReplace,
+				Target:   "/networks/" + id + "/autoipv6",
+				Template: t,
+				Data: map[string]interface{}{
+					"Network": network,
+					"Auth":    a,
+				},
+			})
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#/networks/%s/autoipv6", id, id))
+	}
+}
+
+func setNetworkAutoIPv4(
+	ctx context.Context, controller ztcontrollers.Controller,
+	id string, modes zerotier.V4AssignMode, c *ztc.Client,
+) (*zerotier.ControllerNetwork, error) {
+	network, err := c.UpdateNetwork(
+		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{V4AssignMode: &modes},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return network, nil
+}
+
+func (h *Handlers) HandleNetworkAutoIPv4Post() auth.HTTPHandlerFunc {
+	t := "networks/network-autoipv4.partial.tmpl"
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+		zerotierEnabled := strings.ToLower(c.FormValue("zerotier")) == "true"
+
+		// Run queries
+		ctx := c.Request().Context()
+		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
+		if err != nil {
+			return err
+		}
+		network, err := setNetworkAutoIPv4(
+			ctx, *controller, id, zerotier.V4AssignMode{
+				Zt: &zerotierEnabled,
+			}, h.ztc,
+		)
+		if err != nil {
+			return err
+		}
+
+		// Render Turbo Stream if accepted
+		if turbostreams.Accepted(c.Request().Header) {
+			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
+			return h.r.TurboStream(c.Response(), turbostreams.Message{
+				Action:   turbostreams.ActionReplace,
+				Target:   "/networks/" + id + "/autoipv4",
+				Template: t,
+				Data: map[string]interface{}{
+					"Network": network,
+					"Auth":    a,
+				},
+			})
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#/networks/%s/autoipv4", id, id))
+	}
+}
+
+// Network Rules
 
 func setNetworkRules(
 	ctx context.Context, controller ztcontrollers.Controller,
@@ -450,6 +625,7 @@ func (h *Handlers) HandleNetworkRulesPost() auth.HTTPHandlerFunc {
 			if err != nil {
 				return err
 			}
+			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
 			return h.r.TurboStream(c.Response(), turbostreams.Message{
 				Action:   turbostreams.ActionReplace,
 				Target:   "/networks/" + id + "/rules",
@@ -463,27 +639,6 @@ func (h *Handlers) HandleNetworkRulesPost() auth.HTTPHandlerFunc {
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#network-%s-rules", id, id))
-	}
-}
-
-func (h *Handlers) HandleNetworkNamePost() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		// Parse params
-		id := c.Param("id")
-		address := ztc.GetControllerAddress(id)
-
-		// Run queries
-		ctx := c.Request().Context()
-		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
-		if err != nil {
-			return err
-		}
-		if _, err = nameNetwork(ctx, *controller, id, c.FormValue("name"), h.ztc, h.dc); err != nil {
-			return err
-		}
-
-		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s", id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#/networks/%s/rules", id, id))
 	}
 }

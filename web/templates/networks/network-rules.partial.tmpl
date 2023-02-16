@@ -4,6 +4,9 @@
 
 <turbo-frame id="/networks/{{$network.Id}}/rules">
   <h3>Traffic Rules</h3>
+  <p>
+    This network has the following traffic rules for network security:
+  </p>
   <ol>
     <li>Inspect the packet,</li>
     {{range $rule := $network.Rules}}

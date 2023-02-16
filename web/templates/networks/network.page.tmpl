@@ -35,6 +35,10 @@
         }}
         {{if .Data.NetworkDNS.Named}}
           <h2>DNS Records</h2>
+          <p>
+            Besides DNS records for specific devices associated with this network, the following
+            other DNS records are associated with this network:
+          </p>
           {{range $subdomain := .Data.NetworkDNS.OtherSubdomains}}
             {{
               template "shared/dns/subdomain.partial.tmpl" dict
@@ -43,6 +47,37 @@
             }}
           {{end}}
         {{end}}
+        <h2>IP Addresses</h2>
+        <p>
+          The following settings control how IP addresses are assigned to devices on this network:
+        </p>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-autoipv6.partial.tmpl" dict
+              "Network" .Data.Network
+              "Auth" .Auth
+            }}
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-autoipv4.partial.tmpl" dict
+              "Network" .Data.Network
+              "Auth" .Auth
+            }}
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-routes.partial.tmpl" dict
+              "Network" .Data.Network
+              "Auth" .Auth
+            }}
+          </div>
+        </div>
         <h2>Advanced</h2>
         <div class="card section-card">
           <div class="card-content">
@@ -51,14 +86,6 @@
               "Network" .Data.Network
               "Auth" .Auth
               "JSONPrintedRules" .Data.JSONPrintedRules
-            }}
-          </div>
-        </div>
-        <div class="card section-card">
-          <div class="card-content">
-            {{
-              template "networks/network-ipaddr.partial.tmpl" dict
-              "Network" .Data.Network
             }}
           </div>
         </div>

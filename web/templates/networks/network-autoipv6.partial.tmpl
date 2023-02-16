@@ -1,0 +1,70 @@
+{{$network := (get . "Network")}}
+{{$auth := get . "Auth"}}
+
+<turbo-frame id="/networks/{{$network.Id}}/autoipv6">
+  <h3>IPv6 Auto-Assignments</h3>
+  <p class="mb-4">
+    This network has the following modes for automatic assignment of IPv6 addresses:
+  </p>
+  <form
+    action="/networks/{{$network.Id}}/autoipv6"
+    method="POST"
+    data-turbo-frame="_top"
+    data-controller="form-submission csrf"
+    data-action="submit->form-submission#submit submit->csrf#addToken"
+  >
+    {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+    <div class="field">
+      <label class="label">Modes</label>
+      <div class="control">
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            name="sixplane"
+            value="true"
+            {{if derefBool $network.V6AssignMode.N6plane}}
+              checked
+            {{end}}
+          >
+          ZeroTier 6PLANE (/80 routable per device)
+        </label>
+      </div>
+      <div class="control">
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            name="rfc4193"
+            value="true"
+            {{if derefBool $network.V6AssignMode.Rfc4193}}
+              checked
+            {{end}}
+          >
+          ZeroTier RFC4193 (/128 per device)
+        </label>
+      </div>
+      <div class="control">
+        <label class="checkbox">
+          <input
+            type="checkbox"
+            name="zerotier"
+            value="true"
+            {{if derefBool $network.V6AssignMode.Zt}}
+              checked
+            {{end}}
+          >
+          Network-Managed IPv6 Routes
+        </label>
+      </div>
+    </div>
+    <div class="field">
+      <div class="control" data-form-submission-target="submitter">
+        <input
+          class="button"
+          type="submit"
+          value="Update modes"
+          data-form-submission-target="submit"
+        >
+      </div>
+    </div>
+  </form>
+</turbo-frame>

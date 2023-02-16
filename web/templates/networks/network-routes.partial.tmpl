@@ -1,0 +1,41 @@
+{{$network := (get . "Network")}}
+{{$auth := get . "Auth"}}
+
+<turbo-frame id="/networks/{{$network.Id}}/routes">
+  <h3>Managed Routes</h3>
+  <p class="mb-4">
+    This network manages the following IP address groups (note that IP addresses assigned to devices
+    by this network will only work if they fall within one of these address groups):
+  </p>
+  <p>
+    {{if $network.Routes}}
+      {{range $route := $network.Routes}}
+        {{$route.Target}} via {{$route.Via}}
+      {{else}}
+        <span class="tag is-info">None</span>
+      {{end}}
+    {{else}}
+      <span class="tag is-info">None</span>
+    {{end}}
+  </p>
+  <form
+    action="/networks/{{$network.Id}}/routes"
+    method="POST"
+    data-controller="form-submission csrf"
+    data-action="submit->form-submission#submit submit->csrf#addToken"
+  >
+    {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+    <div class="field">
+    </div>
+    <div class="field">
+      <div class="control" data-form-submission-target="submitter">
+        <input
+          class="button"
+          type="submit"
+          value="Add route"
+          data-form-submission-target="submit"
+        >
+      </div>
+    </div>
+  </form>
+</turbo-frame>
