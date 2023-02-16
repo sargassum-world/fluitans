@@ -11,16 +11,23 @@
   }}
 {{end}}
 <turbo-frame id="/networks/{{$network.Id}}/devices">
+  {{if gt (len $members) 0}}
+    <p>
+      The following devices are associated with this network, though only authorized devices
+      have access to the network:
+    </p>
+  {{end}}
   {{range $member := $members}}
     {{
       template "networks/device.partial.tmpl" dict
       "Member" $member
       "Network" $network
-      "NetworkDNS" $networkDNS
+      "NetworkDNSNamed" $networkDNS.Named
       "Auth" $auth
+      "WithTurboStreamSource" true
     }}
   {{else}}
-    <p>This network does not yet have any devices!</p>
+    <p>This network does not yet have any associated devices!</p>
   {{end}}
   {{if $auth.Identity.Authenticated}}
     <div class="card section-card is-block">
@@ -48,7 +55,7 @@
               >
             </div>
           </div>
-          <p class="help">Add a device to the network before it attempts to join.</p>
+          <p class="help">Authorize a device to join the network before it attempts to join.</p>
         </form>
       </div>
     </div>

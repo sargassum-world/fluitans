@@ -1,9 +1,21 @@
-{{$zerotierMember := (get . "Member").ZerotierMember}}
-{{$domainNames := (get . "Member").DomainNames}}
+{{$member := (get . "Member")}}
 {{$network := (get . "Network")}}
-{{$networkDNS := (get . "NetworkDNS")}}
+{{$networkDNSNamed := (get . "NetworkDNSNamed")}}
 {{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
 
+{{$zerotierMember := $member.ZerotierMember}}
+{{$domainNames := $member.DomainNames}}
+
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (
+      print "/networks/" (derefString $network.Id "")
+      "/devices/" (derefString $zerotierMember.Address "")
+    )
+  }}
+{{end}}
 <turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}">
   <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
@@ -69,7 +81,7 @@
           </form>
         {{end}}
 
-        {{if $networkDNS.Named}}
+        {{if $networkDNSNamed}}
           <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
           {{range $domainName := $domainNames}}
             {{if $auth.Identity.Authenticated}}

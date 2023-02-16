@@ -20,12 +20,12 @@ func GetConfig() (c Config, err error) {
 }
 
 func getNetworkTTL() (int64, error) {
-	const defaultTTL = 24 * 60 * 60 // default: 24 hours
+	const defaultTTL = 60 * 60 * 24 // default: 24 hours
 	return env.GetInt64(envPrefix+"DNS_NETWORKTTL", defaultTTL)
 }
 
 func getDeviceTTL() (int64, error) {
-	const defaultTTL = 1 * 60 * 60 // default: 1 hour
+	const defaultTTL = 60 * 60 // default: 1 hour
 	return env.GetInt64(envPrefix+"DNS_DEVICETTL", defaultTTL)
 }
 

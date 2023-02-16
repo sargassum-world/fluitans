@@ -75,7 +75,8 @@ func getReadCacheTTL() (time.Duration, error) {
 	// API read requests. The cache will be consistent with the API at an infinite TTL (the default
 	// TTL) if we promise to only modify DNS records through Fluitans, and not independently through
 	// the deSEC server.
-	rawTTL, err := env.GetFloat32(envPrefix+"READ_CACHE_TTL", -1)
+	const defaultTTL = 60 * 10 // default: 10 minutes
+	rawTTL, err := env.GetFloat32(envPrefix+"READ_CACHE_TTL", defaultTTL)
 	var ttl time.Duration = -1
 	if rawTTL >= 0 {
 		durationReadCacheTTL := time.Duration(rawTTL) * time.Second
