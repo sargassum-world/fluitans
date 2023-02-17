@@ -1,13 +1,13 @@
 {{$network := (get . "Network")}}
 {{$auth := get . "Auth"}}
 
-<turbo-frame id="/networks/{{$network.Id}}/autoipv6">
-  <h3>IPv6 Auto-Assignments</h3>
+<turbo-frame id="/networks/{{$network.Id}}/autoip/v6-modes">
+  <h3>IPv6 Auto-Assignment Modes</h3>
   <p class="mb-4">
     This network has the following modes for automatic assignment of IPv6 addresses:
   </p>
   <form
-    action="/networks/{{$network.Id}}/autoipv6"
+    action="/networks/{{$network.Id}}/autoip/v6-modes"
     method="POST"
     data-turbo-frame="_top"
     data-controller="form-submission csrf"

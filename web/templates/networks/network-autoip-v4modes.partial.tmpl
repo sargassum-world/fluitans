@@ -1,14 +1,14 @@
 {{$network := (get . "Network")}}
 {{$auth := get . "Auth"}}
 
-<turbo-frame id="/networks/{{$network.Id}}/autoipv4">
-  <h3>IPv4 Auto-Assignments</h3>
+<turbo-frame id="/networks/{{$network.Id}}/autoip/v4-modes">
+  <h3>IPv4 Auto-Assignment Modes</h3>
   <p class="mb-4">
     This network has the following modes for automatic assignment of IPv4 addresses (note that weird
     behavior may occur on devices on multiple networks with overlapping IPv4 addresses):
   </p>
   <form
-    action="/networks/{{$network.Id}}/autoipv4"
+    action="/networks/{{$network.Id}}/autoip/v4-modes"
     method="POST"
     data-turbo-frame="_top"
     data-controller="form-submission csrf"

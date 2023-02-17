@@ -45,8 +45,10 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *s
 	hr.GET("/networks/:id", h.HandleNetworkGet())
 	er.POST("/networks/:id", h.HandleNetworkPost(), haz)
 	er.POST("/networks/:id/name", h.HandleNetworkNamePost(), haz)
-	hr.POST("/networks/:id/autoipv6", h.HandleNetworkAutoIPv6Post(), haz)
-	hr.POST("/networks/:id/autoipv4", h.HandleNetworkAutoIPv4Post(), haz)
+	hr.POST("/networks/:id/routes", h.HandleNetworkRoutesPost(), haz)
+	hr.POST("/networks/:id/autoip/v6-modes", h.HandleNetworkAutoIPv6ModesPost(), haz)
+	hr.POST("/networks/:id/autoip/v4-modes", h.HandleNetworkAutoIPv4ModesPost(), haz)
+	hr.POST("/networks/:id/autoip/pools", h.HandleNetworkAutoIPPoolsPost(), haz)
 	hr.POST("/networks/:id/rules", h.HandleNetworkRulesPost(), haz)
 	hr.POST("/networks/:id/devices", h.HandleDevicesPost(), haz)
 	tsr.SUB("/networks/:id/devices", h.HandleDevicesSub(), tsaz)
@@ -57,4 +59,5 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *s
 	tsr.MSG("/networks/:id/devices/:address", handling.HandleTSMsg(h.r, ss), tsaz)
 	hr.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), haz)
 	hr.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), haz)
+	hr.POST("/networks/:id/devices/:address/ip", h.HandleDeviceIPPost(), haz)
 }

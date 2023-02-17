@@ -1,0 +1,101 @@
+{{$network := (get . "Network")}}
+{{$assignmentPools := (get . "AssignmentPools")}}
+{{$auth := get . "Auth"}}
+
+{{$autoassignIPv4 := (derefBool $network.V4AssignMode.Zt)}}
+{{$autoassignIPv6 := (derefBool $network.V6AssignMode.Zt)}}
+
+<turbo-frame id="/networks/{{$network.Id}}/autoip/pools">
+  <h3>IP Auto-Assignment Pools</h3>
+  {{if and (not $autoassignIPv4) (not $autoassignIPv6)}}
+    <p>
+      To automatically assign IP addresses to devices on this network from a pool of addresses,
+      enable one or both of the network-managed IP route modes in the IPv4 or IPv6 auto-assignments
+      settings panels.
+    </p>
+    <p class="mb-4">
+      You will need to assign IPv4 addresses to devices with web servers or web browsers, if you
+      want them to work in Google Chrome.
+    </p>
+  {{else}}
+    <p class="mb-4">
+      {{if gt (len $network.IpAssignmentPools) 0}}
+        This network has the following IP address auto-assignment pools:
+      {{else}}
+        This network does not yet have any IP address auto-assignment pools.
+        {{if eq (len $network.Routes) 0}}
+          You will first need to add a managed route so that IP addresses within auto-assignment
+          pools will be routed to devices on the network.
+        {{else}}
+          You can enable a managed route as an IP address pool for auto-assignment (easy mode), or you can add
+          a custom IP address pool as an IP range (advanced mode):
+        {{end}}
+      {{end}}
+    </p>
+  {{end}}
+  {{if or $autoassignIPv4 $autoassignIPv6 (gt (len $assignmentPools) 0)}}
+    <form
+      action="/networks/{{$network.Id}}/autoip/pools"
+      method="POST"
+      data-turbo-frame="_top"
+      data-controller="form-submission csrf"
+      data-action="submit->form-submission#submit submit->csrf#addToken"
+    >
+      {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+      {{if gt (len $assignmentPools) 0}}
+        <div class="field">
+          <label class="label">Existing Ranges</label>
+          {{range $pool := $assignmentPools}}
+            <div class="control">
+              <label class="checkbox">
+                <input
+                  type="checkbox"
+                  name="existing-pools"
+                  value="{{$pool.Range.From}}-{{$pool.Range.To}}"
+                  {{if $pool.Enabled}}
+                    checked
+                  {{end}}
+                  {{if and $pool.Range.From.Is4 (not $autoassignIPv4)}}
+                    disabled
+                  {{end}}
+                  {{if and $pool.Range.From.Is6 (not $autoassignIPv6)}}
+                    disabled
+                  {{end}}
+                >
+                {{if $pool.ExactPrefix}}
+                  <span class="tag ip-subnet">{{$pool.Prefix.String}}</span>:
+                {{else}}
+                  Custom:
+                {{end}}
+                <span class="tag ip-address">
+                  {{- $pool.Range.From -}}
+                </span>-<span class="tag ip-address">
+                  {{- $pool.Range.To -}}
+                  </span>
+              </label>
+            </div>
+          {{end}}
+        </div>
+      {{end}}
+      {{if and (or $autoassignIPv4 $autoassignIPv6) (gt (len $network.Routes) 0)}}
+        <label class="label" for="subnet">New Custom Range</label>
+        <div class="field">
+          <div class="control">
+            <input class="input" type="text" name="new-pool" placeholder="10.241.0.1-10.241.0.254">
+          </div>
+        </div>
+      {{end}}
+      <div class="field">
+        <div class="control" data-form-submission-target="submitter">
+          <input
+            class="button"
+            type="submit"
+            value="Update pools"
+            data-form-submission-target="submit"
+          >
+        </div>
+      </div>
+    </form>
+  {{end}}
+</turbo-frame>
+

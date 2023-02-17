@@ -435,7 +435,7 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 	}
 }
 
-// Authorization
+// Device Authorization
 
 func setMemberAuthorization(
 	ctx context.Context, controller ztcontrollers.Controller, networkID, memberAddress string,
@@ -449,7 +449,7 @@ func setMemberAuthorization(
 		return err
 	}
 	if authorized {
-		// We might've added a new network ID, so we should invalidate the cache
+		// We might've added a new network member, so we should invalidate the cache
 		c.Cache.UnsetNetworkMembersByID(networkID)
 	}
 	return nil
@@ -499,7 +499,7 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 	}
 }
 
-// Naming
+// Device Naming
 
 func confirmMemberNameManageable(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
@@ -626,6 +626,73 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
 			"/networks/%s#/networks/%s/device/%s", networkID, networkID, memberAddress,
+		))
+	}
+}
+
+// Device IP Addresses
+
+func setDeviceIPAddresses(
+	ctx context.Context, controller ztcontrollers.Controller, networkID, memberAddress string,
+	ipAddresses []string, c *ztc.Client,
+) error {
+	addresses := make([]string, len(ipAddresses))
+	for i := range ipAddresses {
+		addresses[i] = strings.TrimSpace(ipAddresses[i])
+	}
+	if err := c.UpdateMember(
+		ctx, controller, networkID, memberAddress,
+		zerotier.SetControllerNetworkMemberJSONRequestBody{IpAssignments: &addresses},
+	); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
+	t := devicePartial
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		networkID := c.Param("id")
+		controllerAddress := ztc.GetControllerAddress(networkID)
+		memberAddress := c.Param("address")
+		formParams, err := c.FormParams()
+		if err != nil {
+			return errors.Wrap(err, "couldn't parse form params")
+		}
+
+		// Run queries
+		ctx := c.Request().Context()
+		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return err
+		}
+		ipAddresses := formParams["existing-addresses"]
+		if newAddress := c.FormValue("new-address"); len(newAddress) > 0 {
+			ipAddresses = append(ipAddresses, newAddress)
+		}
+		if err = setDeviceIPAddresses(
+			ctx, *controller, networkID, memberAddress, ipAddresses, h.ztc,
+		); err != nil {
+			return err
+		}
+
+		// Render Turbo Stream if accepted
+		if turbostreams.Accepted(c.Request().Header) {
+			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
+			message, err := replaceDeviceStream(
+				ctx, controllerAddress, networkID, memberAddress, a, h.ztc, h.ztcc, h.dc,
+			)
+			if err != nil {
+				return err
+			}
+			return h.r.TurboStream(c.Response(), message)
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
+			"/networks/%s#/networks/%s/devices/%s/ip", networkID, networkID, memberAddress,
 		))
 	}
 }
