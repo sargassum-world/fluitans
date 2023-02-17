@@ -54,7 +54,7 @@
         <div class="card section-card">
           <div class="card-content">
             {{
-              template "networks/network-autoipv6.partial.tmpl" dict
+              template "networks/network-autoip-v6modes.partial.tmpl" dict
               "Network" .Data.Network
               "Auth" .Auth
             }}
@@ -63,7 +63,7 @@
         <div class="card section-card">
           <div class="card-content">
             {{
-              template "networks/network-autoipv4.partial.tmpl" dict
+              template "networks/network-autoip-v4modes.partial.tmpl" dict
               "Network" .Data.Network
               "Auth" .Auth
             }}
@@ -74,6 +74,16 @@
             {{
               template "networks/network-routes.partial.tmpl" dict
               "Network" .Data.Network
+              "Auth" .Auth
+            }}
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="card-content">
+            {{
+              template "networks/network-autoip-pools.partial.tmpl" dict
+              "Network" .Data.Network
+              "AssignmentPools" .Data.AssignmentPools
               "Auth" .Auth
             }}
           </div>

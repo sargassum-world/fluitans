@@ -269,6 +269,7 @@ type NetworkViewData struct {
 	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
 	Members          []Member
+	AssignmentPools  []AssignmentPool
 	JSONPrintedRules string
 	DomainName       string
 	NetworkDNS       NetworkDNS
@@ -314,6 +315,11 @@ func getNetworkViewData(
 		return NetworkViewData{}, echo.NewHTTPError(http.StatusNotFound, "zerotier network not found")
 	}
 	vd.Network = *network
+	if vd.AssignmentPools, err = parseAssignmentPools(
+		*network.Routes, *network.IpAssignmentPools,
+	); err != nil {
+		return NetworkViewData{}, err
+	}
 	if vd.JSONPrintedRules, err = printJSONRules(*network.Rules); err != nil {
 		return NetworkViewData{}, err
 	}
@@ -337,7 +343,6 @@ func getNetworkViewData(
 	}
 
 	vd.DomainName = dc.Config.DomainName
-
 	return vd, nil
 }
 
@@ -459,14 +464,19 @@ func (h *Handlers) HandleNetworkNamePost() echo.HandlerFunc {
 	}
 }
 
-// Network IP Auto-Assignments
+// Network-Managed Routes
 
-func setNetworkAutoIPv6(
+func setNetworkRoutes(
 	ctx context.Context, controller ztcontrollers.Controller,
-	id string, modes zerotier.V6AssignMode, c *ztc.Client,
+	id string, targets []string, c *ztc.Client,
 ) (*zerotier.ControllerNetwork, error) {
+	routes := make([]zerotier.Route, len(targets))
+	for i := range targets {
+		sanitized := strings.TrimSpace(targets[i])
+		routes[i].Target = &sanitized
+	}
 	network, err := c.UpdateNetwork(
-		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{V6AssignMode: &modes},
+		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{Routes: &routes},
 	)
 	if err != nil {
 		return nil, err
@@ -474,18 +484,19 @@ func setNetworkAutoIPv6(
 	return network, nil
 }
 
-const checkboxTrueValue = "true"
-
-func (h *Handlers) HandleNetworkAutoIPv6Post() auth.HTTPHandlerFunc {
-	t := "networks/network-autoipv6.partial.tmpl"
+func (h *Handlers) HandleNetworkRoutesPost() auth.HTTPHandlerFunc {
+	t := "networks/network-routes.partial.tmpl"
 	h.r.MustHave(t)
+	tPools := "networks/network-autoip-pools.partial.tmpl"
+	h.r.MustHave(tPools)
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		id := c.Param("id")
 		address := ztc.GetControllerAddress(id)
-		sixplaneEnabled := strings.ToLower(c.FormValue("sixplane")) == checkboxTrueValue
-		rfc4193Enabled := strings.ToLower(c.FormValue("rfc4193")) == checkboxTrueValue
-		zerotierEnabled := strings.ToLower(c.FormValue("zerotier")) == checkboxTrueValue
+		formParams, err := c.FormParams()
+		if err != nil {
+			return errors.Wrap(err, "couldn't parse form params")
+		}
 
 		// Run queries
 		ctx := c.Request().Context()
@@ -493,13 +504,11 @@ func (h *Handlers) HandleNetworkAutoIPv6Post() auth.HTTPHandlerFunc {
 		if err != nil {
 			return err
 		}
-		network, err := setNetworkAutoIPv6(
-			ctx, *controller, id, zerotier.V6AssignMode{
-				N6plane: &sixplaneEnabled,
-				Rfc4193: &rfc4193Enabled,
-				Zt:      &zerotierEnabled,
-			}, h.ztc,
-		)
+		targets := formParams["existing-targets"]
+		if newTarget := c.FormValue("new-target"); len(newTarget) > 0 {
+			targets = append(targets, newTarget)
+		}
+		network, err := setNetworkRoutes(ctx, *controller, id, targets, h.ztc)
 		if err != nil {
 			return err
 		}
@@ -507,75 +516,27 @@ func (h *Handlers) HandleNetworkAutoIPv6Post() auth.HTTPHandlerFunc {
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {
 			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
-			return h.r.TurboStream(c.Response(), turbostreams.Message{
-				Action:   turbostreams.ActionReplace,
-				Target:   "/networks/" + id + "/autoipv6",
-				Template: t,
-				Data: map[string]interface{}{
-					"Network": network,
-					"Auth":    a,
+			assignmentPools, err := parseAssignmentPools(*network.Routes, *network.IpAssignmentPools)
+			if err != nil {
+				return err
+			}
+			return h.r.TurboStream(
+				c.Response(),
+				turbostreams.Message{
+					Action:   turbostreams.ActionReplace,
+					Target:   "/networks/" + id + "/routes",
+					Template: t,
+					Data: map[string]interface{}{
+						"Network": network,
+						"Auth":    a,
+					},
 				},
-			})
+				replaceAutoIPPoolsStream(id, network, assignmentPools, a),
+			)
 		}
 
 		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#/networks/%s/autoipv6", id, id))
-	}
-}
-
-func setNetworkAutoIPv4(
-	ctx context.Context, controller ztcontrollers.Controller,
-	id string, modes zerotier.V4AssignMode, c *ztc.Client,
-) (*zerotier.ControllerNetwork, error) {
-	network, err := c.UpdateNetwork(
-		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{V4AssignMode: &modes},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return network, nil
-}
-
-func (h *Handlers) HandleNetworkAutoIPv4Post() auth.HTTPHandlerFunc {
-	t := "networks/network-autoipv4.partial.tmpl"
-	h.r.MustHave(t)
-	return func(c echo.Context, a auth.Auth) error {
-		// Parse params
-		id := c.Param("id")
-		address := ztc.GetControllerAddress(id)
-		zerotierEnabled := strings.ToLower(c.FormValue("zerotier")) == "true"
-
-		// Run queries
-		ctx := c.Request().Context()
-		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
-		if err != nil {
-			return err
-		}
-		network, err := setNetworkAutoIPv4(
-			ctx, *controller, id, zerotier.V4AssignMode{
-				Zt: &zerotierEnabled,
-			}, h.ztc,
-		)
-		if err != nil {
-			return err
-		}
-
-		// Render Turbo Stream if accepted
-		if turbostreams.Accepted(c.Request().Header) {
-			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
-			return h.r.TurboStream(c.Response(), turbostreams.Message{
-				Action:   turbostreams.ActionReplace,
-				Target:   "/networks/" + id + "/autoipv4",
-				Template: t,
-				Data: map[string]interface{}{
-					"Network": network,
-					"Auth":    a,
-				},
-			})
-		}
-
-		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#/networks/%s/autoipv4", id, id))
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf("/networks/%s#/networks/%s/routes", id, id))
 	}
 }
 

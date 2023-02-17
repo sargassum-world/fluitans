@@ -3,21 +3,17 @@
 
 <turbo-frame id="/networks/{{$network.Id}}/routes">
   <h3>Managed Routes</h3>
-  <p class="mb-4">
-    This network manages the following IP address groups (note that IP addresses assigned to devices
-    by this network will only work if they fall within one of these address groups):
-  </p>
-  <p>
-    {{if $network.Routes}}
-      {{range $route := $network.Routes}}
-        {{$route.Target}} via {{$route.Via}}
-      {{else}}
-        <span class="tag is-info">None</span>
-      {{end}}
-    {{else}}
-      <span class="tag is-info">None</span>
-    {{end}}
-  </p>
+  {{if and $network.Routes (gt (len $network.Routes) 0)}}
+    <p class="mb-4">
+      This network manages the following IP address groups:
+    </p>
+  {{else}}
+    <p class="mb-4">
+      This network does not yet have any managed routes! Note that auto-assigned IP addresses in the
+      "network-managed IPv4/IPv6 routes" modes will only work if they fall within a managed route.
+      You can add a route as a subnet:
+    </p>
+  {{end}}
   <form
     action="/networks/{{$network.Id}}/routes"
     method="POST"
@@ -25,14 +21,36 @@
     data-action="submit->form-submission#submit submit->csrf#addToken"
   >
     {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+    {{if gt (len $network.Routes) 0}}
+      <label class="label">Existing Subnets</label>
+      <div class="field">
+        {{range $route := $network.Routes}}
+          <div class="control">
+            <label class="checkbox">
+              <input
+                type="checkbox"
+                name="existing-targets"
+                value="{{$route.Target}}"
+                checked
+              >
+              <span class="tag ip-subnet">{{$route.Target}}</span>
+            </label>
+          </div>
+        {{end}}
+      </div>
+    {{end}}
+    <label class="label" for="subnet">New Subnet</label>
     <div class="field">
+      <div class="control">
+        <input class="input" type="text" name="new-target" placeholder="10.241.0.0/24">
+      </div>
     </div>
     <div class="field">
       <div class="control" data-form-submission-target="submitter">
         <input
           class="button"
           type="submit"
-          value="Add route"
+          value="Update routes"
           data-form-submission-target="submit"
         >
       </div>
