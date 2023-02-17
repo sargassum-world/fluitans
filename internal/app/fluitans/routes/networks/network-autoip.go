@@ -117,7 +117,7 @@ func parseAssignmentPools(
 	return pools, nil
 }
 
-// Network IP Auto-Assignment Modes
+// Network IP Auto-Assignment Pools
 
 const autoIPPoolsPartial = "networks/network-autoip-pools.partial.tmpl"
 
@@ -135,6 +135,80 @@ func replaceAutoIPPoolsStream(
 		},
 	}
 }
+
+func setNetworkAutoIPPools(
+	ctx context.Context, controller ztcontrollers.Controller,
+	id string, rawRanges []string, c *ztc.Client,
+) (*zerotier.ControllerNetwork, error) {
+	pools := make([]zerotier.IpAssignmentPool, len(rawRanges))
+	for i := range rawRanges {
+		sanitizedRange := strings.ReplaceAll(rawRanges[i], " ", "")
+		ipRange, err := netipx.ParseIPRange(sanitizedRange)
+		if err != nil {
+			return nil, errors.Wrapf(err, "couldn't parse ip range %s", sanitizedRange)
+		}
+		rangeStart := ipRange.From().String()
+		rangeEnd := ipRange.To().String()
+		pools[i].IpRangeStart = &rangeStart
+		pools[i].IpRangeEnd = &rangeEnd
+	}
+	network, err := c.UpdateNetwork(
+		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{IpAssignmentPools: &pools},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return network, nil
+}
+
+func (h *Handlers) HandleNetworkAutoIPPoolsPost() auth.HTTPHandlerFunc {
+	t := autoIPPoolsPartial
+	h.r.MustHave(t)
+	return func(c echo.Context, a auth.Auth) error {
+		// Parse params
+		id := c.Param("id")
+		address := ztc.GetControllerAddress(id)
+		formParams, err := c.FormParams()
+		if err != nil {
+			return errors.Wrap(err, "couldn't parse form params")
+		}
+
+		// Run queries
+		ctx := c.Request().Context()
+		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
+		if err != nil {
+			return err
+		}
+		ranges := formParams["existing-pools"]
+		if newPool := c.FormValue("new-pool"); len(newPool) > 0 {
+			ranges = append(ranges, newPool)
+		}
+		network, err := setNetworkAutoIPPools(ctx, *controller, id, ranges, h.ztc)
+		if err != nil {
+			return err
+		}
+
+		// Render Turbo Stream if accepted
+		if turbostreams.Accepted(c.Request().Header) {
+			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
+			assignmentPools, err := parseAssignmentPools(*network.Routes, *network.IpAssignmentPools)
+			if err != nil {
+				return err
+			}
+			return h.r.TurboStream(
+				c.Response(),
+				replaceAutoIPPoolsStream(id, network, assignmentPools, a),
+			)
+		}
+
+		// Redirect user
+		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
+			"/networks/%s#/networks/%s/autoip/pools", id, id,
+		))
+	}
+}
+
+// Network IP Auto-Assignment Modes
 
 func setNetworkAutoIPv6Modes(
 	ctx context.Context, controller ztcontrollers.Controller,
@@ -272,80 +346,6 @@ func (h *Handlers) HandleNetworkAutoIPv4ModesPost() auth.HTTPHandlerFunc {
 		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
 			"/networks/%s#/networks/%s/autoip/v4-modes", id, id,
-		))
-	}
-}
-
-// Network IP Auto-Assignment Pools
-
-func setNetworkAutoIPPools(
-	ctx context.Context, controller ztcontrollers.Controller,
-	id string, rawRanges []string, c *ztc.Client,
-) (*zerotier.ControllerNetwork, error) {
-	pools := make([]zerotier.IpAssignmentPool, len(rawRanges))
-	for i := range rawRanges {
-		sanitizedRange := strings.ReplaceAll(rawRanges[i], " ", "")
-		ipRange, err := netipx.ParseIPRange(sanitizedRange)
-		if err != nil {
-			return nil, errors.Wrapf(err, "couldn't parse ip range %s", sanitizedRange)
-		}
-		rangeStart := ipRange.From().String()
-		rangeEnd := ipRange.To().String()
-		pools[i].IpRangeStart = &rangeStart
-		pools[i].IpRangeEnd = &rangeEnd
-	}
-	network, err := c.UpdateNetwork(
-		ctx, controller, id, zerotier.SetControllerNetworkJSONRequestBody{IpAssignmentPools: &pools},
-	)
-	if err != nil {
-		return nil, err
-	}
-	return network, nil
-}
-
-func (h *Handlers) HandleNetworkAutoIPPoolsPost() auth.HTTPHandlerFunc {
-	t := "networks/network-autoip-pools.partial.tmpl"
-	h.r.MustHave(t)
-	return func(c echo.Context, a auth.Auth) error {
-		// Parse params
-		id := c.Param("id")
-		address := ztc.GetControllerAddress(id)
-		formParams, err := c.FormParams()
-		if err != nil {
-			return errors.Wrap(err, "couldn't parse form params")
-		}
-
-		// Run queries
-		ctx := c.Request().Context()
-		controller, err := h.ztcc.FindControllerByAddress(ctx, address)
-		if err != nil {
-			return err
-		}
-		ranges := formParams["existing-pools"]
-		if newPool := c.FormValue("new-pool"); len(newPool) > 0 {
-			ranges = append(ranges, newPool)
-		}
-		network, err := setNetworkAutoIPPools(ctx, *controller, id, ranges, h.ztc)
-		if err != nil {
-			return err
-		}
-
-		// Render Turbo Stream if accepted
-		if turbostreams.Accepted(c.Request().Header) {
-			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
-			assignmentPools, err := parseAssignmentPools(*network.Routes, *network.IpAssignmentPools)
-			if err != nil {
-				return err
-			}
-			return h.r.TurboStream(
-				c.Response(),
-				replaceAutoIPPoolsStream(id, network, assignmentPools, a),
-			)
-		}
-
-		// Redirect user
-		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
-			"/networks/%s#/networks/%s/autoip/pools", id, id,
 		))
 	}
 }

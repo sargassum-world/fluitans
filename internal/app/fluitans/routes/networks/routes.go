@@ -59,4 +59,5 @@ func (h *Handlers) Register(er godest.EchoRouter, tsr turbostreams.Router, ss *s
 	tsr.MSG("/networks/:id/devices/:address", handling.HandleTSMsg(h.r, ss), tsaz)
 	hr.POST("/networks/:id/devices/:address/authorization", h.HandleDeviceAuthorizationPost(), haz)
 	hr.POST("/networks/:id/devices/:address/name", h.HandleDeviceNamePost(), haz)
+	hr.POST("/networks/:id/devices/:address/ip", h.HandleDeviceIPPost(), haz)
 }

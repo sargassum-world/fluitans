@@ -5,6 +5,7 @@
 {{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
 
 {{$zerotierMember := $member.ZerotierMember}}
+{{$ndpAddresses := $member.NDPAddresses}}
 {{$domainNames := $member.DomainNames}}
 
 {{if $withTurboStreamSource}}
@@ -84,7 +85,9 @@
         {{if $networkDNSNamed}}
           <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
           {{range $domainName := $domainNames}}
-            {{if $auth.Identity.Authenticated}}
+            {{if not $auth.Identity.Authenticated}}
+              <span class="tag domain-name">{{$domainName}}</span>
+            {{else}}
               <form
                 id="unset-name-{{$domainName}}"
                 action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
@@ -112,11 +115,11 @@
                   </span>
                 </div>
               </form>
-            {{else}}
-              <span class="tag domain-name">{{$domainName}}</span>
             {{end}}
           {{else}}
-            {{if $auth.Identity.Authenticated}}
+            {{if not $auth.Identity.Authenticated}}
+              <span class="tag is-warning">Unknown</span>
+            {{else}}
               <form
                 action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
                 method="POST"
@@ -143,8 +146,6 @@
                   </div>
                 </div>
               </form>
-            {{else}}
-              <span class="tag is-warning">Unknown</span>
             {{end}}
           {{end}}
         {{end}}
@@ -152,19 +153,74 @@
     </details>
     <details data-accordion-item class="panel-block accordion-item">
       <summary class="accordion-header level">
-        <h4>Advanced Details</h4>
+        <h4>IP Addresses</h4>
         {{template "shared/accordion-icon.partial.tmpl"}}
       </summary>
       <div class="accordion-content">
-        <h5 class="is-size-6">IP Assignments</h5>
-        <p>
+        {{if not $auth.Identity.Authenticated}}
           {{range $ipAddr := $zerotierMember.IpAssignments}}
-            <span class="tag ip-address">{{$ipAddr}}</span>
-          {{else}}
-            <span class="tag is-warning">None</span>
+            <p><span class="tag ip-address">{{$ipAddr}}</span></p>
           {{end}}
-        </p>
-        {{if $auth.Identity.Authenticated}}
+        {{else}}
+          <form
+            action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/ip"
+            method="POST"
+            data-controller="form-submission csrf"
+            data-action="submit->form-submission#submit submit->csrf#addToken"
+          >
+            {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+            {{if gt (len $zerotierMember.IpAssignments) 0}}
+              <label class="label">Assigned Addresses</label>
+              <div class="field">
+                {{range $ipAddr := $zerotierMember.IpAssignments}}
+                  <div class="control">
+                    <label class="checkbox">
+                      <input
+                        type="checkbox"
+                        {{if has $ipAddr $ndpAddresses}}
+                          name="ndp-addresses"
+                        {{else}}
+                          name="existing-addresses"
+                        {{end}}
+                        value="{{$ipAddr}}"
+                        checked
+                        {{if has $ipAddr $ndpAddresses}}
+                          disabled
+                        {{end}}
+                      >
+                      <span class="tag ip-address">{{$ipAddr}}</span>
+                    </label>
+                  </div>
+                {{end}}
+              </div>
+            {{end}}
+            <label class="label" for="subnet">New Address</label>
+            <div class="field">
+              <div class="control">
+                <input class="input" type="text" name="new-address" placeholder="10.241.0.1">
+              </div>
+            </div>
+            <div class="field">
+              <div class="control" data-form-submission-target="submitter">
+                <input
+                  class="button"
+                  type="submit"
+                  value="Update addresses"
+                  data-form-submission-target="submit"
+                >
+              </div>
+            </div>
+          </form>
+        {{end}}
+      </div>
+    </details>
+    {{if $auth.Identity.Authenticated}}
+      <details data-accordion-item class="panel-block accordion-item">
+        <summary class="accordion-header level">
+          <h4>Advanced Details</h4>
+          {{template "shared/accordion-icon.partial.tmpl"}}
+        </summary>
+        <div class="accordion-content">
           <h5 class="is-size-6">Troubleshooting Information</h5>
           <p>Configuration revision: {{$zerotierMember.Revision}}</p>
           <p>
@@ -175,8 +231,8 @@
               v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
             {{end}}
           </p>
-        {{end}}
-      </div>
-    </details>
+        </div>
+      </details>
+    {{end}}
   </article>
 </turbo-frame>

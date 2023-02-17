@@ -63,59 +63,56 @@ func identifyMemberDomainNames(
 	return memberDomainNames
 }
 
-func addNDPAddresses(
-	networkID string, sixplane, rfc4193 bool, member zerotier.ControllerNetworkMember,
-) (updated zerotier.ControllerNetworkMember, err error) {
+func calculateMemberNDPAddresses(
+	networkID string, sixplane, rfc4193 bool, memberAddress string,
+) (ndpAddresses []string, err error) {
 	if !sixplane && !rfc4193 {
-		return member, nil
+		return nil, nil
 	}
 
-	ndpAddresses := make([]string, 0)
+	const ndpModes = 2
+	ndpAddresses = make([]string, 0, ndpModes)
 	if sixplane {
-		sixplaneAddress, err := zerotier.Get6Plane(networkID, *member.Address)
+		sixplaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
 		if err != nil {
-			return member, err
+			return nil, err
 		}
 		ndpAddresses = append(ndpAddresses, sixplaneAddress)
 	}
 	if rfc4193 {
-		rfc4193Address, err := zerotier.GetRFC4193(networkID, *member.Address)
+		rfc4193Address, err := zerotier.GetRFC4193(networkID, memberAddress)
 		if err != nil {
-			return member, err
+			return nil, err
 		}
 		ndpAddresses = append(ndpAddresses, rfc4193Address)
 	}
 
-	if member.IpAssignments == nil {
-		member.IpAssignments = &ndpAddresses
-	} else {
-		*member.IpAssignments = append(*member.IpAssignments, ndpAddresses...)
-	}
-	return member, nil
+	return ndpAddresses, nil
 }
 
-func addAllNDPAddresses(
-	networkID string, v6AssignMode zerotier.V6AssignMode,
-	members map[string]zerotier.ControllerNetworkMember,
-) error {
+func calculateNDPAddresses(
+	networkID string, v6AssignMode zerotier.V6AssignMode, memberAddresses []string,
+) (memberNDPAddresses map[string][]string, err error) {
 	sixplane := (v6AssignMode.N6plane != nil) && *(v6AssignMode.N6plane)
 	rfc4193 := (v6AssignMode.Rfc4193 != nil) && *(v6AssignMode.Rfc4193)
 	if !sixplane && !rfc4193 {
-		return nil
+		return nil, nil
 	}
 
-	for address, member := range members {
-		updated, err := addNDPAddresses(networkID, sixplane, rfc4193, member)
-		if err != nil {
-			return err
+	memberNDPAddresses = make(map[string][]string)
+	for _, address := range memberAddresses {
+		if memberNDPAddresses[address], err = calculateMemberNDPAddresses(
+			networkID, sixplane, rfc4193, address,
+		); err != nil {
+			return nil, err
 		}
-		members[address] = updated
 	}
-	return nil
+	return memberNDPAddresses, nil
 }
 
 type Member struct {
 	ZerotierMember zerotier.ControllerNetworkMember
+	NDPAddresses   []string
 	DomainNames    []string
 }
 
@@ -129,8 +126,19 @@ func getMemberRecords(
 	if err != nil {
 		return nil, err
 	}
-	if err = addAllNDPAddresses(*network.Id, *network.V6AssignMode, zerotierMembers); err != nil {
+	memberNDPAddresses, err := calculateNDPAddresses(
+		*network.Id, *network.V6AssignMode, memberAddresses,
+	)
+	if err != nil {
 		return nil, err
+	}
+	for memberAddress, zerotierMember := range zerotierMembers {
+		ndpAddresses := memberNDPAddresses[memberAddress]
+		if zerotierMember.IpAssignments == nil {
+			zerotierMember.IpAssignments = &ndpAddresses
+		} else {
+			*zerotierMember.IpAssignments = append(ndpAddresses, *zerotierMember.IpAssignments...)
+		}
 	}
 
 	aaaaRecords, err := getRecordsOfType(subnameRRsets, "AAAA")
@@ -142,6 +150,7 @@ func getMemberRecords(
 	for memberAddress, zerotierMember := range zerotierMembers {
 		members[memberAddress] = Member{
 			ZerotierMember: zerotierMember,
+			NDPAddresses:   memberNDPAddresses[memberAddress],
 			DomainNames:    memberDomainNames[memberAddress],
 		}
 	}
