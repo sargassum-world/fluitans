@@ -3,6 +3,7 @@ package desec
 import (
 	"context"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -10,7 +11,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/desec"
 )
 
-// Filtering
+// Filtering & Sorting
 
 func filterRRsets(rrsets []desec.RRset, recordTypes []string) map[string]desec.RRset {
 	all := make(map[string]desec.RRset)
@@ -38,6 +39,47 @@ func FilterAndSortRRsets(rrsets []desec.RRset, recordTypes []string) []desec.RRs
 		}
 	}
 	return sorted
+}
+
+func GetReverseDomainNameFragments(domainName string) []string {
+	fragments := strings.Split(domainName, ".")
+	for i, j := 0, len(fragments)-1; i < j; i, j = i+1, j-1 {
+		fragments[i], fragments[j] = fragments[j], fragments[i]
+	}
+	return fragments
+}
+
+func CompareSubnames(first, second string) bool {
+	a := GetReverseDomainNameFragments(first)
+	b := GetReverseDomainNameFragments(second)
+	k := 0
+	for k = 0; k < len(a) && k < len(b); k++ {
+		if a[k] < b[k] {
+			return true
+		}
+
+		if a[k] > b[k] {
+			return false
+		}
+	}
+	return len(a) < len(b)
+}
+
+func SortSubnameRRsets(
+	rrsets map[string][]desec.RRset, filterRecordTypes []string,
+) (subnames []string, sorted [][]desec.RRset) {
+	subnames = make([]string, 0, len(rrsets))
+	for subname := range rrsets {
+		subnames = append(subnames, subname)
+	}
+	sort.Slice(subnames, func(i, j int) bool {
+		return CompareSubnames(subnames[i], subnames[j])
+	})
+	sorted = make([][]desec.RRset, 0, len(subnames))
+	for _, subname := range subnames {
+		sorted = append(sorted, FilterAndSortRRsets(rrsets[subname], filterRecordTypes))
+	}
+	return subnames, sorted
 }
 
 // All RRsets

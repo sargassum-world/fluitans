@@ -2,8 +2,8 @@ package client
 
 import (
 	"context"
-	"sort"
-	"strings"
+
+	"github.com/pkg/errors"
 
 	desecc "github.com/sargassum-world/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
@@ -11,14 +11,6 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/desec"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
-
-func GetReverseDomainNameFragments(domainName string) []string {
-	fragments := strings.Split(domainName, ".")
-	for i, j := 0, len(fragments)-1; i < j; i, j = i+1, j-1 {
-		fragments[i], fragments[j] = fragments[j], fragments[i]
-	}
-	return fragments
-}
 
 func GetNetworkIDs(subnameRRsets map[string][]desec.RRset) map[string]string {
 	networkIDs := make(map[string]string)
@@ -36,39 +28,6 @@ func GetNetworkIDs(subnameRRsets map[string][]desec.RRset) map[string]string {
 	return networkIDs
 }
 
-func CompareSubnames(first, second string) bool {
-	a := GetReverseDomainNameFragments(first)
-	b := GetReverseDomainNameFragments(second)
-	k := 0
-	for k = 0; k < len(a) && k < len(b); k++ {
-		if a[k] < b[k] {
-			return true
-		}
-
-		if a[k] > b[k] {
-			return false
-		}
-	}
-	return len(a) < len(b)
-}
-
-func SortSubnameRRsets(
-	rrsets map[string][]desec.RRset, filterRecordTypes []string,
-) (subnames []string, sorted [][]desec.RRset) {
-	subnames = make([]string, 0, len(rrsets))
-	for subname := range rrsets {
-		subnames = append(subnames, subname)
-	}
-	sort.Slice(subnames, func(i, j int) bool {
-		return CompareSubnames(subnames[i], subnames[j])
-	})
-	sorted = make([][]desec.RRset, 0, len(subnames))
-	for _, subname := range subnames {
-		sorted = append(sorted, desecc.FilterAndSortRRsets(rrsets[subname], filterRecordTypes))
-	}
-	return subnames, sorted
-}
-
 type Subdomain struct {
 	Subname       string
 	RRsets        []desec.RRset
@@ -82,7 +41,7 @@ func GetSubdomains(
 	c *desecc.Client, zc *ztc.Client, zcc *ztcontrollers.Client,
 ) ([]Subdomain, error) {
 	ids := GetNetworkIDs(subnameRRsets)
-	sortedKeys, sortedSubnameRRsets := SortSubnameRRsets(subnameRRsets, c.Cache.RecordTypes)
+	sortedKeys, sortedSubnameRRsets := desecc.SortSubnameRRsets(subnameRRsets, c.Cache.RecordTypes)
 	networks, controllers, err := GetNetworks(ctx, ids, zc, zcc)
 	if err != nil {
 		return nil, err
@@ -100,4 +59,21 @@ func GetSubdomains(
 		}
 	}
 	return subnames, nil
+}
+
+func GetRecordsOfType(
+	subnameRRsets map[string][]desec.RRset, rrsetType string,
+) (records map[string][]string, err error) {
+	records = make(map[string][]string)
+	// Look up potential domain names of network members
+	for subname, rrsets := range subnameRRsets {
+		filtered := desecc.FilterAndSortRRsets(rrsets, []string{rrsetType})
+		if len(filtered) > 1 {
+			return nil, errors.Errorf("unexpected number of RRsets for record")
+		}
+		if len(filtered) == 1 {
+			records[subname] = filtered[0].Records
+		}
+	}
+	return records, nil
 }

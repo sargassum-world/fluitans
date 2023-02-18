@@ -14,6 +14,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/sargassum-world/fluitans/internal/app/fluitans/auth"
+	"github.com/sargassum-world/fluitans/internal/app/fluitans/client"
 	desecc "github.com/sargassum-world/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
@@ -72,9 +73,9 @@ func (h *Handlers) HandleDevicesSub() turbostreams.HandlerFunc {
 }
 
 func checkDevicesList(
-	ctx context.Context, controllerAddress, networkID string, prevDevices StringSet,
+	ctx context.Context, controllerAddress, networkID string, prevDevices client.StringSet,
 	c *ztc.Client, cc *ztcontrollers.Client,
-) (changed bool, updatedDevices StringSet, err error) {
+) (changed bool, updatedDevices client.StringSet, err error) {
 	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
 	if err != nil {
 		return false, prevDevices, errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
@@ -85,7 +86,7 @@ func checkDevicesList(
 			err, "couldn't get network %s member addresses", networkID,
 		)
 	}
-	updatedDevices = NewStringSet(addresses)
+	updatedDevices = client.NewStringSet(addresses)
 	if updatedDevices.Equals(prevDevices) {
 		return false, prevDevices, nil
 	}
@@ -98,7 +99,7 @@ func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 	return func(c *turbostreams.Context) error {
 		// Make change trackers
 		initialized := false
-		var devices StringSet
+		var devices client.StringSet
 
 		// Parse params
 		networkID := c.Param("id")
@@ -194,7 +195,7 @@ func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 // Device
 
 type DeviceViewData struct {
-	Member          Member
+	Member          client.Member
 	Network         zerotier.ControllerNetwork
 	NetworkDNSNamed bool
 }
@@ -230,7 +231,7 @@ func getDeviceViewData(
 	}
 	vd.Network = *network
 
-	members, err := getMemberRecords(
+	members, err := client.GetMemberRecords(
 		ctx, dc.Config.DomainName, *controller, *network, []string{memberAddress}, subnameRRsets, c,
 	)
 	if err != nil {
@@ -344,8 +345,8 @@ func (h *Handlers) HandleDeviceSub() turbostreams.HandlerFunc {
 type deviceChangeState struct {
 	Network     zerotier.ControllerNetwork
 	Device      zerotier.ControllerNetworkMember
-	DomainNames StringSet
-	DNSUpdates  StringSet
+	DomainNames client.StringSet
+	DNSUpdates  client.StringSet
 }
 
 func (s *deviceChangeState) Update(
@@ -369,7 +370,7 @@ func (s *deviceChangeState) Update(
 	if err != nil {
 		return false, errors.Wrapf(err, "couldn't get subname rrsets")
 	}
-	members, err := getMemberRecords(
+	members, err := client.GetMemberRecords(
 		ctx, dc.Config.DomainName, controller, *network, []string{memberAddress}, subnameRRsets, c,
 	)
 	if err != nil {
@@ -382,7 +383,7 @@ func (s *deviceChangeState) Update(
 	s.Device = member.ZerotierMember
 
 	// Domain Names
-	updatedDomainNames := NewStringSet(member.DomainNames)
+	updatedDomainNames := client.NewStringSet(member.DomainNames)
 	domainNamesChanged := !updatedDomainNames.Equals(s.DomainNames)
 	s.DomainNames = updatedDomainNames
 
@@ -393,7 +394,7 @@ func (s *deviceChangeState) Update(
 			printed = append(printed, fmt.Sprintf("%s: %s", domainName, dnsUpdate))
 		}
 	}
-	updatedDNSUpdates := NewStringSet(printed)
+	updatedDNSUpdates := client.NewStringSet(printed)
 	dnsUpdatesChanged := !updatedDNSUpdates.Equals(s.DNSUpdates)
 	s.DNSUpdates = updatedDNSUpdates
 
@@ -568,13 +569,13 @@ func setMemberName(
 		return errors.Wrapf(err, "couldn't get network %s member %s", networkID, memberAddress)
 	}
 
-	ipAddresses, _, err := calculateIPAddresses(*network.Id, *network.V6AssignMode, *member)
+	ipAddresses, _, err := ztc.CalculateIPAddresses(*network.Id, *network.V6AssignMode, *member)
 	if err != nil {
 		return errors.Wrapf(
 			err, "couldn't calculate IP addresses for network %s member %s", networkID, memberAddress,
 		)
 	}
-	ipv4Addresses, ipv6Addresses, err := splitIPAddresses(ipAddresses)
+	ipv4Addresses, ipv6Addresses, err := client.SplitIPAddresses(ipAddresses)
 	if err != nil {
 		return errors.Wrapf(
 			err, "found invalid IP address for network %s member %s", networkID, memberAddress,
