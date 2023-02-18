@@ -128,6 +128,9 @@ func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 			}
 
 			// Publish changes
+			// We send the entire devices list because the content of the devices list partial depends on
+			// whether there's at least one device in the network, and this is the simplest solution which
+			// handles all edge cases.
 			message, err := replaceDevicesListStream(
 				c.Context(), controllerAddress, networkID, auth.Auth{}, h.ztc, h.ztcc, h.dc,
 			)
@@ -338,57 +341,63 @@ func (h *Handlers) HandleDeviceSub() turbostreams.HandlerFunc {
 	}
 }
 
-func checkNetwork(
-	ctx context.Context, controllerAddress, networkID string, prevNetwork zerotier.ControllerNetwork,
-	c *ztc.Client, cc *ztcontrollers.Client,
-) (changed bool, updatedNetwork zerotier.ControllerNetwork, err error) {
-	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
-	if err != nil {
-		return false, updatedNetwork, errors.Wrapf(
-			err, "couldn't find controller %s", controllerAddress,
-		)
-	}
-	member, err := c.GetNetwork(ctx, *controller, networkID)
-	if err != nil {
-		return false, updatedNetwork, errors.Wrapf(err, "couldn't get network %s", networkID)
-	}
-	updatedNetwork = *member
-	sixplaneChanged := prevNetwork.V6AssignMode == nil ||
-		prevNetwork.V6AssignMode.N6plane == nil ||
-		*updatedNetwork.V6AssignMode.N6plane != *prevNetwork.V6AssignMode.N6plane
-	rfc4193Changed := prevNetwork.V6AssignMode == nil ||
-		prevNetwork.V6AssignMode.Rfc4193 == nil ||
-		*updatedNetwork.V6AssignMode.Rfc4193 != *prevNetwork.V6AssignMode.Rfc4193
-	if !sixplaneChanged && !rfc4193Changed {
-		prevNetwork.V6AssignMode = updatedNetwork.V6AssignMode
-		return false, prevNetwork, nil
-	}
-	return true, updatedNetwork, nil
+type deviceChangeState struct {
+	Network     zerotier.ControllerNetwork
+	Device      zerotier.ControllerNetworkMember
+	DomainNames StringSet
+	DNSUpdates  StringSet
 }
 
-func checkDevice(
-	ctx context.Context, controllerAddress, networkID, memberAddress string,
-	prevDevice zerotier.ControllerNetworkMember,
-	c *ztc.Client, cc *ztcontrollers.Client,
-) (changed bool, updatedDevice zerotier.ControllerNetworkMember, err error) {
-	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
+func (s *deviceChangeState) Update(
+	ctx context.Context, controller ztcontrollers.Controller, networkID, memberAddress string,
+	c *ztc.Client, dc *desecc.Client,
+) (changed bool, err error) {
+	// Network
+	network, err := c.GetNetwork(ctx, controller, networkID)
 	if err != nil {
-		return false, updatedDevice, errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
+		return false, errors.Wrapf(err, "couldn't get network %s", networkID)
 	}
-	member, err := c.GetNetworkMember(ctx, *controller, networkID, memberAddress)
+	sixplaneChanged := s.Network.V6AssignMode == nil || s.Network.V6AssignMode.N6plane == nil ||
+		*network.V6AssignMode.N6plane != *s.Network.V6AssignMode.N6plane
+	rfc4193Changed := s.Network.V6AssignMode == nil || s.Network.V6AssignMode.Rfc4193 == nil ||
+		*network.V6AssignMode.Rfc4193 != *s.Network.V6AssignMode.Rfc4193
+	networkChanged := sixplaneChanged || rfc4193Changed
+	s.Network = *network
+
+	// Device
+	subnameRRsets, err := dc.GetRRsets(ctx)
 	if err != nil {
-		return false, updatedDevice, errors.Wrapf(
-			err, "couldn't get network %s member %s", networkID, memberAddress,
+		return false, errors.Wrapf(err, "couldn't get subname rrsets")
+	}
+	members, err := getMemberRecords(
+		ctx, dc.Config.DomainName, controller, *network, []string{memberAddress}, subnameRRsets, c,
+	)
+	if err != nil {
+		return false, errors.Wrapf(
+			err, "couldn't get network %s member %s records", networkID, memberAddress,
 		)
 	}
-	updatedDevice = *member
-	revisionChanged := prevDevice.Revision == nil ||
-		*updatedDevice.Revision != *prevDevice.Revision
-	// TODO: do we need to check whether the IP assignments list has changed?
-	if !revisionChanged {
-		return false, prevDevice, nil
+	member := members[memberAddress]
+	deviceChanged := s.Device.Revision == nil || *s.Device.Revision != *member.ZerotierMember.Revision
+	s.Device = member.ZerotierMember
+
+	// Domain Names
+	updatedDomainNames := NewStringSet(member.DomainNames)
+	domainNamesChanged := !updatedDomainNames.Equals(s.DomainNames)
+	s.DomainNames = updatedDomainNames
+
+	// DNS Updates
+	printed := make([]string, 0, len(member.DNSUpdates))
+	for domainName, dnsUpdates := range member.DNSUpdates {
+		for _, dnsUpdate := range dnsUpdates {
+			printed = append(printed, fmt.Sprintf("%s: %s", domainName, dnsUpdate))
+		}
 	}
-	return true, updatedDevice, nil
+	updatedDNSUpdates := NewStringSet(printed)
+	dnsUpdatesChanged := !updatedDNSUpdates.Equals(s.DNSUpdates)
+	s.DNSUpdates = updatedDNSUpdates
+
+	return deviceChanged || networkChanged || domainNamesChanged || dnsUpdatesChanged, nil
 }
 
 func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
@@ -398,38 +407,35 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 	return func(c *turbostreams.Context) error {
 		// Make change trackers
 		initialized := false
-		var device zerotier.ControllerNetworkMember
-		var network zerotier.ControllerNetwork
+		var state deviceChangeState
 
 		// Parse params
+		ctx := c.Context()
 		networkID := c.Param("id")
 		controllerAddress := ztc.GetControllerAddress(networkID)
 		memberAddress := c.Param("address")
 
+		// Run queries
+		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
+		if err != nil {
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
+		}
+
 		// Publish periodically
 		const pubInterval = 5 * time.Second
-		return handling.RepeatImmediate(c.Context(), pubInterval, func() (done bool, err error) {
+		return handling.RepeatImmediate(ctx, pubInterval, func() (done bool, err error) {
 			// Check for changes
-			networkChanged, updatedNetwork, err := checkNetwork(
-				c.Context(), controllerAddress, networkID, network, h.ztc, h.ztcc,
-			)
-			if err != nil {
-				return false, errors.Wrapf(err, "couldn't check network %s for changes", networkID)
-			}
-			network = updatedNetwork
-			deviceChanged, updatedDevice, err := checkDevice(
-				c.Context(), controllerAddress, networkID, memberAddress, device, h.ztc, h.ztcc,
-			)
+			changed, err := state.Update(ctx, *controller, networkID, memberAddress, h.ztc, h.dc)
 			if err != nil {
 				return false, errors.Wrapf(
-					err, "couldn't check network %s member %s for changes", networkID, memberAddress,
+					err, "couldn't update state while tracking changes to network %s member %s",
+					networkID, memberAddress,
 				)
 			}
-			device = updatedDevice
-
-			if !deviceChanged && !networkChanged {
+			if !changed {
 				return false, nil
 			}
+
 			if !initialized {
 				// We just started publishing because a page added a subscription, so there's no need to
 				// send the devices list again - that page already has the latest version
@@ -439,7 +445,7 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 
 			// Publish changes
 			messages, err := replaceDeviceStream(
-				c.Context(), controllerAddress, networkID, memberAddress, auth.Auth{}, h.ztc, h.ztcc, h.dc,
+				ctx, controllerAddress, networkID, memberAddress, auth.Auth{}, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
 				return false, errors.Wrapf(

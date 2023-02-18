@@ -187,6 +187,10 @@ type DNSUpdate struct {
 	Record    string
 }
 
+func (u DNSUpdate) String() string {
+	return fmt.Sprintf("%s: %s %s", u.Type, u.Operation, u.Record)
+}
+
 type Member struct {
 	ZerotierMember zerotier.ControllerNetworkMember
 	NDPAddresses   []string
