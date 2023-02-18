@@ -2,12 +2,15 @@ package desec
 
 import (
 	"context"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/sargassum-world/fluitans/pkg/desec"
 )
+
+// Filtering
 
 func filterRRsets(rrsets []desec.RRset, recordTypes []string) map[string]desec.RRset {
 	all := make(map[string]desec.RRset)
@@ -87,7 +90,7 @@ func (c *Client) getRRsetsFromDesec(ctx context.Context) (map[string][]desec.RRs
 	mergedRRsets := *res.JSON200
 	rrsets := make(map[string][]desec.RRset)
 	for _, rrset := range mergedRRsets {
-		subname := *rrset.Subname
+		subname := rrset.Subname
 		rrsets[subname] = append(rrsets[subname], rrset)
 	}
 
@@ -119,6 +122,73 @@ func (c *Client) GetRRsets(ctx context.Context) (map[string][]desec.RRset, error
 
 	// fmt.Println("Performing a desec API read operation for GetRRsets...")
 	return c.getRRsetsFromDesec(ctx)
+}
+
+func (c *Client) UpsertRRsets(ctx context.Context, rrsets ...desec.RRset) ([]desec.RRset, error) {
+	if err := c.tryAddLimitedWrite(); err != nil {
+		return nil, err
+	}
+	client, cerr := c.Config.DNSServer.NewClient()
+	if cerr != nil {
+		return nil, cerr
+	}
+
+	// TODO: handle rate-limiting
+	domainName := c.Config.DomainName
+	res, err := client.PartialUpdateRRsetsWithResponse(ctx, domainName, rrsets)
+	if err != nil {
+		return nil, err
+	}
+	if err = c.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
+		return nil, err
+	}
+	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+		return nil, err
+	}
+
+	returnedRRsets := *res.JSON200
+	returnedKeys := make(map[RRsetKey]struct{})
+	staleDomainNameCaches := make(map[string]struct{})
+	for _, rrset := range returnedRRsets {
+		key := NewRRsetKey(rrset)
+		returnedKeys[key] = struct{}{}
+		if err = c.Cache.SetRRsetByNameAndType(domainName, key.Subname, key.Type, rrset); err != nil {
+			return nil, err
+		}
+		if !c.Cache.HasSubname(domainName, key.Subname) {
+			staleDomainNameCaches[domainName] = struct{}{}
+		}
+	}
+	for _, rrset := range rrsets {
+		if !IsDeletionUpsertRRset(rrset) {
+			continue
+		}
+		key := NewRRsetKey(rrset)
+		if _, returned := returnedKeys[key]; !returned {
+			c.Cache.SetNonexistentRRsetByNameAndType(domainName, key.Subname, key.Type)
+		}
+		if c.Cache.HasSubname(domainName, key.Subname) {
+			staleDomainNameCaches[domainName] = struct{}{}
+		}
+	}
+
+	for domainName := range staleDomainNameCaches {
+		c.Cache.UnsetSubnames(domainName)
+	}
+
+	return returnedRRsets, nil
+}
+
+func (c *Client) DeleteRRsets(ctx context.Context, keys ...RRsetKey) error {
+	rrsets := make([]desec.RRset, len(keys))
+	for i, key := range keys {
+		rrsets[i] = key.AsDeletionUpsertRRset()
+	}
+	returnedRRsets, err := c.UpsertRRsets(ctx, rrsets...)
+	if len(returnedRRsets) != 0 {
+		return errors.New("expected zero rrsets to be returned after a bulk delete operation")
+	}
+	return err
 }
 
 // Subname RRsets
@@ -243,11 +313,63 @@ func (c *Client) GetRRset(ctx context.Context, subname, recordType string) (*des
 
 func (c *Client) CreateRRset(
 	ctx context.Context, subname, recordType string, ttl int64, records []string,
+) (desec.RRset, error) {
+	if err := c.tryAddLimitedWrite(); err != nil {
+		return desec.RRset{}, err
+	}
+	client, cerr := c.Config.DNSServer.NewClient()
+	if cerr != nil {
+		return desec.RRset{}, cerr
+	}
+
+	// TODO: handle rate-limiting
+	domainName := c.Config.DomainName
+	intTTL := int(ttl)
+	requestBody := desec.RRset{
+		Subname: subname,
+		Type:    recordType,
+		Ttl:     &intTTL,
+		Records: records,
+	}
+	res, err := client.CreateRRsetsWithResponse(ctx, domainName, []desec.RRset{requestBody})
+	if err != nil {
+		return desec.RRset{}, err
+	}
+
+	if err = c.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
+		return desec.RRset{}, err
+	}
+
+	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+		return desec.RRset{}, err
+	}
+
+	rrsets := res.JSON201
+	if len(*rrsets) != 1 {
+		return desec.RRset{}, errors.Errorf(
+			"response for creating a single rrset unexpectedly contains %d rrsets", len(*rrsets),
+		)
+	}
+	rrset := (*rrsets)[0]
+	if err = c.Cache.SetRRsetByNameAndType(
+		domainName, subname, rrset.Type, rrset,
+	); err != nil {
+		return desec.RRset{}, err
+	}
+
+	if !c.Cache.HasSubname(domainName, subname) {
+		c.Cache.UnsetSubnames(domainName)
+	}
+
+	return rrset, nil
+}
+
+func (c *Client) UpdateRRset(
+	ctx context.Context, subname, recordType string, ttl int64, records []string,
 ) (*desec.RRset, error) {
 	if err := c.tryAddLimitedWrite(); err != nil {
 		return nil, err
 	}
-
 	client, cerr := c.Config.DNSServer.NewClient()
 	if cerr != nil {
 		return nil, cerr
@@ -255,26 +377,30 @@ func (c *Client) CreateRRset(
 
 	// TODO: handle rate-limiting
 	domainName := c.Config.DomainName
-	requestBody := desec.CreateRRsetsJSONRequestBody{
-		Subname: &subname,
+	intTTL := int(ttl)
+	requestBody := desec.RRset{
+		Subname: subname,
 		Type:    recordType,
-		Ttl:     int(ttl),
+		Ttl:     &intTTL,
 		Records: records,
 	}
-	res, err := client.CreateRRsetsWithResponse(ctx, domainName, requestBody)
+	res, err := client.UpdateRRsetWithResponse(ctx, domainName, subname, recordType, requestBody)
 	if err != nil {
 		return nil, err
 	}
-
 	if err = c.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
 		return nil, err
 	}
-
 	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
 		return nil, err
 	}
 
-	rrset := res.JSON201
+	if res.StatusCode() == http.StatusNoContent {
+		c.Cache.SetNonexistentRRsetByNameAndType(domainName, subname, recordType)
+		return nil, nil
+	}
+
+	rrset := res.JSON200
 	if err = c.Cache.SetRRsetByNameAndType(
 		domainName, subname, rrset.Type, *rrset,
 	); err != nil {
@@ -292,7 +418,6 @@ func (c *Client) DeleteRRset(ctx context.Context, subname, recordType string) er
 	if err := c.tryAddLimitedWrite(); err != nil {
 		return err
 	}
-
 	client, cerr := c.Config.DNSServer.NewClient()
 	if cerr != nil {
 		return cerr
@@ -315,5 +440,8 @@ func (c *Client) DeleteRRset(ctx context.Context, subname, recordType string) er
 	c.Cache.SetNonexistentRRsetByNameAndType(
 		domainName, subname, recordType,
 	)
+	if c.Cache.HasSubname(domainName, subname) {
+		c.Cache.UnsetSubnames(domainName)
+	}
 	return nil
 }

@@ -115,11 +115,14 @@ type RRset struct {
 	Domain  *string    `json:"domain,omitempty"`
 	Name    *string    `json:"name,omitempty"`
 	Records []string   `json:"records"`
-	Subname *string    `json:"subname,omitempty"`
+	Subname string     `json:"subname"`
 	Touched *time.Time `json:"touched,omitempty"`
-	Ttl     int        `json:"ttl"`
+	Ttl     *int       `json:"ttl,omitempty"`
 	Type    string     `json:"type"`
 }
+
+// RRsets defines model for RRsets.
+type RRsets = []RRset
 
 // RegisterAccount defines model for RegisterAccount.
 type RegisterAccount struct {
@@ -233,13 +236,13 @@ type CreateCaptchaJSONRequestBody = Captcha
 type CreateDomainJSONRequestBody = Domain
 
 // PartialUpdateRRsetsJSONRequestBody defines body for PartialUpdateRRsets for application/json ContentType.
-type PartialUpdateRRsetsJSONRequestBody = RRset
+type PartialUpdateRRsetsJSONRequestBody = RRsets
 
 // CreateRRsetsJSONRequestBody defines body for CreateRRsets for application/json ContentType.
-type CreateRRsetsJSONRequestBody = RRset
+type CreateRRsetsJSONRequestBody = RRsets
 
 // UpdateRRsetsJSONRequestBody defines body for UpdateRRsets for application/json ContentType.
-type UpdateRRsetsJSONRequestBody = RRset
+type UpdateRRsetsJSONRequestBody = RRsets
 
 // PartialUpdateRRsetJSONRequestBody defines body for PartialUpdateRRset for application/json ContentType.
 type PartialUpdateRRsetJSONRequestBody = RRset

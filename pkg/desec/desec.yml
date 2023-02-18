@@ -293,13 +293,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RRset'
+              $ref: '#/components/schemas/RRsets'
       responses:
         '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RRset'
+                $ref: '#/components/schemas/RRsets'
           description: ''
       tags:
       - api
@@ -317,13 +317,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RRset'
+              $ref: '#/components/schemas/RRsets'
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RRset'
+                $ref: '#/components/schemas/RRsets'
           description: ''
       tags:
       - api
@@ -341,13 +341,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/RRset'
+              $ref: '#/components/schemas/RRsets'
       responses:
         '200':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/RRset'
+                $ref: '#/components/schemas/RRsets'
           description: ''
       tags:
       - api
@@ -1541,8 +1541,12 @@ components:
           readOnly: true
       required:
       - records
-      - ttl
+      - subname
       - type
+    RRsets:
+      type: array
+      items:
+        $ref: '#/components/schemas/RRset'
     AuthenticatedActivateUserAction:
       type: object
       properties:

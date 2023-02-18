@@ -11,7 +11,7 @@
       type="text"
       class="input"
       name="ttl"
-      value="{{$rrset.Ttl}}"
+      value="{{derefInt $rrset.Ttl 0}}"
       placeholder="3600"
       readonly
     />
@@ -46,7 +46,7 @@
 <!-- TODO: make a controller with a confirmation dialog -->
 {{if $auth.Identity.Authenticated}}
   <form
-    action="/dns/{{derefString $rrset.Subname "@"}}/{{$rrset.Type}}"
+    action="/dns/{{$rrset.Subname}}/{{$rrset.Type}}"
     method="POST"
     data-turbo-frame="{{$turboFrameTarget}}"
     data-controller="form-submission csrf"

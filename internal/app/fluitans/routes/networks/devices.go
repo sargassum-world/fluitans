@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"strings"
 	"time"
 
@@ -71,7 +72,7 @@ func replaceDevicesListStream(
 ) (turbostreams.Message, error) {
 	networkViewData, err := getNetworkViewData(ctx, controllerAddress, networkID, c, cc, dc)
 	if err != nil {
-		return turbostreams.Message{}, err
+		return turbostreams.Message{}, errors.Wrapf(err, "couldn't get network %s data", networkID)
 	}
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
@@ -96,11 +97,11 @@ func (h *Handlers) HandleDevicesSub() turbostreams.HandlerFunc {
 		ctx := c.Context()
 		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 		}
 		network, err := h.ztc.GetNetwork(ctx, *controller, networkID)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't get network %s", networkID)
 		}
 		if network == nil {
 			return errors.Errorf("network %s not found", networkID)
@@ -117,11 +118,13 @@ func checkDevicesList(
 ) (changed bool, updatedDevices StringSet, err error) {
 	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
 	if err != nil {
-		return false, prevDevices, err
+		return false, prevDevices, errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 	}
 	addresses, err := c.GetNetworkMemberAddresses(ctx, *controller, networkID)
 	if err != nil {
-		return false, prevDevices, err
+		return false, prevDevices, errors.Wrapf(
+			err, "couldn't get network %s member addresses", networkID,
+		)
 	}
 	updatedDevices = NewStringSet(addresses)
 	if updatedDevices.Equals(prevDevices) {
@@ -150,7 +153,9 @@ func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 				c.Context(), controllerAddress, networkID, devices, h.ztc, h.ztcc,
 			)
 			if err != nil {
-				return false, err
+				return false, errors.Wrapf(
+					err, "couldn't check network %s members list for changes", networkID,
+				)
 			}
 			devices = updatedDevices
 			if !changed {
@@ -168,7 +173,9 @@ func (h *Handlers) HandleDevicesPub() turbostreams.HandlerFunc {
 				c.Context(), controllerAddress, networkID, auth.Auth{}, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
-				return false, err
+				return false, errors.Wrapf(
+					err, "couldn't generate turbo streams update for network %s members list", networkID,
+				)
 			}
 			c.Publish(message)
 			return false, nil
@@ -189,12 +196,14 @@ func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 		ctx := c.Request().Context()
 		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 		}
 		if err = setMemberAuthorization(
 			ctx, *controller, networkID, memberAddress, true, h.ztc,
 		); err != nil {
-			return err
+			return errors.Wrapf(
+				err, "couldn't authorize network %s member %s", networkID, memberAddress,
+			)
 		}
 
 		// Render Turbo Stream if accepted
@@ -206,7 +215,9 @@ func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
-				return err
+				return errors.Wrapf(
+					err, "couldn't generate turbo streams update for network %s members list", networkID,
+				)
 			}
 			return h.r.TurboStream(c.Response(), replaceStream)
 		}
@@ -230,12 +241,12 @@ type DeviceViewData struct {
 }
 
 func getDeviceViewData(
-	ctx context.Context, address, networkID, memberAddress string,
+	ctx context.Context, controllerAddress, networkID, memberAddress string,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
 ) (vd DeviceViewData, err error) {
-	controller, err := cc.FindControllerByAddress(ctx, address)
+	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
 	if err != nil {
-		return DeviceViewData{}, err
+		return DeviceViewData{}, errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 	}
 	if controller == nil {
 		return DeviceViewData{}, echo.NewHTTPError(http.StatusNotFound, "controller not found")
@@ -246,11 +257,11 @@ func getDeviceViewData(
 	var subnameRRsets map[string][]desec.RRset
 	eg.Go(func() (err error) {
 		network, err = c.GetNetwork(ctx, *controller, networkID)
-		return err
+		return errors.Wrapf(err, "couldn't get network %s", networkID)
 	})
 	eg.Go(func() (err error) {
 		subnameRRsets, err = dc.GetRRsets(ctx)
-		return err
+		return errors.Wrap(err, "couldn't get subname RRsets")
 	})
 	if err = eg.Wait(); err != nil {
 		return DeviceViewData{}, err
@@ -264,7 +275,9 @@ func getDeviceViewData(
 		ctx, dc.Config.DomainName, *controller, *network, []string{memberAddress}, subnameRRsets, c,
 	)
 	if err != nil {
-		return DeviceViewData{}, err
+		return DeviceViewData{}, errors.Wrapf(
+			err, "couldn't get network %s member %s records", networkID, memberAddress,
+		)
 	}
 	var ok bool
 	if vd.Member, ok = members[memberAddress]; !ok {
@@ -273,8 +286,11 @@ func getDeviceViewData(
 		)
 	}
 
-	if vd.NetworkDNSNamed, err = checkNamedByDNS(egctx, *network.Name, *network.Id, dc); err != nil {
-		return DeviceViewData{}, err
+	if vd.NetworkDNSNamed, err = checkNamedByDNS(egctx, *network.Name, networkID, dc); err != nil {
+		return DeviceViewData{}, errors.Wrapf(
+			err, "couldn't check whether network %s has dns-validated name of %s",
+			networkID, *network.Name,
+		)
 	}
 
 	return vd, nil
@@ -288,7 +304,9 @@ func replaceDeviceStream(
 		ctx, controllerAddress, networkID, memberAddress, c, cc, dc,
 	)
 	if err != nil {
-		return turbostreams.Message{}, err
+		return turbostreams.Message{}, errors.Wrapf(
+			err, "couldn't get device view data for network %s member %s", networkID, memberAddress,
+		)
 	}
 	return turbostreams.Message{
 		Action:   turbostreams.ActionReplace,
@@ -315,11 +333,11 @@ func (h *Handlers) HandleDeviceSub() turbostreams.HandlerFunc {
 		ctx := c.Context()
 		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 		}
 		member, err := h.ztc.GetNetworkMember(ctx, *controller, networkID, memberAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't get network %s member %s", networkID, memberAddress)
 		}
 		if member == nil {
 			return errors.Errorf("network %s member %s not found", networkID, memberAddress)
@@ -336,11 +354,13 @@ func checkNetwork(
 ) (changed bool, updatedNetwork zerotier.ControllerNetwork, err error) {
 	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
 	if err != nil {
-		return false, updatedNetwork, err
+		return false, updatedNetwork, errors.Wrapf(
+			err, "couldn't find controller %s", controllerAddress,
+		)
 	}
 	member, err := c.GetNetwork(ctx, *controller, networkID)
 	if err != nil {
-		return false, updatedNetwork, err
+		return false, updatedNetwork, errors.Wrapf(err, "couldn't get network %s", networkID)
 	}
 	updatedNetwork = *member
 	sixplaneChanged := prevNetwork.V6AssignMode == nil ||
@@ -363,11 +383,13 @@ func checkDevice(
 ) (changed bool, updatedDevice zerotier.ControllerNetworkMember, err error) {
 	controller, err := cc.FindControllerByAddress(ctx, controllerAddress)
 	if err != nil {
-		return false, updatedDevice, err
+		return false, updatedDevice, errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 	}
 	member, err := c.GetNetworkMember(ctx, *controller, networkID, memberAddress)
 	if err != nil {
-		return false, updatedDevice, err
+		return false, updatedDevice, errors.Wrapf(
+			err, "couldn't get network %s member %s", networkID, memberAddress,
+		)
 	}
 	updatedDevice = *member
 	revisionChanged := prevDevice.Revision == nil ||
@@ -401,14 +423,18 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 				c.Context(), controllerAddress, networkID, network, h.ztc, h.ztcc,
 			)
 			if err != nil {
-				return false, err
+				return false, errors.Wrapf(
+					err, "couldn't check network %s for changes", networkID,
+				)
 			}
 			network = updatedNetwork
 			deviceChanged, updatedDevice, err := checkDevice(
 				c.Context(), controllerAddress, networkID, memberAddress, device, h.ztc, h.ztcc,
 			)
 			if err != nil {
-				return false, err
+				return false, errors.Wrapf(
+					err, "couldn't check network %s member %s for changes", networkID, memberAddress,
+				)
 			}
 			device = updatedDevice
 
@@ -427,7 +453,10 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 				c.Context(), controllerAddress, networkID, memberAddress, auth.Auth{}, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
-				return false, err
+				return false, errors.Wrapf(
+					err, "couldn't generate turbo streams update for network %s member %s",
+					networkID, memberAddress,
+				)
 			}
 			c.Publish(message)
 			return false, nil
@@ -446,7 +475,7 @@ func setMemberAuthorization(
 		ctx, controller, networkID, memberAddress,
 		zerotier.SetControllerNetworkMemberJSONRequestBody{Authorized: &auth},
 	); err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't update network %s member %s", networkID, memberAddress)
 	}
 	if authorized {
 		// We might've added a new network member, so we should invalidate the cache
@@ -469,12 +498,14 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 		ctx := c.Request().Context()
 		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 		}
 		if err = setMemberAuthorization(
 			ctx, *controller, networkID, memberAddress, authorization, h.ztc,
 		); err != nil {
-			return err
+			return errors.Wrapf(
+				err, "couldn't update authorization on network %s for member %s", networkID, memberAddress,
+			)
 		}
 
 		// Render Turbo Stream if accepted
@@ -487,7 +518,9 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
-				return err
+				return errors.Wrapf(
+					err, "couldn't generate turbo streams update for network %s members list", networkID,
+				)
 			}
 			return h.r.TurboStream(c.Response(), replaceStream)
 		}
@@ -502,77 +535,130 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 // Device Naming
 
 func confirmMemberNameManageable(
-	ctx context.Context, controller ztcontrollers.Controller, networkID string,
-	memberAddress, memberName string, c *ztc.Client, dc *desecc.Client,
+	ctx context.Context, network zerotier.ControllerNetwork, memberName string, dc *desecc.Client,
 ) (memberSubname string, err error) {
-	network, memberAddresses, err := c.GetNetworkInfo(ctx, controller, networkID)
-	if err != nil {
-		return "", err
-	}
-
 	networkName := *network.Name
-	named, err := checkNamedByDNS(ctx, networkName, networkID, dc)
+	named, err := checkNamedByDNS(ctx, networkName, *network.Id, dc)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(
+			err, "couldn't check whether network %s has dns-validated name of %s",
+			*network.Id, *network.Name,
+		)
 	}
 	if !named {
 		return "", errors.Errorf("network does not have a valid domain name for naming members")
 	}
-	hasMember := false
-	for _, address := range memberAddresses {
-		if address == memberAddress {
-			hasMember = true
-			break
-		}
-	}
-	if !hasMember {
-		return "", errors.Errorf(
-			"cannot set domain name for device which is not a network member",
-		)
-	}
+
+	// TODO: check whether the member name was already allocated!
 
 	fqdn := fmt.Sprintf("%s.d.%s", memberName, networkName)
 	return strings.TrimSuffix(fqdn, fmt.Sprintf(".%s", dc.Config.DomainName)), nil
+}
+
+func validateIPAddresses(rawAddresses []string) (ipv4 []string, ipv6 []string, err error) {
+	ipv4 = make([]string, 0, len(rawAddresses))
+	ipv6 = make([]string, 0, len(rawAddresses))
+	for _, rawAddress := range rawAddresses {
+		address, err := netip.ParseAddr(rawAddress)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "couldn't parse IP address %s", rawAddress)
+		}
+		if address.Is4() {
+			ipv4 = append(ipv4, address.String())
+			continue
+		}
+		if address.Is6() {
+			ipv6 = append(ipv6, address.String())
+			continue
+		}
+	}
+	return ipv4, ipv6, nil
 }
 
 func setMemberName(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
 	memberAddress, memberName string, c *ztc.Client, dc *desecc.Client,
 ) error {
-	memberSubname, err := confirmMemberNameManageable(
-		ctx, controller, networkID, memberAddress, memberName, c, dc,
-	)
+	network, err := c.GetNetwork(ctx, controller, networkID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't get network %s", networkID)
+	}
+	memberSubname, err := confirmMemberNameManageable(ctx, *network, memberName, dc)
+	if err != nil {
+		return errors.Wrapf(err, "network %s can't manage member name %s", networkID, memberName)
+	}
+	member, err := c.GetNetworkMember(ctx, controller, networkID, memberAddress)
+	if err != nil {
+		return errors.Wrapf(err, "couldn't get network %s member %s", networkID, memberAddress)
 	}
 
-	n6PlaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
+	ipAddresses, _, err := calculateIPAddresses(*network.Id, *network.V6AssignMode, *member)
 	if err != nil {
-		return err
+		return errors.Wrapf(
+			err, "couldn't calculate IP addresses for network %s member %s", networkID, memberAddress,
+		)
 	}
-	// TODO: prohibit assigning a name which was already assigned
-	if _, err := dc.CreateRRset(
-		ctx, memberSubname, "AAAA", c.Config.DNS.DeviceTTL, []string{n6PlaneAddress},
-	); err != nil {
-		return err
+	ipv4Addresses, ipv6Addresses, err := validateIPAddresses(ipAddresses)
+	if err != nil {
+		return errors.Wrapf(
+			err, "found invalid IP address for network %s member %s", networkID, memberAddress,
+		)
+	}
+
+	// TODO: use bulk Update
+	ttl := int(c.Config.DNS.DeviceTTL)
+	rrsets := []desec.RRset{
+		{
+			Subname: memberSubname,
+			Type:    "AAAA",
+			Ttl:     &ttl,
+			Records: ipv6Addresses,
+		},
+		{
+			Subname: memberSubname,
+			Type:    "A",
+			Ttl:     &ttl,
+			Records: ipv4Addresses,
+		},
+	}
+	if _, err := dc.UpsertRRsets(ctx, rrsets...); err != nil {
+		return errors.Wrapf(
+			err, "couldn't upsert AAAA and/or A records of %s for network %s member %s",
+			memberSubname, networkID, memberAddress,
+		)
 	}
 	return nil
 }
 
 func unsetMemberName(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
-	memberAddress, memberName string, c *ztc.Client, dc *desecc.Client,
+	memberName string, c *ztc.Client, dc *desecc.Client,
 ) error {
-	memberSubname, err := confirmMemberNameManageable(
-		ctx, controller, networkID, memberAddress, memberName, c, dc,
-	)
+	network, err := c.GetNetwork(ctx, controller, networkID)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't get network %s", networkID)
+	}
+	memberSubname, err := confirmMemberNameManageable(ctx, *network, memberName, dc)
+	if err != nil {
+		return errors.Wrapf(err, "network %s can't manage member name %s", networkID, memberName)
 	}
 
-	// TODO: first confirm that the RRset contains an IP address associated with the member
-	if err := dc.DeleteRRset(ctx, memberSubname, "AAAA"); err != nil {
-		return err
+	// TODO: use bulk deletion
+	deletionKeys := []desecc.RRsetKey{
+		{
+			Subname: memberSubname,
+			Type:    "AAAA",
+		},
+		{
+			Subname: memberSubname,
+			Type:    "A",
+		},
+	}
+	if err := dc.DeleteRRsets(ctx, deletionKeys...); err != nil {
+		return errors.Wrapf(
+			err, "couldn't delete AAAA and A records of %s in network %s member",
+			memberSubname, networkID,
+		)
 	}
 	return nil
 }
@@ -589,7 +675,7 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 		ctx := c.Request().Context()
 		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 		}
 
 		switch setName {
@@ -597,14 +683,18 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 			if err = setMemberName(
 				ctx, *controller, networkID, memberAddress, setName, h.ztc, h.dc,
 			); err != nil {
-				return err
+				return errors.Wrapf(
+					err, "couldn't set name of network %s member %s to %s", networkID, memberAddress, setName,
+				)
 			}
 		case "":
 			nameToUnset := c.FormValue("unset-name")
 			if err = unsetMemberName(
-				ctx, *controller, networkID, memberAddress, nameToUnset, h.ztc, h.dc,
+				ctx, *controller, networkID, nameToUnset, h.ztc, h.dc,
 			); err != nil {
-				return err
+				return errors.Wrapf(
+					err, "couldn't unset name %s of network %s member %s", setName, networkID, memberAddress,
+				)
 			}
 		}
 
@@ -618,7 +708,9 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
-				return err
+				return errors.Wrapf(
+					err, "couldn't generate turbo streams update for network %s members list", networkID,
+				)
 			}
 			return h.r.TurboStream(c.Response(), replaceStream)
 		}
@@ -644,7 +736,7 @@ func setDeviceIPAddresses(
 		ctx, controller, networkID, memberAddress,
 		zerotier.SetControllerNetworkMemberJSONRequestBody{IpAssignments: &addresses},
 	); err != nil {
-		return err
+		return errors.Wrapf(err, "couldn't update network %s member %s", networkID, memberAddress)
 	}
 	return nil
 }
@@ -666,7 +758,7 @@ func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
 		ctx := c.Request().Context()
 		controller, err := h.ztcc.FindControllerByAddress(ctx, controllerAddress)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "couldn't find controller %s", controllerAddress)
 		}
 		ipAddresses := formParams["existing-addresses"]
 		if newAddress := c.FormValue("new-address"); len(newAddress) > 0 {
@@ -675,7 +767,9 @@ func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
 		if err = setDeviceIPAddresses(
 			ctx, *controller, networkID, memberAddress, ipAddresses, h.ztc,
 		); err != nil {
-			return err
+			return errors.Wrapf(
+				err, "couldn't set ip addresses of network %s member %s", networkID, memberAddress,
+			)
 		}
 
 		// Render Turbo Stream if accepted
@@ -685,7 +779,10 @@ func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
 				ctx, controllerAddress, networkID, memberAddress, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
-				return err
+				return errors.Wrapf(
+					err, "couldn't generate turbo streams update for network %s member %s",
+					networkID, memberAddress,
+				)
 			}
 			return h.r.TurboStream(c.Response(), message)
 		}

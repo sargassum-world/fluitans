@@ -41,29 +41,52 @@ func getRecordsOfType(
 	return records, nil
 }
 
-func identifyMemberDomainNames(
-	zoneDomainName string, zerotierMembers map[string]zerotier.ControllerNetworkMember,
-	aaaaRecords map[string][]string,
-) map[string][]string {
-	addressDomainNames := make(map[string][]string)
+func identifyAddressDomainNames(
+	subnameRRsets map[string][]desec.RRset,
+) (addressDomainNames map[string][]string, err error) {
+	aaaaRecords, err := getRecordsOfType(subnameRRsets, "AAAA")
+	if err != nil {
+		return nil, err
+	}
+	aRecords, err := getRecordsOfType(subnameRRsets, "A")
+	if err != nil {
+		return nil, err
+	}
+
+	addressDomainNames = make(map[string][]string)
 	for subname, records := range aaaaRecords {
 		for _, ipAddress := range records {
 			addressDomainNames[ipAddress] = append(addressDomainNames[ipAddress], subname)
 		}
 	}
-	memberDomainNames := make(map[string][]string)
-	for memberAddress, member := range zerotierMembers {
-		for _, ipAddress := range *member.IpAssignments {
-			for _, subname := range addressDomainNames[ipAddress] {
-				domainName := subname + "." + zoneDomainName
-				memberDomainNames[memberAddress] = append(memberDomainNames[memberAddress], domainName)
-			}
+	for subname, records := range aRecords {
+		for _, ipAddress := range records {
+			addressDomainNames[ipAddress] = append(addressDomainNames[ipAddress], subname)
 		}
 	}
-	return memberDomainNames
+	return addressDomainNames, nil
 }
 
-func calculateMemberNDPAddresses(
+func identifyDomainNames(
+	zoneDomainName string, member zerotier.ControllerNetworkMember,
+	addressDomainNames map[string][]string,
+) []string {
+	domainNames := make([]string, 0)
+	domainNameAdded := make(map[string]struct{})
+	for _, ipAddress := range *member.IpAssignments {
+		for _, subname := range addressDomainNames[ipAddress] {
+			domainName := subname + "." + zoneDomainName
+			if _, alreadyAdded := domainNameAdded[domainName]; alreadyAdded {
+				continue
+			}
+			domainNames = append(domainNames, domainName)
+			domainNameAdded[domainName] = struct{}{}
+		}
+	}
+	return domainNames
+}
+
+func calculateNDPAddresses(
 	networkID string, sixplane, rfc4193 bool, memberAddress string,
 ) (ndpAddresses []string, err error) {
 	if !sixplane && !rfc4193 {
@@ -90,24 +113,19 @@ func calculateMemberNDPAddresses(
 	return ndpAddresses, nil
 }
 
-func calculateNDPAddresses(
-	networkID string, v6AssignMode zerotier.V6AssignMode, memberAddresses []string,
-) (memberNDPAddresses map[string][]string, err error) {
+func calculateIPAddresses(
+	networkID string, v6AssignMode zerotier.V6AssignMode, member zerotier.ControllerNetworkMember,
+) (allIPAddresses []string, ndpAddresses []string, err error) {
 	sixplane := (v6AssignMode.N6plane != nil) && *(v6AssignMode.N6plane)
 	rfc4193 := (v6AssignMode.Rfc4193 != nil) && *(v6AssignMode.Rfc4193)
-	if !sixplane && !rfc4193 {
-		return nil, nil
+	ndpAddresses, err = calculateNDPAddresses(networkID, sixplane, rfc4193, *member.Address)
+	if err != nil {
+		return nil, nil, err
 	}
-
-	memberNDPAddresses = make(map[string][]string)
-	for _, address := range memberAddresses {
-		if memberNDPAddresses[address], err = calculateMemberNDPAddresses(
-			networkID, sixplane, rfc4193, address,
-		); err != nil {
-			return nil, err
-		}
+	if member.IpAssignments == nil {
+		return ndpAddresses, nil, nil
 	}
-	return memberNDPAddresses, nil
+	return append(ndpAddresses, *member.IpAssignments...), ndpAddresses, nil
 }
 
 type Member struct {
@@ -126,33 +144,28 @@ func getMemberRecords(
 	if err != nil {
 		return nil, err
 	}
-	memberNDPAddresses, err := calculateNDPAddresses(
-		*network.Id, *network.V6AssignMode, memberAddresses,
-	)
+	addressDomainNames, err := identifyAddressDomainNames(subnameRRsets)
 	if err != nil {
 		return nil, err
-	}
-	for memberAddress, zerotierMember := range zerotierMembers {
-		ndpAddresses := memberNDPAddresses[memberAddress]
-		if zerotierMember.IpAssignments == nil {
-			zerotierMember.IpAssignments = &ndpAddresses
-		} else {
-			*zerotierMember.IpAssignments = append(ndpAddresses, *zerotierMember.IpAssignments...)
-		}
 	}
 
-	aaaaRecords, err := getRecordsOfType(subnameRRsets, "AAAA")
-	if err != nil {
-		return nil, err
-	}
-	memberDomainNames := identifyMemberDomainNames(zoneDomainName, zerotierMembers, aaaaRecords)
+	memberNDPAddresses := make(map[string][]string)
 	members := make(map[string]Member)
 	for memberAddress, zerotierMember := range zerotierMembers {
+		allIPAddresses, ndpAddresses, err := calculateIPAddresses(
+			*network.Id, *network.V6AssignMode, zerotierMember,
+		)
+		if err != nil {
+			return nil, err
+		}
+		zerotierMember.IpAssignments = &allIPAddresses
 		members[memberAddress] = Member{
 			ZerotierMember: zerotierMember,
-			NDPAddresses:   memberNDPAddresses[memberAddress],
-			DomainNames:    memberDomainNames[memberAddress],
+			NDPAddresses:   ndpAddresses,
+			// identifyDomainNames assumes the member's IP assignments include any assigned NDP addresses
+			DomainNames: identifyDomainNames(zoneDomainName, zerotierMember, addressDomainNames),
 		}
+		memberNDPAddresses[memberAddress] = ndpAddresses
 	}
 	return members, nil
 }
