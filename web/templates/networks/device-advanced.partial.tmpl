@@ -1,0 +1,29 @@
+{{$member := (get . "Member")}}
+{{$network := (get . "Network")}}
+{{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+
+{{$zerotierMember := $member.ZerotierMember}}
+
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (
+      print "/networks/" (derefString $network.Id "")
+      "/devices/" (derefString $zerotierMember.Address "")
+      "/advanced"
+    )
+  }}
+{{end}}
+<turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/advanced">
+  <h5 class="is-size-6">Troubleshooting Information</h5>
+  <p>Configuration revision: {{$zerotierMember.Revision}}</p>
+  <p>
+    Version:
+    {{if eq -1 (derefInt $zerotierMember.VMajor -1)}}
+      <span class="tag is-warning">Unknown</span>
+    {{else}}
+      v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
+    {{end}}
+  </p>
+</turbo-frame>
