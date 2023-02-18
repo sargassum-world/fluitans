@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/netip"
 	"sort"
 	"strings"
 
@@ -21,6 +22,56 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/desec"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
+
+// StringSet Utility
+
+type StringSet map[string]struct{}
+
+func NewStringSet(strings []string) StringSet {
+	set := make(map[string]struct{})
+	for _, s := range strings {
+		set[s] = struct{}{}
+	}
+	return set
+}
+
+func (ss StringSet) Contains(set StringSet) bool {
+	if ss == nil || set == nil {
+		return false
+	}
+	if len(set) > len(ss) {
+		return false
+	}
+
+	for s := range set {
+		if _, ok := ss[s]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
+func (ss StringSet) Equals(set StringSet) bool {
+	if ss == nil || set == nil {
+		return false
+	}
+	if len(set) != len(ss) {
+		return false
+	}
+
+	// This might not be the most efficient algorithm, but it's fine for now
+	return ss.Contains(set) && set.Contains(ss)
+}
+
+func (ss StringSet) Difference(set StringSet) StringSet {
+	difference := make(map[string]struct{})
+	for s := range ss {
+		if _, ok := set[s]; !ok {
+			difference[s] = struct{}{}
+		}
+	}
+	return difference
+}
 
 // Network Members & Member DNS
 
@@ -70,8 +121,9 @@ func identifyAddressDomainNames(
 func identifyDomainNames(
 	zoneDomainName string, member zerotier.ControllerNetworkMember,
 	addressDomainNames map[string][]string,
-) []string {
-	domainNames := make([]string, 0)
+) (domainNames []string, subnames []string) {
+	domainNames = make([]string, 0)
+	subnames = make([]string, 0)
 	domainNameAdded := make(map[string]struct{})
 	for _, ipAddress := range *member.IpAssignments {
 		for _, subname := range addressDomainNames[ipAddress] {
@@ -80,10 +132,11 @@ func identifyDomainNames(
 				continue
 			}
 			domainNames = append(domainNames, domainName)
+			subnames = append(subnames, subname)
 			domainNameAdded[domainName] = struct{}{}
 		}
 	}
-	return domainNames
+	return domainNames, subnames
 }
 
 func calculateNDPAddresses(
@@ -128,10 +181,94 @@ func calculateIPAddresses(
 	return append(ndpAddresses, *member.IpAssignments...), ndpAddresses, nil
 }
 
+type DNSUpdate struct {
+	Type      string
+	Operation string
+	Record    string
+}
+
 type Member struct {
 	ZerotierMember zerotier.ControllerNetworkMember
 	NDPAddresses   []string
 	DomainNames    []string
+	DNSUpdates     map[string][]DNSUpdate
+}
+
+func splitIPAddresses(rawAddresses []string) (ipv4 []string, ipv6 []string, err error) {
+	ipv4 = make([]string, 0, len(rawAddresses))
+	ipv6 = make([]string, 0, len(rawAddresses))
+	for _, rawAddress := range rawAddresses {
+		address, err := netip.ParseAddr(rawAddress)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "couldn't parse IP address %s", rawAddress)
+		}
+		if address.Is4() {
+			ipv4 = append(ipv4, address.String())
+			continue
+		}
+		if address.Is6() {
+			ipv6 = append(ipv6, address.String())
+			continue
+		}
+	}
+	return ipv4, ipv6, nil
+}
+
+func planDNSUpdates(
+	member zerotier.ControllerNetworkMember, subnames []string, domainNames []string,
+	subnameRRsets map[string][]desec.RRset,
+) (domainNameUpdates map[string][]DNSUpdate, err error) {
+	ipv4Addresses, ipv6Addresses, err := splitIPAddresses(*member.IpAssignments)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err, "found invalid IP address for network member %s", *member.Address,
+		)
+	}
+	aaaaExpected := NewStringSet(ipv6Addresses)
+	aExpected := NewStringSet(ipv4Addresses)
+	domainNameUpdates = make(map[string][]DNSUpdate)
+	for i, subname := range subnames {
+		var aaaaActual StringSet
+		var aActual StringSet
+		for _, rrset := range subnameRRsets[subname] {
+			if rrset.Type == "AAAA" {
+				aaaaActual = NewStringSet(rrset.Records)
+			}
+			if rrset.Type == "A" {
+				aActual = NewStringSet(rrset.Records)
+			}
+		}
+		domainName := domainNames[i]
+		for address := range aaaaActual.Difference(aaaaExpected) {
+			domainNameUpdates[domainName] = append(domainNameUpdates[domainName], DNSUpdate{
+				Type:      "AAAA",
+				Operation: "remove",
+				Record:    address,
+			})
+		}
+		for address := range aaaaExpected.Difference(aaaaActual) {
+			domainNameUpdates[domainName] = append(domainNameUpdates[domainName], DNSUpdate{
+				Type:      "AAAA",
+				Operation: "add",
+				Record:    address,
+			})
+		}
+		for address := range aActual.Difference(aExpected) {
+			domainNameUpdates[domainName] = append(domainNameUpdates[domainName], DNSUpdate{
+				Type:      "A",
+				Operation: "remove",
+				Record:    address,
+			})
+		}
+		for address := range aExpected.Difference(aActual) {
+			domainNameUpdates[domainName] = append(domainNameUpdates[domainName], DNSUpdate{
+				Type:      "A",
+				Operation: "add",
+				Record:    address,
+			})
+		}
+	}
+	return domainNameUpdates, nil
 }
 
 func getMemberRecords(
@@ -159,11 +296,22 @@ func getMemberRecords(
 			return nil, err
 		}
 		zerotierMember.IpAssignments = &allIPAddresses
+		// identifyDomainNames assumes the member's IP assignments include any assigned NDP addresses
+		domainNames, subnames := identifyDomainNames(zoneDomainName, zerotierMember, addressDomainNames)
+		dnsUpdates, err := planDNSUpdates(
+			zerotierMember, subnames, domainNames, subnameRRsets,
+		)
+		if err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't calculate dns record updates needed for network %s member %s",
+				*network.Id, memberAddress,
+			)
+		}
 		members[memberAddress] = Member{
 			ZerotierMember: zerotierMember,
 			NDPAddresses:   ndpAddresses,
-			// identifyDomainNames assumes the member's IP assignments include any assigned NDP addresses
-			DomainNames: identifyDomainNames(zoneDomainName, zerotierMember, addressDomainNames),
+			DomainNames:    domainNames,
+			DNSUpdates:     dnsUpdates,
 		}
 		memberNDPAddresses[memberAddress] = ndpAddresses
 	}

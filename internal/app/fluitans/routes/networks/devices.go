@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/netip"
 	"strings"
 	"time"
 
@@ -21,46 +20,6 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/desec"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
-
-// Device Membership Comparison
-
-type StringSet map[string]bool
-
-func NewStringSet(strings []string) StringSet {
-	set := make(map[string]bool)
-	for _, s := range strings {
-		set[s] = true
-	}
-	return set
-}
-
-func (ss StringSet) Contains(set StringSet) bool {
-	if ss == nil || set == nil {
-		return false
-	}
-	if len(set) > len(ss) {
-		return false
-	}
-
-	for s := range set {
-		if _, ok := ss[s]; !ok {
-			return false
-		}
-	}
-	return true
-}
-
-func (ss StringSet) Equals(set StringSet) bool {
-	if ss == nil || set == nil {
-		return false
-	}
-	if len(set) != len(ss) {
-		return false
-	}
-
-	// This might not be the most efficient algorithm, but it's fine for now
-	return ss.Contains(set) && set.Contains(ss)
-}
 
 // Devices
 
@@ -211,7 +170,7 @@ func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 			// We send the entire devices list because the content of the devices list partial depends on
 			// whether there's at least one device in the network, and this is the simplest solution which
 			// handles all edge cases.
-			replaceStream, err := replaceDevicesListStream(
+			message, err := replaceDevicesListStream(
 				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
@@ -219,7 +178,7 @@ func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 					err, "couldn't generate turbo streams update for network %s members list", networkID,
 				)
 			}
-			return h.r.TurboStream(c.Response(), replaceStream)
+			return h.r.TurboStream(c.Response(), message)
 		}
 
 		// Redirect user
@@ -235,7 +194,6 @@ const devicePartial = "networks/device.partial.tmpl"
 
 type DeviceViewData struct {
 	Member          Member
-	DomainNames     []string
 	Network         zerotier.ControllerNetwork
 	NetworkDNSNamed bool
 }
@@ -314,7 +272,6 @@ func replaceDeviceStream(
 		Template: devicePartial,
 		Data: map[string]interface{}{
 			"Member":          deviceViewData.Member,
-			"DomainNames":     deviceViewData.DomainNames,
 			"Network":         deviceViewData.Network,
 			"NetworkDNSNamed": deviceViewData.NetworkDNSNamed,
 			"Auth":            a,
@@ -514,7 +471,7 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 			// amount of data to give the device partial, and it's probably not worth the additional code
 			// complexity to try to only look up the data for this device in order to send a smaller
 			// HTTP response payload.
-			replaceStream, err := replaceDevicesListStream(
+			message, err := replaceDevicesListStream(
 				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
@@ -522,7 +479,7 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 					err, "couldn't generate turbo streams update for network %s members list", networkID,
 				)
 			}
-			return h.r.TurboStream(c.Response(), replaceStream)
+			return h.r.TurboStream(c.Response(), message)
 		}
 
 		// Redirect user
@@ -555,26 +512,6 @@ func confirmMemberNameManageable(
 	return strings.TrimSuffix(fqdn, fmt.Sprintf(".%s", dc.Config.DomainName)), nil
 }
 
-func validateIPAddresses(rawAddresses []string) (ipv4 []string, ipv6 []string, err error) {
-	ipv4 = make([]string, 0, len(rawAddresses))
-	ipv6 = make([]string, 0, len(rawAddresses))
-	for _, rawAddress := range rawAddresses {
-		address, err := netip.ParseAddr(rawAddress)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "couldn't parse IP address %s", rawAddress)
-		}
-		if address.Is4() {
-			ipv4 = append(ipv4, address.String())
-			continue
-		}
-		if address.Is6() {
-			ipv6 = append(ipv6, address.String())
-			continue
-		}
-	}
-	return ipv4, ipv6, nil
-}
-
 func setMemberName(
 	ctx context.Context, controller ztcontrollers.Controller, networkID string,
 	memberAddress, memberName string, c *ztc.Client, dc *desecc.Client,
@@ -598,7 +535,7 @@ func setMemberName(
 			err, "couldn't calculate IP addresses for network %s member %s", networkID, memberAddress,
 		)
 	}
-	ipv4Addresses, ipv6Addresses, err := validateIPAddresses(ipAddresses)
+	ipv4Addresses, ipv6Addresses, err := splitIPAddresses(ipAddresses)
 	if err != nil {
 		return errors.Wrapf(
 			err, "found invalid IP address for network %s member %s", networkID, memberAddress,
@@ -704,15 +641,16 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 			// amount of data to give the device partial, and it's probably not worth the additional code
 			// complexity to try to only look up the data for this device in order to send a smaller
 			// HTTP response payload.
-			replaceStream, err := replaceDevicesListStream(
-				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
+			message, err := replaceDeviceStream(
+				c.Request().Context(), controllerAddress, networkID, memberAddress, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
 				return errors.Wrapf(
-					err, "couldn't generate turbo streams update for network %s members list", networkID,
+					err, "couldn't generate turbo streams update for network %s member %s",
+					networkID, memberAddress,
 				)
 			}
-			return h.r.TurboStream(c.Response(), replaceStream)
+			return h.r.TurboStream(c.Response(), message)
 		}
 
 		// Redirect user
