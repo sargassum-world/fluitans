@@ -190,8 +190,6 @@ func (h *Handlers) HandleDevicesPost() auth.HTTPHandlerFunc {
 
 // Device
 
-const devicePartial = "networks/device.partial.tmpl"
-
 type DeviceViewData struct {
 	Member          Member
 	Network         zerotier.ControllerNetwork
@@ -254,27 +252,62 @@ func getDeviceViewData(
 	return vd, nil
 }
 
+const (
+	deviceHeaderPartial   = "networks/device-header.partial.tmpl"
+	deviceBasicsPartial   = "networks/device-basics.partial.tmpl"
+	deviceIPPartial       = "networks/device-ip.partial.tmpl"
+	deviceAdvancedPartial = "networks/device-advanced.partial.tmpl"
+)
+
+var devicePartials [4]string = [4]string{
+	deviceHeaderPartial,
+	deviceBasicsPartial,
+	deviceIPPartial,
+	deviceAdvancedPartial,
+}
+
 func replaceDeviceStream(
 	ctx context.Context, controllerAddress, networkID, memberAddress string, a auth.Auth,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
-) (turbostreams.Message, error) {
+) ([]turbostreams.Message, error) {
 	deviceViewData, err := getDeviceViewData(
 		ctx, controllerAddress, networkID, memberAddress, c, cc, dc,
 	)
 	if err != nil {
-		return turbostreams.Message{}, errors.Wrapf(
+		return nil, errors.Wrapf(
 			err, "couldn't get device view data for network %s member %s", networkID, memberAddress,
 		)
 	}
-	return turbostreams.Message{
-		Action:   turbostreams.ActionReplace,
-		Target:   "/networks/" + networkID + "/devices/" + memberAddress,
-		Template: devicePartial,
-		Data: map[string]interface{}{
-			"Member":          deviceViewData.Member,
-			"Network":         deviceViewData.Network,
-			"NetworkDNSNamed": deviceViewData.NetworkDNSNamed,
-			"Auth":            a,
+	data := map[string]interface{}{
+		"Member":          deviceViewData.Member,
+		"Network":         deviceViewData.Network,
+		"NetworkDNSNamed": deviceViewData.NetworkDNSNamed,
+		"Auth":            a,
+	}
+	return []turbostreams.Message{
+		{
+			Action:   turbostreams.ActionReplace,
+			Target:   "/networks/" + networkID + "/devices/" + memberAddress + "/header",
+			Template: deviceHeaderPartial,
+			Data:     data,
+		},
+		{
+			Action:   turbostreams.ActionReplace,
+			Target:   "/networks/" + networkID + "/devices/" + memberAddress + "/basics",
+			Template: deviceBasicsPartial,
+			Data:     data,
+		},
+		{
+			Action:   turbostreams.ActionReplace,
+			Target:   "/networks/" + networkID + "/devices/" + memberAddress + "/ip",
+			Template: deviceIPPartial,
+			Data:     data,
+		},
+		{
+			Action:   turbostreams.ActionReplace,
+			Target:   "/networks/" + networkID + "/devices/" + memberAddress + "/advanced",
+			Template: deviceAdvancedPartial,
+			Data:     data,
 		},
 	}, nil
 }
@@ -359,8 +392,9 @@ func checkDevice(
 }
 
 func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
-	t := devicesListPartial
-	h.r.MustHave(t)
+	for _, partial := range devicePartials {
+		h.r.MustHave(partial)
+	}
 	return func(c *turbostreams.Context) error {
 		// Make change trackers
 		initialized := false
@@ -380,9 +414,7 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 				c.Context(), controllerAddress, networkID, network, h.ztc, h.ztcc,
 			)
 			if err != nil {
-				return false, errors.Wrapf(
-					err, "couldn't check network %s for changes", networkID,
-				)
+				return false, errors.Wrapf(err, "couldn't check network %s for changes", networkID)
 			}
 			network = updatedNetwork
 			deviceChanged, updatedDevice, err := checkDevice(
@@ -406,7 +438,7 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 			}
 
 			// Publish changes
-			message, err := replaceDeviceStream(
+			messages, err := replaceDeviceStream(
 				c.Context(), controllerAddress, networkID, memberAddress, auth.Auth{}, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
@@ -415,7 +447,7 @@ func (h *Handlers) HandleDevicePub() turbostreams.HandlerFunc {
 					networkID, memberAddress,
 				)
 			}
-			c.Publish(message)
+			c.Publish(messages...)
 			return false, nil
 		})
 	}
@@ -471,15 +503,16 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 			// amount of data to give the device partial, and it's probably not worth the additional code
 			// complexity to try to only look up the data for this device in order to send a smaller
 			// HTTP response payload.
-			message, err := replaceDevicesListStream(
-				c.Request().Context(), controllerAddress, networkID, a, h.ztc, h.ztcc, h.dc,
+			messages, err := replaceDeviceStream(
+				c.Request().Context(), controllerAddress, networkID, memberAddress, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
 				return errors.Wrapf(
-					err, "couldn't generate turbo streams update for network %s members list", networkID,
+					err, "couldn't generate turbo streams update for network %s member %s",
+					networkID, memberAddress,
 				)
 			}
-			return h.r.TurboStream(c.Response(), message)
+			return h.r.TurboStream(c.Response(), messages...)
 		}
 
 		// Redirect user
@@ -601,6 +634,9 @@ func unsetMemberName(
 }
 
 func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
+	for _, partial := range devicePartials {
+		h.r.MustHave(partial)
+	}
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		networkID := c.Param("id")
@@ -641,7 +677,7 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 			// amount of data to give the device partial, and it's probably not worth the additional code
 			// complexity to try to only look up the data for this device in order to send a smaller
 			// HTTP response payload.
-			message, err := replaceDeviceStream(
+			messages, err := replaceDeviceStream(
 				c.Request().Context(), controllerAddress, networkID, memberAddress, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
@@ -650,7 +686,7 @@ func (h *Handlers) HandleDeviceNamePost() auth.HTTPHandlerFunc {
 					networkID, memberAddress,
 				)
 			}
-			return h.r.TurboStream(c.Response(), message)
+			return h.r.TurboStream(c.Response(), messages...)
 		}
 
 		// Redirect user
@@ -680,8 +716,9 @@ func setDeviceIPAddresses(
 }
 
 func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
-	t := devicePartial
-	h.r.MustHave(t)
+	for _, partial := range devicePartials {
+		h.r.MustHave(partial)
+	}
 	return func(c echo.Context, a auth.Auth) error {
 		// Parse params
 		networkID := c.Param("id")
@@ -713,7 +750,7 @@ func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
 		// Render Turbo Stream if accepted
 		if turbostreams.Accepted(c.Request().Header) {
 			// TODO: also broadcast this message over Turbo Streams, and have web browsers subscribe to it
-			message, err := replaceDeviceStream(
+			messages, err := replaceDeviceStream(
 				ctx, controllerAddress, networkID, memberAddress, a, h.ztc, h.ztcc, h.dc,
 			)
 			if err != nil {
@@ -722,7 +759,7 @@ func (h *Handlers) HandleDeviceIPPost() auth.HTTPHandlerFunc {
 					networkID, memberAddress,
 				)
 			}
-			return h.r.TurboStream(c.Response(), message)
+			return h.r.TurboStream(c.Response(), messages...)
 		}
 
 		// Redirect user

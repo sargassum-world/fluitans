@@ -20,23 +20,12 @@
 <turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}">
   <article class="panel entity-panel" id="device-{{$zerotierMember.Address}}">
     <header class="panel-heading">
-      <h3 class="entity-name">
-        {{if $domainNames}}
-          <span class="tag domain-name">{{index $domainNames 0}}</span>
-        {{else}}
-          <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
-        {{end}}
-      </h3>
-      <div class="tags">
-        {{if (derefBool $zerotierMember.Authorized)}}
-          <span class="tag is-success">Authorized</span>
-        {{else}}
-          <span class="tag is-warning">Not authorized</span>
-        {{end}}
-        {{if (derefBool $zerotierMember.ActiveBridge)}}
-          <span class="tag is-info">Bridge</span>
-        {{end}}
-      </div>
+      {{
+        template "networks/device-header.partial.tmpl" dict
+        "Member" $member
+        "Network" $network
+        "Auth" $auth
+      }}
     </header>
     <details data-accordion-item class="panel-block accordion-item">
       <summary class="accordion-header level">
@@ -54,7 +43,6 @@
           "Network" $network
           "NetworkDNSNamed" $networkDNSNamed
           "Auth" $auth
-          "WithTurboStreamSource" false
         }}
       </div>
     </details>
@@ -69,7 +57,6 @@
           "Member" $member
           "Network" $network
           "Auth" $auth
-          "WithTurboStreamSource" false
         }}
       </div>
     </details>
@@ -85,7 +72,6 @@
           "Member" $member
           "Network" $network
           "Auth" $auth
-          "WithTurboStreamSource" false
         }}
         </div>
       </details>
