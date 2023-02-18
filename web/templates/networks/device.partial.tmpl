@@ -84,39 +84,7 @@
 
         {{if $networkDNSNamed}}
           <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
-          {{range $domainName := $domainNames}}
-            {{if not $auth.Identity.Authenticated}}
-              <span class="tag domain-name">{{$domainName}}</span>
-            {{else}}
-              <form
-                id="unset-name-{{$domainName}}"
-                action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
-                method="POST"
-                data-controller="form-submission csrf"
-                data-action="submit->form-submission#submit submit->csrf#addToken"
-              >
-                {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
-                <input
-                  type="hidden"
-                  name="unset-name"
-                  value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}"
-                >
-                <input type="hidden" name="set-name" value="">
-                <div class="control" data-form-submission-target="submitter">
-                  <span class="tag domain-name">
-                    {{$domainName}}
-                    <span class="control">
-                      <button
-                        class="delete"
-                        form="unset-name-{{$domainName}}"
-                        data-form-submission-target="submit"
-                      ></button>
-                    </span>
-                  </span>
-                </div>
-              </form>
-            {{end}}
-          {{else}}
+          {{if eq (len $domainNames) 0}}
             {{if not $auth.Identity.Authenticated}}
               <span class="tag is-warning">Unknown</span>
             {{else}}
@@ -147,6 +115,75 @@
                 </div>
               </form>
             {{end}}
+          {{else}}
+            {{range $domainName := $domainNames}}
+              {{if not $auth.Identity.Authenticated}}
+                <span class="tag domain-name">{{$domainName}}</span>
+              {{else}}
+                <form
+                  id="unset-name-{{$domainName}}"
+                  action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+                  method="POST"
+                  data-controller="form-submission csrf"
+                  data-action="submit->form-submission#submit submit->csrf#addToken"
+                >
+                  {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+                  <input
+                    type="hidden"
+                    name="unset-name"
+                    value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}"
+                  >
+                  <input type="hidden" name="set-name" value="">
+                  <div class="control" data-form-submission-target="submitter">
+                    <span class="tag domain-name">
+                      {{$domainName}}
+                      <span class="control">
+                        <button
+                          class="delete"
+                          form="unset-name-{{$domainName}}"
+                          data-form-submission-target="submit"
+                        ></button>
+                      </span>
+                    </span>
+                  </div>
+                </form>
+              {{end}}
+            {{end}}
+            <h5 class="is-size-6">Updates Required</h5>
+            <p>
+              The domain name records are out-of-date, as they do not match the current IP address
+              assignments for this network member. The following updates are needed:
+            </p>
+            <ul>
+              <li>TODO</li>
+            </ul>
+            <p>
+              You can wait for these updates to be applied automatically, or you can try to apply
+              these updates immediately.
+            </p>
+            <form
+              action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+              method="POST"
+              data-controller="form-submission csrf"
+              data-action="submit->form-submission#submit submit->csrf#addToken"
+            >
+              {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+              <input
+                type="hidden"
+                name="set-name"
+                value="{{trimSuffix ".d." (trimSuffix $network.Name (index $domainNames 0))}}"
+              >
+              <div class="field">
+                <div class="control" data-form-submission-target="submitter">
+                  <input
+                    type="submit"
+                    class="button"
+                    value="Apply updates immediately"
+                    data-form-submission-target="submit"
+                  >
+                </div>
+              </div>
+            </form>
           {{end}}
         {{end}}
       </div>
