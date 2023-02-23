@@ -1,0 +1,122 @@
+{{$member := (get . "Member")}}
+{{$network := (get . "Network")}}
+{{$networkDNSNamed := (get . "NetworkDNSNamed")}}
+{{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+
+{{$zerotierMember := $member.ZerotierMember}}
+{{$domainNames := $member.DomainNames}}
+
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (
+      print "/networks/" (derefString $network.Id "")
+      "/devices/" (derefString $zerotierMember.Address "")
+      "/basics"
+    )
+  }}
+{{end}}
+<turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/basics">
+  <h5 class="is-size-6">Zerotier Address</h5>
+  <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+
+  {{if $auth.Identity.Authenticated}}
+    <h5 class="is-size-6">Network Membership</h5>
+    <form
+      action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/authorization"
+      method="POST"
+      data-controller="form-submission csrf"
+      data-action="submit->form-submission#submit submit->csrf#addToken"
+    >
+      {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+      <input
+        type="hidden"
+        name="authorization"
+        value="{{if derefBool $zerotierMember.Authorized}}false{{else}}true{{end}}"
+      >
+      <div class="control" data-form-submission-target="submitter">
+        <input
+          class="button"
+          type="submit"
+          value="
+            {{if derefBool $zerotierMember.Authorized}}
+              Revoke device authorization
+            {{else}}
+              Authorize device
+            {{end}}
+          "
+          data-form-submission-target="submit"
+        >
+      </div>
+    </form>
+  {{end}}
+
+  <h5 class="is-size-6">Domain Name{{if gt (len $domainNames) 1}}s{{end}}</h5>
+  {{if eq (len $domainNames) 0}}
+    {{if not $auth.Identity.Authenticated}}
+      <span class="tag is-warning">Unknown</span>
+    {{else}}
+      <form
+        action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+        method="POST"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+        <div class="field has-addons">
+          <div class="control">
+            <input type="text" class="input" name="set-name">
+          </div>
+          <div class="control">
+            <span class="button is-static">.d.{{$network.Name}}</span>
+          </div>
+        </div>
+        <div class="field">
+          <div class="control" data-form-submission-target="submitter">
+            <input
+              type="submit"
+              class="button"
+              value="Set domain name"
+              data-form-submission-target="submit"
+            >
+          </div>
+        </div>
+      </form>
+    {{end}}
+  {{else}}
+    {{range $domainName := $domainNames}}
+      {{if not $auth.Identity.Authenticated}}
+        <span class="tag domain-name">{{$domainName}}</span>
+      {{else}}
+        <form
+          id="unset-name-{{$domainName}}"
+          action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+          method="POST"
+          data-controller="form-submission csrf"
+          data-action="submit->form-submission#submit submit->csrf#addToken"
+        >
+          {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+          <input
+            type="hidden"
+            name="unset-name"
+            value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}"
+          >
+          <input type="hidden" name="set-name" value="">
+          <div class="control" data-form-submission-target="submitter">
+            <span class="tag domain-name">
+              {{$domainName}}
+              <span class="control">
+                <button
+                  class="delete"
+                  form="unset-name-{{$domainName}}"
+                  data-form-submission-target="submit"
+                ></button>
+              </span>
+            </span>
+          </div>
+        </form>
+      {{end}}
+    {{end}}
+  {{end}}
+</turbo-frame>

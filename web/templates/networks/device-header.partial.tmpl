@@ -1,0 +1,37 @@
+{{$member := (get . "Member")}}
+{{$network := (get . "Network")}}
+{{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+
+{{$zerotierMember := $member.ZerotierMember}}
+{{$domainNames := $member.DomainNames}}
+
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (
+      print "/networks/" (derefString $network.Id "")
+      "/devices/" (derefString $zerotierMember.Address "")
+      "/header"
+    )
+  }}
+{{end}}
+<turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/header">
+  <h3 class="entity-name">
+    {{if $domainNames}}
+      <span class="tag domain-name">{{index $domainNames 0}}</span>
+    {{else}}
+      <span class="tag zerotier-address">{{$zerotierMember.Address}}</span>
+    {{end}}
+  </h3>
+  <div class="tags">
+    {{if (derefBool $zerotierMember.Authorized)}}
+      <span class="tag is-success">Authorized</span>
+    {{else}}
+      <span class="tag is-warning">Not authorized</span>
+    {{end}}
+    {{if (derefBool $zerotierMember.ActiveBridge)}}
+      <span class="tag is-info">Bridge</span>
+    {{end}}
+  </div>
+</turbo-frame>

@@ -1,0 +1,76 @@
+{{$member := (get . "Member")}}
+{{$network := (get . "Network")}}
+{{$auth := (get . "Auth")}}
+{{$withTurboStreamSource := (get . "WithTurboStreamSource")}}
+
+{{$zerotierMember := $member.ZerotierMember}}
+{{$domainNames := $member.DomainNames}}
+{{$dnsUpdates := $member.DNSUpdates}}
+
+{{if $withTurboStreamSource}}
+  {{
+    template "shared/turbo-cable-stream-source.partial.tmpl"
+    (
+      print "/networks/" (derefString $network.Id "")
+      "/devices/" (derefString $zerotierMember.Address "")
+      "/advanced"
+    )
+  }}
+{{end}}
+<turbo-frame id="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/advanced">
+  <h5 class="is-size-6">Troubleshooting Information</h5>
+  <p>Configuration revision: {{$zerotierMember.Revision}}</p>
+  <p>
+    Version:
+    {{if eq -1 (derefInt $zerotierMember.VMajor -1)}}
+      <span class="tag is-warning">Unknown</span>
+    {{else}}
+      v{{$zerotierMember.VMajor}}.{{$zerotierMember.VMinor}}.{{$zerotierMember.VRev}}
+    {{end}}
+  </p>
+
+  {{if gt (len $dnsUpdates) 0}}
+    <h5 class="is-size-6">DNS Updates Required</h5>
+    <p>
+      The DNS records for the domain name need to be updated. You can wait for these updates to
+      be applied automatically, or you can try to apply these updates immediately:
+    </p>
+    {{range $domainName := $domainNames}}
+      {{if gt (len $domainNames) 1}}
+        <p class="mt-4"><span class="tag domain-name">{{$domainName}}</span>:</p>
+      {{end}}
+      <ul>
+        {{range $update := (index $dnsUpdates $domainName)}}
+          <li>
+            {{$update.Type}}:
+            {{$update.Operation}}
+            <span class="tag ip-address">{{$update.Record}}</span>
+          </li>
+        {{end}}
+      </ul>
+      <form
+        action="/networks/{{$network.Id}}/devices/{{$zerotierMember.Address}}/name"
+        method="POST"
+        data-controller="form-submission csrf"
+        data-action="submit->form-submission#submit submit->csrf#addToken"
+      >
+        {{template "shared/auth/csrf-input.partial.tmpl" $auth.CSRF}}
+        <input
+          type="hidden"
+          name="set-name"
+          value="{{trimSuffix ".d." (trimSuffix $network.Name $domainName)}}"
+        >
+        <div class="field">
+          <div class="control" data-form-submission-target="submitter">
+            <input
+              type="submit"
+              class="button"
+              value="Apply updates immediately"
+              data-form-submission-target="submit"
+            >
+          </div>
+        </div>
+      </form>
+    {{end}}
+  {{end}}
+</turbo-frame>

@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	desecc "github.com/sargassum-world/fluitans/internal/clients/desec"
 	ztc "github.com/sargassum-world/fluitans/internal/clients/zerotier"
 	"github.com/sargassum-world/fluitans/internal/clients/ztcontrollers"
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
@@ -17,7 +18,7 @@ func CompareSubnamesAndAddresses(
 	secondNamed := len(secondSubnames) > 0
 	if firstNamed && secondNamed {
 		// fmt.Println("Comparing subnames", firstSubnames[0], secondSubnames[0])
-		return CompareSubnames(firstSubnames[0], secondSubnames[0])
+		return desecc.CompareSubnames(firstSubnames[0], secondSubnames[0])
 	}
 	if firstNamed {
 		return true

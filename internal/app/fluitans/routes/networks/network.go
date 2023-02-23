@@ -22,182 +22,7 @@ import (
 	"github.com/sargassum-world/fluitans/pkg/zerotier"
 )
 
-// Network Members & Member DNS
-
-func getRecordsOfType(
-	subnameRRsets map[string][]desec.RRset, rrsetType string,
-) (map[string][]string, error) {
-	records := make(map[string][]string)
-	// Look up potential domain names of network members
-	for subname, rrsets := range subnameRRsets {
-		filtered := desecc.FilterAndSortRRsets(rrsets, []string{rrsetType})
-		if len(filtered) > 1 {
-			return nil, errors.Errorf("unexpected number of RRsets for record")
-		}
-		if len(filtered) == 1 {
-			records[subname] = filtered[0].Records
-		}
-	}
-	return records, nil
-}
-
-func identifyMemberDomainNames(
-	zoneDomainName string, zerotierMembers map[string]zerotier.ControllerNetworkMember,
-	aaaaRecords map[string][]string,
-) map[string][]string {
-	addressDomainNames := make(map[string][]string)
-	for subname, records := range aaaaRecords {
-		for _, ipAddress := range records {
-			addressDomainNames[ipAddress] = append(addressDomainNames[ipAddress], subname)
-		}
-	}
-	memberDomainNames := make(map[string][]string)
-	for memberAddress, member := range zerotierMembers {
-		for _, ipAddress := range *member.IpAssignments {
-			for _, subname := range addressDomainNames[ipAddress] {
-				domainName := subname + "." + zoneDomainName
-				memberDomainNames[memberAddress] = append(memberDomainNames[memberAddress], domainName)
-			}
-		}
-	}
-	return memberDomainNames
-}
-
-func calculateMemberNDPAddresses(
-	networkID string, sixplane, rfc4193 bool, memberAddress string,
-) (ndpAddresses []string, err error) {
-	if !sixplane && !rfc4193 {
-		return nil, nil
-	}
-
-	const ndpModes = 2
-	ndpAddresses = make([]string, 0, ndpModes)
-	if sixplane {
-		sixplaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
-		if err != nil {
-			return nil, err
-		}
-		ndpAddresses = append(ndpAddresses, sixplaneAddress)
-	}
-	if rfc4193 {
-		rfc4193Address, err := zerotier.GetRFC4193(networkID, memberAddress)
-		if err != nil {
-			return nil, err
-		}
-		ndpAddresses = append(ndpAddresses, rfc4193Address)
-	}
-
-	return ndpAddresses, nil
-}
-
-func calculateNDPAddresses(
-	networkID string, v6AssignMode zerotier.V6AssignMode, memberAddresses []string,
-) (memberNDPAddresses map[string][]string, err error) {
-	sixplane := (v6AssignMode.N6plane != nil) && *(v6AssignMode.N6plane)
-	rfc4193 := (v6AssignMode.Rfc4193 != nil) && *(v6AssignMode.Rfc4193)
-	if !sixplane && !rfc4193 {
-		return nil, nil
-	}
-
-	memberNDPAddresses = make(map[string][]string)
-	for _, address := range memberAddresses {
-		if memberNDPAddresses[address], err = calculateMemberNDPAddresses(
-			networkID, sixplane, rfc4193, address,
-		); err != nil {
-			return nil, err
-		}
-	}
-	return memberNDPAddresses, nil
-}
-
-type Member struct {
-	ZerotierMember zerotier.ControllerNetworkMember
-	NDPAddresses   []string
-	DomainNames    []string
-}
-
-func getMemberRecords(
-	ctx context.Context, zoneDomainName string, controller ztcontrollers.Controller,
-	network zerotier.ControllerNetwork, memberAddresses []string,
-	subnameRRsets map[string][]desec.RRset,
-	c *ztc.Client,
-) (map[string]Member, error) {
-	zerotierMembers, err := c.GetNetworkMembers(ctx, controller, *network.Id, memberAddresses)
-	if err != nil {
-		return nil, err
-	}
-	memberNDPAddresses, err := calculateNDPAddresses(
-		*network.Id, *network.V6AssignMode, memberAddresses,
-	)
-	if err != nil {
-		return nil, err
-	}
-	for memberAddress, zerotierMember := range zerotierMembers {
-		ndpAddresses := memberNDPAddresses[memberAddress]
-		if zerotierMember.IpAssignments == nil {
-			zerotierMember.IpAssignments = &ndpAddresses
-		} else {
-			*zerotierMember.IpAssignments = append(ndpAddresses, *zerotierMember.IpAssignments...)
-		}
-	}
-
-	aaaaRecords, err := getRecordsOfType(subnameRRsets, "AAAA")
-	if err != nil {
-		return nil, err
-	}
-	memberDomainNames := identifyMemberDomainNames(zoneDomainName, zerotierMembers, aaaaRecords)
-	members := make(map[string]Member)
-	for memberAddress, zerotierMember := range zerotierMembers {
-		members[memberAddress] = Member{
-			ZerotierMember: zerotierMember,
-			NDPAddresses:   memberNDPAddresses[memberAddress],
-			DomainNames:    memberDomainNames[memberAddress],
-		}
-	}
-	return members, nil
-}
-
-func SortNetworkMembers(members map[string]Member) (addresses []string, sorted []Member) {
-	addresses = make([]string, 0, len(members))
-	for address := range members {
-		addresses = append(addresses, address)
-	}
-	sort.Slice(addresses, func(i, j int) bool {
-		return client.CompareSubnamesAndAddresses(
-			members[addresses[i]].DomainNames, addresses[i],
-			members[addresses[j]].DomainNames, addresses[j],
-		)
-	})
-	sorted = make([]Member, 0, len(addresses))
-	for _, address := range addresses {
-		sorted = append(sorted, members[address])
-	}
-	return addresses, sorted
-}
-
 // Network DNS
-
-func checkNamedByDNS(
-	ctx context.Context, networkName, networkID string, c *desecc.Client,
-) (bool, error) {
-	domainSuffix := "." + c.Config.DomainName
-	if !strings.HasSuffix(networkName, domainSuffix) {
-		return false, nil
-	}
-
-	subname := strings.TrimSuffix(networkName, domainSuffix)
-	txtRRset, err := c.GetRRset(ctx, subname, "TXT")
-	if err != nil {
-		return false, err
-	}
-
-	if txtRRset != nil {
-		parsedID, txtHasNetworkID := client.GetNetworkID(txtRRset.Records)
-		return txtHasNetworkID && (parsedID == networkID), nil
-	}
-
-	return false, nil
-}
 
 func identifyNetworkAliases(
 	networkID, confirmedSubname string, txtRecords map[string][]string,
@@ -232,13 +57,12 @@ func getNetworkDNSRecords(
 	ctx context.Context, networkID, networkName string, subnameRRsets map[string][]desec.RRset,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
 ) (networkDNS NetworkDNS, err error) {
-	namedByDNS, err := checkNamedByDNS(ctx, networkName, networkID, dc)
-	if err != nil || !namedByDNS {
-		return NetworkDNS{}, err
+	if !client.NetworkNamedByDNS(networkID, networkName, dc.Config.DomainName, subnameRRsets) {
+		return NetworkDNS{}, nil
 	}
 	networkDNS.Named = true
 
-	txtRecords, err := getRecordsOfType(subnameRRsets, "TXT")
+	txtRecords, err := client.GetRecordsOfType(subnameRRsets, "TXT")
 	if err != nil {
 		return NetworkDNS{}, err
 	}
@@ -277,7 +101,7 @@ func getNetworkDNSRecords(
 type NetworkViewData struct {
 	Controller       ztcontrollers.Controller
 	Network          zerotier.ControllerNetwork
-	Members          []Member
+	Members          []client.Member
 	AssignmentPools  []AssignmentPool
 	JSONPrintedRules string
 	DomainName       string
@@ -310,11 +134,11 @@ func getNetworkViewData(
 	var memberAddresses []string
 	var subnameRRsets map[string][]desec.RRset
 	eg.Go(func() (err error) {
-		network, memberAddresses, err = c.GetNetworkInfo(ctx, *controller, id)
+		network, memberAddresses, err = c.GetNetworkInfo(egctx, *controller, id)
 		return err
 	})
 	eg.Go(func() (err error) {
-		subnameRRsets, err = dc.GetRRsets(ctx)
+		subnameRRsets, err = dc.GetRRsets(egctx)
 		return err
 	})
 	if err = eg.Wait(); err != nil {
@@ -335,10 +159,10 @@ func getNetworkViewData(
 
 	eg, egctx = errgroup.WithContext(ctx)
 	eg.Go(func() (err error) {
-		members, err := getMemberRecords(
-			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
+		members, err := client.GetMemberRecords(
+			egctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
 		)
-		_, vd.Members = SortNetworkMembers(members)
+		_, vd.Members = client.SortNetworkMembers(members)
 		return err
 	})
 	eg.Go(func() (err error) {

@@ -11,7 +11,7 @@
       {{$network.Name}}
     {{end}}
   </h1>
-  <p>ID: {{template "shared/networks/network-id.partial.tmpl" $network.Id}}</p>
+  <p>ZeroTier ID: {{template "shared/networks/network-id.partial.tmpl" $network.Id}}</p>
   {{if $networkDNS.Named}}
     <p>
       Domain Name:

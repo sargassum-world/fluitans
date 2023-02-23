@@ -265,7 +265,7 @@ func (h *Handlers) HandleNetworkAutoIPv6ModesPost() auth.HTTPHandlerFunc {
 				c.Response(),
 				turbostreams.Message{
 					Action:   turbostreams.ActionReplace,
-					Target:   "/networks/" + id + "/autoip/v6modes",
+					Target:   "/networks/" + id + "/autoip/v6-modes",
 					Template: t,
 					Data: map[string]interface{}{
 						"Network": network,
@@ -278,7 +278,7 @@ func (h *Handlers) HandleNetworkAutoIPv6ModesPost() auth.HTTPHandlerFunc {
 
 		// Redirect user
 		return c.Redirect(http.StatusSeeOther, fmt.Sprintf(
-			"/networks/%s#/networks/%s/autoip/v6modes", id, id,
+			"/networks/%s#/networks/%s/autoip/v6-modes", id, id,
 		))
 	}
 }
@@ -332,7 +332,7 @@ func (h *Handlers) HandleNetworkAutoIPv4ModesPost() auth.HTTPHandlerFunc {
 				c.Response(),
 				turbostreams.Message{
 					Action:   turbostreams.ActionReplace,
-					Target:   "/networks/" + id + "/autoip/v4modes",
+					Target:   "/networks/" + id + "/autoip/v4-modes",
 					Template: t,
 					Data: map[string]interface{}{
 						"Network": network,

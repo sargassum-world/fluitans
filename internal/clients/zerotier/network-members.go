@@ -79,3 +79,47 @@ func (c *Client) UpdateMember(
 	_, err = client.SetControllerNetworkMemberWithResponse(ctx, networkID, memberAddress, member)
 	return err
 }
+
+// IP Addresses
+
+func CalculateNDPAddresses(
+	networkID string, sixplane, rfc4193 bool, memberAddress string,
+) (ndpAddresses []string, err error) {
+	if !sixplane && !rfc4193 {
+		return nil, nil
+	}
+
+	const ndpModes = 2
+	ndpAddresses = make([]string, 0, ndpModes)
+	if sixplane {
+		sixplaneAddress, err := zerotier.Get6Plane(networkID, memberAddress)
+		if err != nil {
+			return nil, err
+		}
+		ndpAddresses = append(ndpAddresses, sixplaneAddress)
+	}
+	if rfc4193 {
+		rfc4193Address, err := zerotier.GetRFC4193(networkID, memberAddress)
+		if err != nil {
+			return nil, err
+		}
+		ndpAddresses = append(ndpAddresses, rfc4193Address)
+	}
+
+	return ndpAddresses, nil
+}
+
+func CalculateIPAddresses(
+	networkID string, v6AssignMode zerotier.V6AssignMode, member zerotier.ControllerNetworkMember,
+) (allIPAddresses []string, ndpAddresses []string, err error) {
+	sixplane := (v6AssignMode.N6plane != nil) && *(v6AssignMode.N6plane)
+	rfc4193 := (v6AssignMode.Rfc4193 != nil) && *(v6AssignMode.Rfc4193)
+	ndpAddresses, err = CalculateNDPAddresses(networkID, sixplane, rfc4193, *member.Address)
+	if err != nil {
+		return nil, nil, err
+	}
+	if member.IpAssignments == nil {
+		return ndpAddresses, nil, nil
+	}
+	return append(ndpAddresses, *member.IpAssignments...), ndpAddresses, nil
+}

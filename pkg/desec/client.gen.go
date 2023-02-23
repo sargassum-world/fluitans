@@ -3353,7 +3353,7 @@ func (r ListRRsetsResponse) StatusCode() int {
 type PartialUpdateRRsetsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *RRset
+	JSON200      *RRsets
 }
 
 // Status returns HTTPResponse.Status
@@ -3375,7 +3375,7 @@ func (r PartialUpdateRRsetsResponse) StatusCode() int {
 type CreateRRsetsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON201      *RRset
+	JSON201      *RRsets
 }
 
 // Status returns HTTPResponse.Status
@@ -3397,7 +3397,7 @@ func (r CreateRRsetsResponse) StatusCode() int {
 type UpdateRRsetsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *RRset
+	JSON200      *RRsets
 }
 
 // Status returns HTTPResponse.Status
@@ -4843,7 +4843,7 @@ func ParsePartialUpdateRRsetsResponse(rsp *http.Response) (*PartialUpdateRRsetsR
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
+		var dest RRsets
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4869,7 +4869,7 @@ func ParseCreateRRsetsResponse(rsp *http.Response) (*CreateRRsetsResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
-		var dest RRset
+		var dest RRsets
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -4895,7 +4895,7 @@ func ParseUpdateRRsetsResponse(rsp *http.Response) (*UpdateRRsetsResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest RRset
+		var dest RRsets
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

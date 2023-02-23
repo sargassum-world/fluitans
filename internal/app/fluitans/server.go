@@ -221,6 +221,14 @@ func (s *Server) runWorkersInContext(ctx context.Context) error {
 		}
 		return nil
 	})
+	eg.Go(func() error {
+		if err := workers.UpdateZeroTierDNSRecords(
+			ctx, s.Globals.Zerotier, s.Globals.ZTControllers, s.Globals.Desec,
+		); err != nil && err != context.Canceled {
+			s.Globals.Logger.Error(errors.Wrap(err, "couldn't update dns records for zerotier networks"))
+		}
+		return nil
+	})
 	// TODO: add worker to batch DNS record writes when needed
 	eg.Go(func() error {
 		if err := s.Globals.TSBroker.Serve(ctx); err != nil && err != context.Canceled {
