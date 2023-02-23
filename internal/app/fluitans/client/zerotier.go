@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -14,6 +15,23 @@ import (
 )
 
 // DNS Update
+
+func determineExpectedRRsets(
+	member zerotier.ControllerNetworkMember, subnames []string, ttl int,
+) (expectedRRsets []desec.RRset, err error) {
+	const approxRRsetsPerSubname = 2
+	expectedRRsets = make([]desec.RRset, 0, approxRRsetsPerSubname*len(subnames))
+	for _, subname := range subnames {
+		rrsets, err := NewMemberNameRRsets(member, subname, ttl)
+		if err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't make AAAA and A rrsets for network member %s", *member.Address,
+			)
+		}
+		expectedRRsets = append(expectedRRsets, rrsets...)
+	}
+	return expectedRRsets, nil
+}
 
 type DNSUpdate struct {
 	Type      string
@@ -88,10 +106,11 @@ type Member struct {
 	ZerotierMember zerotier.ControllerNetworkMember
 	NDPAddresses   []string
 	DomainNames    []string
+	ExpectedRRsets []desec.RRset
 	DNSUpdates     map[string][]DNSUpdate
 }
 
-func identifyAddressDomainNames(
+func IdentifyAddressDomainNames(
 	subnameRRsets map[string][]desec.RRset,
 ) (addressDomainNames map[string][]string, err error) {
 	aaaaRecords, err := GetRecordsOfType(subnameRRsets, "AAAA")
@@ -117,7 +136,7 @@ func identifyAddressDomainNames(
 	return addressDomainNames, nil
 }
 
-func identifyDomainNames(
+func IdentifyDomainNames(
 	zoneDomainName string, member zerotier.ControllerNetworkMember,
 	addressDomainNames map[string][]string,
 ) (domainNames []string, subnames []string) {
@@ -148,7 +167,7 @@ func GetMemberRecords(
 	if err != nil {
 		return nil, err
 	}
-	addressDomainNames, err := identifyAddressDomainNames(subnameRRsets)
+	addressDomainNames, err := IdentifyAddressDomainNames(subnameRRsets)
 	if err != nil {
 		return nil, err
 	}
@@ -163,11 +182,17 @@ func GetMemberRecords(
 			return nil, err
 		}
 		zerotierMember.IpAssignments = &allIPAddresses
-		// identifyDomainNames assumes the member's IP assignments include any assigned NDP addresses
-		domainNames, subnames := identifyDomainNames(zoneDomainName, zerotierMember, addressDomainNames)
-		dnsUpdates, err := planDNSUpdates(
-			zerotierMember, subnames, domainNames, subnameRRsets,
+		domainNames, subnames := IdentifyDomainNames(zoneDomainName, zerotierMember, addressDomainNames)
+		expectedRRsets, err := determineExpectedRRsets(
+			zerotierMember, subnames, int(c.Config.DNS.DeviceTTL),
 		)
+		if err != nil {
+			return nil, errors.Wrapf(
+				err, "couldn't determine expected dns records for network %s member %s",
+				*network.Id, memberAddress,
+			)
+		}
+		dnsUpdates, err := planDNSUpdates(zerotierMember, subnames, domainNames, subnameRRsets)
 		if err != nil {
 			return nil, errors.Wrapf(
 				err, "couldn't calculate dns record updates needed for network %s member %s",
@@ -178,6 +203,7 @@ func GetMemberRecords(
 			ZerotierMember: zerotierMember,
 			NDPAddresses:   ndpAddresses,
 			DomainNames:    domainNames,
+			ExpectedRRsets: expectedRRsets,
 			DNSUpdates:     dnsUpdates,
 		}
 		memberNDPAddresses[memberAddress] = ndpAddresses
@@ -201,4 +227,52 @@ func SortNetworkMembers(members map[string]Member) (addresses []string, sorted [
 		sorted = append(sorted, members[address])
 	}
 	return addresses, sorted
+}
+
+func NewMemberNameRRsets(
+	member zerotier.ControllerNetworkMember, memberSubname string,
+	dnsTTL int,
+) (rrsets []desec.RRset, err error) {
+	ipv4Addresses, ipv6Addresses, err := SplitIPAddresses(*member.IpAssignments)
+	if err != nil {
+		return nil, errors.Wrapf(err, "found invalid IP address for network member %s", *member.Address)
+	}
+
+	return []desec.RRset{
+		{
+			Subname: memberSubname,
+			Type:    "AAAA",
+			Ttl:     &dnsTTL,
+			Records: ipv6Addresses,
+		},
+		{
+			Subname: memberSubname,
+			Type:    "A",
+			Ttl:     &dnsTTL,
+			Records: ipv4Addresses,
+		},
+	}, nil
+}
+
+func NetworkNamedByDNS(
+	networkID, networkName, domainName string, subnameRRsets map[string][]desec.RRset,
+) bool {
+	domainSuffix := "." + domainName
+	if !strings.HasSuffix(networkName, domainSuffix) {
+		return false
+	}
+
+	subname := strings.TrimSuffix(networkName, domainSuffix)
+	rrsets, ok := subnameRRsets[subname]
+	if !ok {
+		return false
+	}
+	for _, rrset := range rrsets {
+		if rrset.Type == "TXT" {
+			parsedID, txtHasNetworkID := GetNetworkID(rrset.Records)
+			return txtHasNetworkID && (parsedID == networkID)
+		}
+	}
+
+	return false
 }

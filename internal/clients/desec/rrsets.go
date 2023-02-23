@@ -125,7 +125,7 @@ func (c *Client) getRRsetsFromDesec(ctx context.Context) (map[string][]desec.RRs
 		return nil, err
 	}
 	// TODO: handle pagination
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return nil, err
 	}
 
@@ -184,7 +184,7 @@ func (c *Client) UpsertRRsets(ctx context.Context, rrsets ...desec.RRset) ([]des
 	if err = c.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
 		return nil, err
 	}
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return nil, err
 	}
 
@@ -265,7 +265,7 @@ func (c *Client) getSubnameRRsetsFromDesec(
 	}
 
 	// TODO: handle pagination
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return nil, err
 	}
 
@@ -327,7 +327,7 @@ func (c *Client) getRRsetFromDesec(
 		return nil, nil // treat this as a nonexistent RRset
 	}
 
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return nil, err
 	}
 
@@ -382,7 +382,7 @@ func (c *Client) CreateRRset(
 		return desec.RRset{}, err
 	}
 
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return desec.RRset{}, err
 	}
 
@@ -433,7 +433,7 @@ func (c *Client) UpdateRRset(
 	if err = c.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
 		return nil, err
 	}
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return nil, err
 	}
 
@@ -475,7 +475,7 @@ func (c *Client) DeleteRRset(ctx context.Context, subname, recordType string) er
 	if err = c.handleDesecMissingDomainError(*res.HTTPResponse); err != nil {
 		return err
 	}
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return err
 	}
 

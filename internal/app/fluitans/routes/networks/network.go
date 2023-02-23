@@ -24,28 +24,6 @@ import (
 
 // Network DNS
 
-func checkNamedByDNS(
-	ctx context.Context, networkName, networkID string, c *desecc.Client,
-) (bool, error) {
-	domainSuffix := "." + c.Config.DomainName
-	if !strings.HasSuffix(networkName, domainSuffix) {
-		return false, nil
-	}
-
-	subname := strings.TrimSuffix(networkName, domainSuffix)
-	txtRRset, err := c.GetRRset(ctx, subname, "TXT")
-	if err != nil {
-		return false, err
-	}
-
-	if txtRRset != nil {
-		parsedID, txtHasNetworkID := client.GetNetworkID(txtRRset.Records)
-		return txtHasNetworkID && (parsedID == networkID), nil
-	}
-
-	return false, nil
-}
-
 func identifyNetworkAliases(
 	networkID, confirmedSubname string, txtRecords map[string][]string,
 ) []string {
@@ -79,9 +57,8 @@ func getNetworkDNSRecords(
 	ctx context.Context, networkID, networkName string, subnameRRsets map[string][]desec.RRset,
 	c *ztc.Client, cc *ztcontrollers.Client, dc *desecc.Client,
 ) (networkDNS NetworkDNS, err error) {
-	namedByDNS, err := checkNamedByDNS(ctx, networkName, networkID, dc)
-	if err != nil || !namedByDNS {
-		return NetworkDNS{}, err
+	if !client.NetworkNamedByDNS(networkID, networkName, dc.Config.DomainName, subnameRRsets) {
+		return NetworkDNS{}, nil
 	}
 	networkDNS.Named = true
 
@@ -157,11 +134,11 @@ func getNetworkViewData(
 	var memberAddresses []string
 	var subnameRRsets map[string][]desec.RRset
 	eg.Go(func() (err error) {
-		network, memberAddresses, err = c.GetNetworkInfo(ctx, *controller, id)
+		network, memberAddresses, err = c.GetNetworkInfo(egctx, *controller, id)
 		return err
 	})
 	eg.Go(func() (err error) {
-		subnameRRsets, err = dc.GetRRsets(ctx)
+		subnameRRsets, err = dc.GetRRsets(egctx)
 		return err
 	})
 	if err = eg.Wait(); err != nil {
@@ -183,7 +160,7 @@ func getNetworkViewData(
 	eg, egctx = errgroup.WithContext(ctx)
 	eg.Go(func() (err error) {
 		members, err := client.GetMemberRecords(
-			ctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
+			egctx, dc.Config.DomainName, *controller, *network, memberAddresses, subnameRRsets, c,
 		)
 		_, vd.Members = client.SortNetworkMembers(members)
 		return err

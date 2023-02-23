@@ -35,7 +35,7 @@ func (c *Client) getDomainFromDesec(ctx context.Context) (*desec.Domain, error) 
 		return nil, err
 	}
 
-	if err = c.handleDesecClientError(*res.HTTPResponse, c.Logger); err != nil {
+	if err = c.handleDesecClientError(*res.HTTPResponse, res.Body, c.Logger); err != nil {
 		return nil, err
 	}
 

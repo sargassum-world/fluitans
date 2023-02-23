@@ -64,7 +64,7 @@ func (c *Client) handleDesecMissingRRsetError(
 	return nil
 }
 
-func (c *Client) handleDesecClientError(res http.Response, l godest.Logger) error {
+func (c *Client) handleDesecClientError(res http.Response, body []byte, l godest.Logger) error {
 	switch res.StatusCode {
 	case http.StatusTooManyRequests:
 		retryWaitSec := getRetryWait(res.Header, l)
@@ -73,8 +73,12 @@ func (c *Client) handleDesecClientError(res http.Response, l godest.Logger) erro
 		c.ReadLimiter.Throttled(time.Now(), retryWaitSec)
 		return newReadRateLimitError(retryWaitSec)
 	case http.StatusBadRequest:
+		if body == nil {
+			return echo.NewHTTPError(http.StatusBadRequest)
+		}
+
 		// TODO: handle pagination when there's a Link: header
-		return echo.NewHTTPError(http.StatusBadRequest)
+		return echo.NewHTTPError(http.StatusBadRequest, string(body))
 	}
 
 	return nil

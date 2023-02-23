@@ -216,11 +216,11 @@ func getDeviceViewData(
 	var network *zerotier.ControllerNetwork
 	var subnameRRsets map[string][]desec.RRset
 	eg.Go(func() (err error) {
-		network, err = c.GetNetwork(ctx, *controller, networkID)
+		network, err = c.GetNetwork(egctx, *controller, networkID)
 		return errors.Wrapf(err, "couldn't get network %s", networkID)
 	})
 	eg.Go(func() (err error) {
-		subnameRRsets, err = dc.GetRRsets(ctx)
+		subnameRRsets, err = dc.GetRRsets(egctx)
 		return errors.Wrap(err, "couldn't get subname RRsets")
 	})
 	if err = eg.Wait(); err != nil {
@@ -230,6 +230,9 @@ func getDeviceViewData(
 		return DeviceViewData{}, echo.NewHTTPError(http.StatusNotFound, "zerotier network not found")
 	}
 	vd.Network = *network
+	vd.NetworkDNSNamed = client.NetworkNamedByDNS(
+		networkID, *network.Name, dc.Config.DomainName, subnameRRsets,
+	)
 
 	members, err := client.GetMemberRecords(
 		ctx, dc.Config.DomainName, *controller, *network, []string{memberAddress}, subnameRRsets, c,
@@ -243,13 +246,6 @@ func getDeviceViewData(
 	if vd.Member, ok = members[memberAddress]; !ok {
 		return DeviceViewData{}, echo.NewHTTPError(
 			http.StatusNotFound, "zerotier network member not found",
-		)
-	}
-
-	if vd.NetworkDNSNamed, err = checkNamedByDNS(egctx, *network.Name, networkID, dc); err != nil {
-		return DeviceViewData{}, errors.Wrapf(
-			err, "couldn't check whether network %s has dns-validated name of %s",
-			networkID, *network.Name,
 		)
 	}
 
@@ -531,6 +527,28 @@ func (h *Handlers) HandleDeviceAuthorizationPost() auth.HTTPHandlerFunc {
 
 // Device Naming
 
+func checkNamedByDNS(
+	ctx context.Context, networkName, networkID string, c *desecc.Client,
+) (bool, error) {
+	domainSuffix := "." + c.Config.DomainName
+	if !strings.HasSuffix(networkName, domainSuffix) {
+		return false, nil
+	}
+
+	subname := strings.TrimSuffix(networkName, domainSuffix)
+	txtRRset, err := c.GetRRset(ctx, subname, "TXT")
+	if err != nil {
+		return false, err
+	}
+
+	if txtRRset != nil {
+		parsedID, txtHasNetworkID := client.GetNetworkID(txtRRset.Records)
+		return txtHasNetworkID && (parsedID == networkID), nil
+	}
+
+	return false, nil
+}
+
 func confirmMemberNameManageable(
 	ctx context.Context, network zerotier.ControllerNetwork, memberName string, dc *desecc.Client,
 ) (memberSubname string, err error) {
@@ -568,35 +586,19 @@ func setMemberName(
 	if err != nil {
 		return errors.Wrapf(err, "couldn't get network %s member %s", networkID, memberAddress)
 	}
-
-	ipAddresses, _, err := ztc.CalculateIPAddresses(*network.Id, *network.V6AssignMode, *member)
-	if err != nil {
+	if *member.IpAssignments, _, err = ztc.CalculateIPAddresses(
+		*network.Id, *network.V6AssignMode, *member,
+	); err != nil {
 		return errors.Wrapf(
-			err, "couldn't calculate IP addresses for network %s member %s", networkID, memberAddress,
-		)
-	}
-	ipv4Addresses, ipv6Addresses, err := client.SplitIPAddresses(ipAddresses)
-	if err != nil {
-		return errors.Wrapf(
-			err, "found invalid IP address for network %s member %s", networkID, memberAddress,
+			err, "couldn't determine ip addresses for network %s member %s", networkID, memberAddress,
 		)
 	}
 
-	// TODO: use bulk Update
-	ttl := int(c.Config.DNS.DeviceTTL)
-	rrsets := []desec.RRset{
-		{
-			Subname: memberSubname,
-			Type:    "AAAA",
-			Ttl:     &ttl,
-			Records: ipv6Addresses,
-		},
-		{
-			Subname: memberSubname,
-			Type:    "A",
-			Ttl:     &ttl,
-			Records: ipv4Addresses,
-		},
+	rrsets, err := client.NewMemberNameRRsets(*member, memberSubname, int(c.Config.DNS.DeviceTTL))
+	if err != nil {
+		return errors.Wrapf(
+			err, "couldn't make AAAA and A rrsets for network %s member %s", networkID, memberAddress,
+		)
 	}
 	if _, err := dc.UpsertRRsets(ctx, rrsets...); err != nil {
 		return errors.Wrapf(
