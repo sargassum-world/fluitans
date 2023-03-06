@@ -37,7 +37,7 @@
     "@fontsource/atkinson-hyperlegible": "^4.5.11",
     "@fontsource/oxygen-mono": "^4.5.10",
     "@hotwired/stimulus": "3.2.1",
-    "@hotwired/turbo": "^7.2.5",
+    "@hotwired/turbo": "^7.3.0",
     "@sargassum-world/stimulated": "^0.5.0",
     "decode-uri-component": "0.4.1",
     "json5": "2.2.3",
